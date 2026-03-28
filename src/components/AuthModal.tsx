@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { AuthState } from "../hooks/useAuth";
+import { useToast } from "../context/toast";
 
 interface Props {
   open: boolean;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function AuthModal({ open, onClose, auth, defaultTab = "signin" }: Props) {
+  const { toast } = useToast();
   const [tab, setTab] = useState<"signin" | "signup">(defaultTab);
   const [showForgot, setShowForgot] = useState(false);
   const [email, setEmail] = useState("");
@@ -36,14 +38,19 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin" }: Props)
     setSubmitting(true);
     if (showForgot) {
       await auth.resetPassword(email);
+      if (!auth.error) toast("Reset link sent — check your inbox 📬", "info");
     } else if (tab === "signin") {
       await auth.signIn(email, password);
+      // sign-in success toast fires from App.tsx via auth.user change
+      if (!auth.error) onClose();
     } else {
       await auth.signUp(email, password);
+      // auth.error holds the "check your email" confirmation message for sign-up
+      if (auth.error?.toLowerCase().includes("check your email")) {
+        toast("Account created! Check your email to confirm 📧", "success");
+      }
     }
     setSubmitting(false);
-    // Close on successful sign-in (session will be set by the hook)
-    if (!auth.error && tab === "signin" && !showForgot) onClose();
   }
 
   const isInfo = auth.error?.toLowerCase().includes("check your email")
