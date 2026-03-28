@@ -49,7 +49,6 @@ export default {
         "fade-in-up": "fadeInUp 0.6s cubic-bezier(0.4,0,0.2,1) forwards",
         shimmer: "shimmer 2s infinite",
         "pulse-once": "pulseOnce 1.5s ease-in-out 1",
-        shine: "shine 0.5s forwards",
       },
       keyframes: {
         float: {
@@ -68,10 +67,7 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.65" },
         },
-        shine: {
-          from: { left: "-100%" },
-          to: { left: "100%" },
-        },
+
       },
     },
   },
