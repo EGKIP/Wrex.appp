@@ -126,7 +126,7 @@ function RubricPanel({ rubric }: { rubric: RubricMatchResult }) {
 function SkeletonPanel() {
   return (
     <aside className="space-y-5">
-      <div className="rounded-modal border border-white/10 bg-white/5 p-6 sm:p-8">
+      <div className="rounded-modal border border-border-base bg-white p-6 shadow-soft sm:p-8">
         <div className="flex items-center gap-6">
           <div className="skeleton h-[140px] w-[140px] rounded-full" />
           <div className="flex-1 space-y-3">
@@ -153,19 +153,19 @@ export function ResultsPanel({ results, loading = false }: ResultsPanelProps) {
 
   if (!results) {
     return (
-      <aside className="rounded-modal border border-dashed border-border-base bg-white/5 p-8 backdrop-blur-sm">
-        <div className="flex h-14 w-14 items-center justify-center rounded-input bg-white/10">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-white/40">
+      <aside className="rounded-modal border border-dashed border-border-base bg-white p-8 shadow-soft">
+        <div className="flex h-14 w-14 items-center justify-center rounded-input bg-mist">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-charcoal/40">
             <path d="M9 12h6M9 16h6M9 8h6M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" strokeLinecap="round" />
           </svg>
         </div>
-        <h3 className="font-heading mt-5 text-xl font-bold tracking-tight text-white/80">
+        <h3 className="mt-5 text-xl font-bold tracking-tight text-navy">
           Paste something to get started
         </h3>
-        <p className="mt-3 max-w-md text-sm leading-7 text-white/45">
+        <p className="mt-3 max-w-md text-sm leading-7 text-charcoal/65">
           Your score, flagged sentences, and writing tips will appear here.
         </p>
-        <ul className="mt-5 space-y-2 text-sm text-white/40">
+        <ul className="mt-5 space-y-2 text-sm text-charcoal/55">
           {["Rubric alignment score", "Flagged sentences with signal strength", "Actionable writing tips"].map(item => (
             <li key={item} className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-accent" />

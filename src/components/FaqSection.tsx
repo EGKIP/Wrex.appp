@@ -33,10 +33,10 @@ export function FaqSection() {
   return (
     <section id="faq" className="bg-white px-6 py-16 lg:px-10 lg:py-20">
       <div className="mx-auto max-w-2xl">
-        <h2 className="text-[1.75rem] font-bold tracking-tight text-navy lg:text-[2rem]">
+        <h2 className="text-[1.75rem] font-bold tracking-tight text-navy lg:text-[2.25rem]">
           Questions
         </h2>
-        <p className="mt-2 text-sm text-charcoal/65">
+        <p className="mt-3 text-base text-charcoal/65">
           Everything you'd want to know before you paste anything.
         </p>
 

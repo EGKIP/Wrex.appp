@@ -38,7 +38,7 @@ export default {
       },
       fontFamily: {
         sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
-        heading: ["Outfit", "Inter", "ui-sans-serif", "sans-serif"],
+        heading: ["Inter", "ui-sans-serif", "sans-serif"],
         mono: ["JetBrains Mono", "ui-monospace", "monospace"],
       },
       fontSize: {

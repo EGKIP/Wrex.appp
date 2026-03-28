@@ -1,20 +1,9 @@
-const PREVIEW_ITEMS = [
-  { label: "Causes addressed", status: "covered" },
-  { label: "Social impact", status: "partial" },
-  { label: "Economic analysis", status: "missing" },
+const FEATURES = [
+  { icon: "📊", label: "AI-pattern score", desc: "0–100 likelihood score based on writing patterns" },
+  { icon: "🔍", label: "Sentence flags", desc: "Highlights specific sentences that look AI-written" },
+  { icon: "📋", label: "Rubric alignment", desc: "Maps your draft against assignment criteria" },
+  { icon: "💡", label: "Writing tips", desc: "Concrete suggestions to improve your draft" },
 ];
-
-function statusStyle(status: string) {
-  if (status === "covered") return { dot: "bg-success", text: "text-success", badge: "bg-success/10 text-success" };
-  if (status === "partial") return { dot: "bg-warning", text: "text-warning", badge: "bg-warning/10 text-warning" };
-  return { dot: "bg-danger", text: "text-danger", badge: "bg-danger/10 text-danger" };
-}
-
-function statusLabel(status: string) {
-  if (status === "covered") return "Covered";
-  if (status === "partial") return "Partial";
-  return "Missing";
-}
 
 export function Hero() {
   return (
@@ -67,48 +56,27 @@ export function Hero() {
             </p>
           </div>
 
-          {/* Right — floating preview card */}
+          {/* Right — what you get card */}
           <div className="hidden lg:block">
             <div className="animate-float">
-              <div
-                className="rounded-modal bg-white p-6 shadow-float"
-                style={{ transform: "rotate(3deg)" }}
-              >
-                {/* Score badge */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/50">
-                      Rubric alignment
-                    </p>
-                    <p className="font-stat mt-1 text-4xl font-bold text-navy">72%</p>
-                  </div>
-                  <div className="flex h-14 w-14 items-center justify-center rounded-score bg-gradient-to-br from-warning/20 to-accent/10">
-                    <span className="text-2xl">📝</span>
-                  </div>
-                </div>
-
-                {/* Criterion list */}
-                <div className="mt-4 space-y-2">
-                  {PREVIEW_ITEMS.map(({ label, status }) => {
-                    const s = statusStyle(status);
-                    return (
-                      <div key={label} className="flex items-center justify-between rounded-input bg-mist px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <span className={`h-2 w-2 rounded-full ${s.dot}`} />
-                          <span className="text-xs font-medium text-charcoal">{label}</span>
-                        </div>
-                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${s.badge}`}>
-                          {statusLabel(status)}
-                        </span>
+              <div className="rounded-modal bg-white p-6 shadow-float">
+                <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/45">
+                  What you get
+                </p>
+                <div className="mt-4 space-y-3">
+                  {FEATURES.map(({ icon, label, desc }) => (
+                    <div key={label} className="flex items-start gap-3 rounded-input bg-mist px-4 py-3">
+                      <span className="text-lg leading-none">{icon}</span>
+                      <div>
+                        <p className="text-sm font-semibold text-navy">{label}</p>
+                        <p className="mt-0.5 text-xs leading-5 text-charcoal/60">{desc}</p>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
-
-                {/* Bottom tip */}
-                <div className="mt-4 rounded-input border border-accent/20 bg-accent/5 px-3 py-2">
-                  <p className="text-xs text-charcoal/70">
-                    💡 <span className="font-medium">Tip:</span> Add more on economic factors — that criterion is missing.
+                <div className="mt-4 rounded-input border border-accent/25 bg-accent/8 px-4 py-2.5">
+                  <p className="text-xs font-medium text-charcoal/70">
+                    Free · No account needed · Private
                   </p>
                 </div>
               </div>

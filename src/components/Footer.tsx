@@ -6,8 +6,8 @@ export function Footer() {
         <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
           {/* Brand */}
           <div className="max-w-xs">
-            <p className="font-bold text-navy">Wrex.app</p>
-            <p className="mt-2 text-sm leading-6 text-charcoal/65">
+            <p className="text-base font-bold text-navy">Wrex.app</p>
+            <p className="mt-2 text-sm leading-6 text-charcoal/60">
               Write to your rubric. Every time.
             </p>
           </div>

@@ -27,7 +27,7 @@ export function Navbar() {
   }, []);
 
   return (
-    <header className="sticky top-4 z-20 px-4 lg:px-6">
+    <header className="sticky top-0 z-20 px-4 pt-3 pb-1.5 lg:px-6">
       <div className="mx-auto max-w-7xl">
         <div className="glass-nav flex items-center justify-between px-5 py-3">
           <Brand />
