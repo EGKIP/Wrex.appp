@@ -1,11 +1,11 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  color: #2d3748;
+  color: #334155;
   background: #ffffff;
   font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
@@ -17,9 +17,104 @@ html {
 body {
   margin: 0;
   min-width: 320px;
-  background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+  background: #ffffff;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* Noise texture overlay for depth */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Floating glass nav */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.06);
+}
+
+/* Yellow shine CTA button */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+  transition: left 0s;
+}
+.btn-shine:hover::before {
+  left: 100%;
+  transition: left 0.5s ease;
+}
+
+/* Skeleton shimmer */
+.skeleton {
+  background: linear-gradient(90deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Gradient border textarea (dark section) */
+.gradient-border-wrap {
+  position: relative;
+  border-radius: 14px;
+  padding: 2px;
+  background: linear-gradient(135deg, #FBBF24 0%, #3B82F6 50%, #10B981 100%);
+}
+.gradient-border-wrap textarea {
+  border-radius: 12px;
+  border: none;
+  outline: none;
+}
+
+/* Heading font utility */
+.font-heading {
+  font-family: "Outfit", "Inter", sans-serif;
+}
+
+/* Mono stat utility */
+.font-stat {
+  font-family: "JetBrains Mono", monospace;
+}
+
+/* Stagger fade-in for child elements */
+.stagger > *:nth-child(1) { animation-delay: 0.1s; }
+.stagger > *:nth-child(2) { animation-delay: 0.2s; }
+.stagger > *:nth-child(3) { animation-delay: 0.3s; }
+.stagger > *:nth-child(4) { animation-delay: 0.4s; }
+.stagger > * {
+  animation: fadeInUp 0.6s cubic-bezier(0.4,0,0.2,1) forwards;
+  opacity: 0;
+}
+
+/* Pulse animation on flagged sentences */
+.flagged-pulse {
+  animation: pulseOnce 1.5s ease-in-out 1;
+}
+
+/* Yellow blob background accent */
+.blob-yellow {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(251,191,36,0.18) 0%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
 }
