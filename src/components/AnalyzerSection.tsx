@@ -80,17 +80,29 @@ export function AnalyzerSection() {
               type="button"
               onClick={onAnalyze}
               disabled={loading}
-              className="rounded-2xl bg-navy px-6 py-3 text-sm font-semibold text-white transition hover:bg-navy/95 disabled:cursor-not-allowed disabled:bg-navy/60"
+              className="flex items-center gap-2 rounded-2xl bg-navy px-6 py-3 text-sm font-semibold text-white transition hover:bg-navy/95 disabled:cursor-not-allowed disabled:bg-navy/60"
             >
-              {loading ? "Analyzing..." : "Analyze Writing"}
+              {loading ? (
+                <>
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Analyzing…
+                </>
+              ) : (
+                "Analyze Writing"
+              )}
             </button>
             <p className="max-w-sm text-sm text-charcoal/65">
-              Want to improve this writing later? Pro will offer deeper revision
-              guidance and humanizing support.
+              Rubric alignment and humanizing guidance coming in Pro.{" "}
+              <a href="#waitlist" className="font-medium text-navy underline underline-offset-2">
+                Join the waitlist.
+              </a>
             </p>
           </div>
         </div>
-        <ResultsPanel results={results} />
+        <ResultsPanel results={results} loading={loading} />
       </div>
     </section>
   );

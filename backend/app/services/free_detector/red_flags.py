@@ -1,3 +1,4 @@
+from app.schemas.free import FlaggedSentence
 from app.services.free_detector.feature_extractor import DocumentFeatures, SentenceFeatures
 
 
@@ -16,8 +17,8 @@ def build_red_flags(features: DocumentFeatures) -> list[str]:
     return flags[:4] or ["The overall score is driven by a blend of subtle document-level patterns."]
 
 
-def build_flagged_sentences(sentence_features: list[SentenceFeatures]) -> list[dict[str, object]]:
-    flagged: list[dict[str, object]] = []
+def build_flagged_sentences(sentence_features: list[SentenceFeatures]) -> list[FlaggedSentence]:
+    flagged: list[FlaggedSentence] = []
 
     for feature in sentence_features:
         score = (
@@ -38,14 +39,14 @@ def build_flagged_sentences(sentence_features: list[SentenceFeatures]) -> list[d
                 reasons.append("lower uniqueness")
 
             flagged.append(
-                {
-                    "index": feature.index,
-                    "text": feature.text,
-                    "score": round(min(score, 0.99), 2),
-                    "reason": f"Signals include {', '.join(reasons)}."
+                FlaggedSentence(
+                    index=feature.index,
+                    text=feature.text,
+                    score=round(min(score, 0.99), 2),
+                    reason=f"Signals include {', '.join(reasons)}."
                     if reasons
                     else "This sentence follows a highly uniform phrasing pattern.",
-                }
+                )
             )
 
     return flagged[:5]

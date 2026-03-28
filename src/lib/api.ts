@@ -1,4 +1,4 @@
-import type { AnalyzeResponse } from "../types";
+import type { AnalyzeResponse, WaitlistResponse } from "../types";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -26,7 +26,7 @@ export async function analyzeText(text: string): Promise<AnalyzeResponse> {
   return handleResponse<AnalyzeResponse>(response);
 }
 
-export async function joinWaitlist(email: string): Promise<{ message: string }> {
+export async function joinWaitlist(email: string): Promise<WaitlistResponse> {
   const response = await fetch(`${API_BASE_URL}/waitlist`, {
     method: "POST",
     headers: {
@@ -35,5 +35,7 @@ export async function joinWaitlist(email: string): Promise<{ message: string }> 
     body: JSON.stringify({ email }),
   });
 
-  return handleResponse<{ message: string }>(response);
+  return handleResponse<WaitlistResponse>(response);
 }
+
+

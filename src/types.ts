@@ -1,3 +1,7 @@
+export type WaitlistResponse = {
+  message: string;
+};
+
 export type AnalyzeResponse = {
   score: number;
   confidence: "Low" | "Medium" | "High";
