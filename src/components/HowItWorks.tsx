@@ -24,7 +24,7 @@ export function HowItWorks() {
           <h2 className="text-3xl font-semibold tracking-tight text-navy">
             How it works
           </h2>
-          <p className="mt-3 text-base text-charcoal/60">
+          <p className="mt-3 text-base text-charcoal/70">
             Three steps. No setup. Takes 30 seconds.
           </p>
         </div>
@@ -41,7 +41,7 @@ export function HowItWorks() {
               <h3 className="mt-4 text-lg font-semibold text-navy">
                 {step.title}
               </h3>
-              <p className="mt-2 text-sm leading-7 text-charcoal/65">
+              <p className="mt-2 text-sm leading-7 text-charcoal/75">
                 {step.desc}
               </p>
             </div>

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from app.core.config import settings
 from app.core.rate_limit import get_rate_limit_context
 from app.schemas.free import AnalyzeResponse, DocumentStats, ProPrompt
@@ -5,6 +7,7 @@ from app.services.free_detector.feature_extractor import extract_features
 from app.services.free_detector.preprocessor import preprocess_text
 from app.services.free_detector.red_flags import build_flagged_sentences, build_red_flags
 from app.services.free_detector.scorer import score_document
+from app.services.rubric_matcher.matcher import match_rubric
 
 
 def validate_text(text: str) -> str:
@@ -40,7 +43,7 @@ def build_tips(score: int) -> list[str]:
     return tips[:4]
 
 
-def analyze_document(text: str) -> AnalyzeResponse:
+def analyze_document(text: str, rubric: Optional[str] = None) -> AnalyzeResponse:
     validate_text(text)
     _rate_limit_context = get_rate_limit_context()
 
@@ -59,6 +62,28 @@ def analyze_document(text: str) -> AnalyzeResponse:
         transition_phrase_count=features.transition_phrase_count,
     )
 
+    rubric_result = None
+    if rubric and rubric.strip():
+        raw = match_rubric(draft=text, rubric=rubric)
+        from app.schemas.free import CriterionResult, RubricMatchResult  # local to avoid circular
+        rubric_result = RubricMatchResult(
+            overall_score=raw.overall_score,
+            strong_count=raw.strong_count,
+            partial_count=raw.partial_count,
+            missing_count=raw.missing_count,
+            summary=raw.summary,
+            criteria=[
+                CriterionResult(
+                    criterion=c.criterion,
+                    coverage=c.coverage,
+                    score=c.score,
+                    matched_terms=c.matched_terms,
+                    total_terms=c.total_terms,
+                )
+                for c in raw.criteria
+            ],
+        )
+
     return AnalyzeResponse(
         score=score,
         confidence=confidence,
@@ -70,9 +95,10 @@ def analyze_document(text: str) -> AnalyzeResponse:
         pro_prompt=ProPrompt(
             title="Improve this writing with Pro",
             message=(
-                "Get deeper writing suggestions, grammar help, humanizing edits, "
-                "and rubric-based guidance with the Pro writing model."
+                "Get deeper rewrite suggestions, gap detection, "
+                "and humanizing support with Pro."
             ),
-            cta_label="Unlock Pro Writing Tools",
+            cta_label="Explore Pro",
         ),
+        rubric_result=rubric_result,
     )

@@ -7,13 +7,13 @@ export function Footer() {
           {/* Brand */}
           <div className="max-w-xs">
             <p className="font-semibold text-navy">Wrex.app</p>
-            <p className="mt-2 text-sm leading-6 text-charcoal/55">
-              AI writing analysis built for students. For personal study use only.
+            <p className="mt-2 text-sm leading-6 text-charcoal/65">
+              AI writing analysis built for students.
             </p>
           </div>
 
           {/* Links */}
-          <div className="flex flex-wrap gap-x-10 gap-y-3 text-sm text-charcoal/55">
+          <div className="flex flex-wrap gap-x-10 gap-y-3 text-sm text-charcoal/65">
             <a href="#how-it-works" className="transition hover:text-navy">How it works</a>
             <a href="#analyzer" className="transition hover:text-navy">Try it</a>
             <a href="#faq" className="transition hover:text-navy">FAQ</a>
@@ -22,9 +22,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col gap-1 border-t border-navy/8 pt-6 text-xs text-charcoal/40 md:flex-row md:justify-between">
+        <div className="mt-10 border-t border-navy/8 pt-6 text-xs text-charcoal/50">
           <p>© {year} Wrex.app. All rights reserved.</p>
-          <p>Results are probabilistic indicators — not proof, not academic evidence.</p>
         </div>
       </div>
     </footer>

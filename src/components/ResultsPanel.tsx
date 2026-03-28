@@ -1,4 +1,4 @@
-import type { AnalyzeResponse } from "../types";
+import type { AnalyzeResponse, CriterionResult, RubricMatchResult } from "../types";
 
 type ResultsPanelProps = {
   results: AnalyzeResponse | null;
@@ -33,7 +33,7 @@ function ScoreArc({ score }: { score: number }) {
       </svg>
       <div className="absolute flex flex-col items-center">
         <span className="text-3xl font-semibold text-navy">{score}</span>
-        <span className="text-xs text-charcoal/50">/ 100</span>
+        <span className="text-xs text-charcoal/60">/ 100</span>
       </div>
     </div>
   );
@@ -51,8 +51,61 @@ function SignalBar({ score }: { score: number }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="shrink-0 text-xs font-medium text-charcoal/60">{pct}%</span>
+      <span className="shrink-0 text-xs font-medium text-charcoal/70">{pct}%</span>
     </div>
+  );
+}
+
+/** Rubric alignment panel shown when rubric_result is present. */
+function CoveragePill({ coverage }: { coverage: CriterionResult["coverage"] }) {
+  const styles =
+    coverage === "strong"
+      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+      : coverage === "partial"
+        ? "bg-accent/20 text-navy border-accent/40"
+        : "bg-red-50 text-red-600 border-red-200";
+  const label = coverage === "strong" ? "Covered" : coverage === "partial" ? "Partial" : "Missing";
+  return (
+    <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${styles}`}>{label}</span>
+  );
+}
+
+function RubricPanel({ rubric }: { rubric: RubricMatchResult }) {
+  const scoreColor =
+    rubric.overall_score >= 70
+      ? "text-emerald-600"
+      : rubric.overall_score >= 40
+        ? "text-amber-600"
+        : "text-red-500";
+
+  return (
+    <section className="rounded-[2rem] border border-navy/10 bg-white p-6 shadow-soft">
+      <div className="flex items-center justify-between">
+        <h4 className="text-lg font-semibold text-navy">Rubric alignment</h4>
+        <span className={`text-2xl font-semibold ${scoreColor}`}>{rubric.overall_score}%</span>
+      </div>
+      <p className="mt-2 text-sm text-charcoal/70">{rubric.summary}</p>
+      <div className="mt-3 flex gap-4 text-xs text-charcoal/60">
+        <span className="text-emerald-600 font-semibold">{rubric.strong_count} covered</span>
+        <span className="text-amber-600 font-semibold">{rubric.partial_count} partial</span>
+        <span className="text-red-500 font-semibold">{rubric.missing_count} missing</span>
+      </div>
+      <div className="mt-5 space-y-3">
+        {rubric.criteria.map((criterion, i) => (
+          <div key={i} className="rounded-soft border border-navy/8 bg-mist px-4 py-3">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm text-charcoal">{criterion.criterion}</p>
+              <CoveragePill coverage={criterion.coverage} />
+            </div>
+            {criterion.matched_terms.length > 0 && (
+              <p className="mt-1.5 text-xs text-charcoal/55">
+                Matched: {criterion.matched_terms.slice(0, 6).join(", ")}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -119,8 +172,8 @@ export function ResultsPanel({ results, loading = false }: ResultsPanelProps) {
         <div className="flex flex-wrap items-center gap-6">
           <ScoreArc score={results.score} />
           <div className="flex-1">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-charcoal/45">
-              AI-likelihood score
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-charcoal/60">
+              AI-pattern score
             </p>
             <p className="mt-1 text-lg font-semibold text-navy">
               {results.score >= 70 ? "High pattern match" : results.score >= 40 ? "Moderate pattern match" : "Low pattern match"}
@@ -130,7 +183,7 @@ export function ResultsPanel({ results, loading = false }: ResultsPanelProps) {
             </div>
           </div>
         </div>
-        <p className="mt-5 rounded-soft bg-mist px-5 py-4 text-base leading-7 text-charcoal/85">
+        <p className="mt-5 rounded-soft bg-mist px-5 py-4 text-base leading-7 text-charcoal">
           {results.summary}
         </p>
         {/* All 8 stats */}
@@ -191,7 +244,10 @@ export function ResultsPanel({ results, loading = false }: ResultsPanelProps) {
         </div>
       </section>
 
-      {/* Pro CTA — wired to waitlist */}
+      {/* Rubric alignment — only shown when rubric was provided */}
+      {results.rubric_result && <RubricPanel rubric={results.rubric_result} />}
+
+      {/* Pro CTA */}
       <section className="rounded-[2rem] border border-navy/10 bg-navy p-6 text-white shadow-soft">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/55">
           Pro — coming soon
@@ -220,9 +276,9 @@ type StatCardProps = {
 function StatCard({ label, value, hint }: StatCardProps) {
   return (
     <div className="rounded-soft border border-navy/8 bg-mist px-4 py-3">
-      <p className="text-xs font-medium text-charcoal/50">{label}</p>
+      <p className="text-xs font-medium text-charcoal/60">{label}</p>
       <p className="mt-1 text-xl font-semibold text-navy">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-charcoal/45">{hint}</p> : null}
+      {hint ? <p className="mt-1 text-xs text-charcoal/55">{hint}</p> : null}
     </div>
   );
 }

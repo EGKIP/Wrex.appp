@@ -4,9 +4,9 @@ export function Hero() {
       <h1 className="text-5xl font-semibold tracking-tight text-navy sm:text-6xl">
         Know if your writing<br />actually answers the question.
       </h1>
-      <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-charcoal/65">
-        Wrex reads your draft the same way your professor will — against what the
-        assignment actually asked for. Sentence by sentence, no guessing.
+      <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-charcoal/75">
+        Paste your draft and your rubric. Wrex tells you what you've covered,
+        what's thin, and what's missing — before you submit.
       </p>
       <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
         <a
@@ -16,8 +16,8 @@ export function Hero() {
           Try it free →
         </a>
       </div>
-      <p className="mt-4 text-xs text-charcoal/40">
-        No account needed · Free to start · Built for students
+      <p className="mt-4 text-xs text-charcoal/55">
+        No account needed · Free to start · 3 analyses per day
       </p>
     </section>
   );

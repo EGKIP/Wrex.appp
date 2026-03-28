@@ -16,6 +16,6 @@ def healthcheck() -> dict[str, str]:
 @limiter.limit("10/minute")
 def analyze_text(request: Request, payload: AnalyzeRequest) -> AnalyzeResponse:
     try:
-        return analyze_document(payload.text)
+        return analyze_document(payload.text, rubric=payload.rubric)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc

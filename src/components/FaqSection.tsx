@@ -6,20 +6,20 @@ const FAQS = [
     a: "Yes. Your first analysis is completely free — no account, no credit card. Create a free account to get 3 analyses per day, every day.",
   },
   {
-    q: "How does Wrex actually analyze my writing?",
-    a: "Wrex uses pattern recognition trained on large language model outputs to score your writing sentence by sentence. It looks at sentence length variance, vocabulary diversity, repetition patterns, and phrasing consistency — the same signals that AI detectors flag. It does not send your writing to a third party for grading.",
+    q: "How does Wrex analyze my writing?",
+    a: "Wrex reads your draft sentence by sentence — looking at how consistent your sentence lengths are, how varied your vocabulary is, how often you repeat phrases, and which transition words you use. It's the same kind of pattern scan your reader would do intuitively. Nothing is sent to a third party.",
   },
   {
     q: "What is rubric alignment?",
-    a: "Rubric alignment lets you paste your assignment brief or marking criteria alongside your draft. Wrex then maps each criterion to your writing and shows you which points you've covered, which are thin, and which are missing entirely — before you submit. This is a Pro feature, coming soon.",
+    a: "Paste your assignment brief or marking criteria alongside your draft and Wrex maps each requirement to what you've written. You see which points are covered, which are thin, and which you missed — before you submit.",
   },
   {
-    q: "Will this get me in trouble?",
-    a: "No. Wrex results are for your personal study use only. They are probabilistic indicators, not proof of anything. They carry no academic weight and are not admissible as evidence of AI use. Wrex is a revision tool, not a reporting tool.",
+    q: "Will my school see this?",
+    a: "No. Wrex is a private revision tool. It has no connection to your school, your submission portal, or your professor. Nothing you paste here is shared with anyone.",
   },
   {
     q: "What's the difference between free and Pro?",
-    a: "Free gives you AI pattern detection, sentence-level flags, and writing tips — 3 times per day. Pro adds rubric alignment, gap detection, paragraph-level rewrite suggestions, and humanizing support. Pro is $8/month for students, $12/month otherwise.",
+    a: "Free gives you AI-pattern detection, sentence-level flags, rubric alignment, and writing tips — 3 times per day. Pro adds deeper gap detection, paragraph-level rewrite suggestions, and humanizing support. Pro is $8/month for students.",
   },
   {
     q: "Does Wrex store my writing?",
@@ -36,7 +36,7 @@ export function FaqSection() {
         <h2 className="text-3xl font-semibold tracking-tight text-navy">
           Questions
         </h2>
-        <p className="mt-2 text-sm text-charcoal/55">
+        <p className="mt-2 text-sm text-charcoal/65">
           Everything you'd want to know before you paste anything.
         </p>
 

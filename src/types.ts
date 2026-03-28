@@ -2,6 +2,23 @@ export type WaitlistResponse = {
   message: string;
 };
 
+export type CriterionResult = {
+  criterion: string;
+  coverage: "strong" | "partial" | "missing";
+  score: number;
+  matched_terms: string[];
+  total_terms: number;
+};
+
+export type RubricMatchResult = {
+  overall_score: number;
+  strong_count: number;
+  partial_count: number;
+  missing_count: number;
+  criteria: CriterionResult[];
+  summary: string;
+};
+
 export type AnalyzeResponse = {
   score: number;
   confidence: "Low" | "Medium" | "High";
@@ -29,4 +46,5 @@ export type AnalyzeResponse = {
     message: string;
     cta_label: string;
   };
+  rubric_result: RubricMatchResult | null;
 };

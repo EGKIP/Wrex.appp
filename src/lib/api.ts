@@ -14,13 +14,16 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
-export async function analyzeText(text: string): Promise<AnalyzeResponse> {
+export async function analyzeText(
+  text: string,
+  rubric?: string,
+): Promise<AnalyzeResponse> {
   const response = await fetch(`${API_BASE_URL}/analyze`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, rubric: rubric ?? null }),
   });
 
   return handleResponse<AnalyzeResponse>(response);
