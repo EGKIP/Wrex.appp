@@ -27,8 +27,8 @@ export function Navbar() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-20 border-b border-navy/5 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
+    <header className="sticky top-0 z-20 border-b border-border-base bg-white/95 backdrop-blur">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-0 lg:px-10" style={{ height: 64 }}>
         <Brand />
 
         {/* Desktop nav */}
@@ -37,16 +37,25 @@ export function Navbar() {
             <a
               key={href}
               href={href}
-              className={`transition ${active === href ? "font-semibold text-navy" : "text-charcoal/60 hover:text-navy"}`}
+              className={`relative pb-0.5 font-medium transition-colors ${
+                active === href
+                  ? "text-navy after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-accent after:content-['']"
+                  : "text-charcoal/70 hover:text-navy"
+              }`}
             >
               {label}
             </a>
           ))}
+          {/* Sign in — text button */}
+          <a href="#analyzer" className="font-medium text-charcoal/70 transition hover:text-navy hover:underline">
+            Sign in
+          </a>
+          {/* Try Free — yellow primary CTA */}
           <a
             href="#analyzer"
-            className="rounded-2xl bg-navy px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy/90"
+            className="rounded-lg bg-accent px-6 py-2.5 text-sm font-bold text-navy shadow-card transition hover:bg-accent-dark hover:scale-[1.02]"
           >
-            Sign in
+            Try free
           </a>
         </nav>
 
@@ -54,7 +63,7 @@ export function Navbar() {
         <button
           type="button"
           onClick={() => setMenuOpen((o) => !o)}
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-navy/10 text-navy md:hidden"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-border-base text-navy md:hidden"
           aria-label="Toggle menu"
         >
           {menuOpen ? (
@@ -71,14 +80,14 @@ export function Navbar() {
 
       {/* Mobile drawer */}
       {menuOpen && (
-        <div className="border-t border-navy/5 bg-white px-6 pb-6 pt-4 md:hidden">
+        <div className="border-t border-border-base bg-white px-6 pb-6 pt-4 md:hidden">
           <nav className="flex flex-col gap-4 text-sm">
             {NAV_LINKS.map(({ label, href }) => (
               <a
                 key={href}
                 href={href}
                 onClick={() => setMenuOpen(false)}
-                className="text-charcoal/70 transition hover:text-navy"
+                className="font-medium text-charcoal/70 transition hover:text-navy"
               >
                 {label}
               </a>
@@ -86,9 +95,16 @@ export function Navbar() {
             <a
               href="#analyzer"
               onClick={() => setMenuOpen(false)}
-              className="mt-1 rounded-2xl bg-navy px-4 py-3 text-center text-sm font-semibold text-white"
+              className="font-medium text-info transition hover:underline"
             >
               Sign in
+            </a>
+            <a
+              href="#analyzer"
+              onClick={() => setMenuOpen(false)}
+              className="mt-1 rounded-lg bg-accent px-4 py-3 text-center text-sm font-bold text-navy"
+            >
+              Try free
             </a>
           </nav>
         </div>

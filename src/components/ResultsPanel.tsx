@@ -6,9 +6,28 @@ type ResultsPanelProps = {
 };
 
 function confidenceTone(confidence: AnalyzeResponse["confidence"]) {
-  if (confidence === "High") return "bg-accent/30 text-navy";
-  if (confidence === "Medium") return "bg-mist text-navy";
-  return "bg-white/60 text-charcoal";
+  if (confidence === "High") return "bg-danger/10 text-danger border border-danger/20";
+  if (confidence === "Medium") return "bg-warning/10 text-warning border border-warning/20";
+  return "bg-success/10 text-success border border-success/20";
+}
+
+/** Score card gradient background based on AI score */
+function scoreGradient(score: number) {
+  if (score >= 70) return "from-red-100 to-red-50";
+  if (score >= 40) return "from-yellow-100 to-yellow-50";
+  return "from-green-100 to-green-50";
+}
+
+function scoreColor(score: number) {
+  if (score >= 70) return "#EF4444";
+  if (score >= 40) return "#F59E0B";
+  return "#10B981";
+}
+
+function scoreLabel(score: number) {
+  if (score >= 70) return "High AI pattern match";
+  if (score >= 40) return "Mixed signals";
+  return "Looks human";
 }
 
 /** Animated circular arc that fills proportionally to the score (0–100). */
@@ -16,13 +35,12 @@ function ScoreArc({ score }: { score: number }) {
   const radius = 52;
   const circumference = 2 * Math.PI * radius;
   const filled = (score / 100) * circumference;
-  const color =
-    score >= 70 ? "#f59e0b" : score >= 40 ? "#fbbf24" : "#10b981";
+  const color = scoreColor(score);
 
   return (
     <div className="relative flex h-36 w-36 items-center justify-center">
       <svg className="-rotate-90" width="144" height="144" viewBox="0 0 144 144">
-        <circle cx="72" cy="72" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="10" />
+        <circle cx="72" cy="72" r={radius} fill="none" stroke="#E2E8F0" strokeWidth="10" />
         <circle
           cx="72" cy="72" r={radius} fill="none"
           stroke={color} strokeWidth="10"
@@ -32,8 +50,8 @@ function ScoreArc({ score }: { score: number }) {
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <span className="text-3xl font-semibold text-navy">{score}</span>
-        <span className="text-xs text-charcoal/60">/ 100</span>
+        <span className="text-4xl font-bold" style={{ color }}>{score}</span>
+        <span className="text-xs text-charcoal/50">/ 100</span>
       </div>
     </div>
   );
@@ -42,13 +60,13 @@ function ScoreArc({ score }: { score: number }) {
 /** Signal strength bar shown per flagged sentence. */
 function SignalBar({ score }: { score: number }) {
   const pct = Math.round(score * 100);
-  const color = pct >= 75 ? "bg-amber-400" : pct >= 55 ? "bg-yellow-300" : "bg-emerald-300";
+  const barColor = pct >= 75 ? "#EF4444" : pct >= 55 ? "#F59E0B" : "#10B981";
   return (
     <div className="mt-2 flex items-center gap-3">
-      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-navy/10">
+      <div className="h-2 flex-1 overflow-hidden rounded-full bg-border-base">
         <div
-          className={`h-full rounded-full ${color} transition-all duration-700`}
-          style={{ width: `${pct}%` }}
+          className="h-full rounded-full transition-all duration-700"
+          style={{ width: `${pct}%`, backgroundColor: barColor }}
         />
       </div>
       <span className="shrink-0 text-xs font-medium text-charcoal/70">{pct}%</span>
@@ -60,10 +78,10 @@ function SignalBar({ score }: { score: number }) {
 function CoveragePill({ coverage }: { coverage: CriterionResult["coverage"] }) {
   const styles =
     coverage === "strong"
-      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+      ? "bg-success/10 text-success border-success/20"
       : coverage === "partial"
-        ? "bg-accent/20 text-navy border-accent/40"
-        : "bg-red-50 text-red-600 border-red-200";
+        ? "bg-warning/10 text-warning border-warning/20"
+        : "bg-danger/10 text-danger border-danger/20";
   const label = coverage === "strong" ? "Covered" : coverage === "partial" ? "Partial" : "Missing";
   return (
     <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${styles}`}>{label}</span>
@@ -71,28 +89,24 @@ function CoveragePill({ coverage }: { coverage: CriterionResult["coverage"] }) {
 }
 
 function RubricPanel({ rubric }: { rubric: RubricMatchResult }) {
-  const scoreColor =
-    rubric.overall_score >= 70
-      ? "text-emerald-600"
-      : rubric.overall_score >= 40
-        ? "text-amber-600"
-        : "text-red-500";
+  const color =
+    rubric.overall_score >= 70 ? "text-success" : rubric.overall_score >= 40 ? "text-warning" : "text-danger";
 
   return (
-    <section className="rounded-[2rem] border border-navy/10 bg-white p-6 shadow-soft">
+    <section className="rounded-card border border-border-base bg-white p-6 shadow-soft">
       <div className="flex items-center justify-between">
-        <h4 className="text-lg font-semibold text-navy">Rubric alignment</h4>
-        <span className={`text-2xl font-semibold ${scoreColor}`}>{rubric.overall_score}%</span>
+        <h4 className="text-base font-semibold text-navy">Rubric alignment</h4>
+        <span className={`text-2xl font-bold ${color}`}>{rubric.overall_score}%</span>
       </div>
-      <p className="mt-2 text-sm text-charcoal/70">{rubric.summary}</p>
-      <div className="mt-3 flex gap-4 text-xs text-charcoal/60">
-        <span className="text-emerald-600 font-semibold">{rubric.strong_count} covered</span>
-        <span className="text-amber-600 font-semibold">{rubric.partial_count} partial</span>
-        <span className="text-red-500 font-semibold">{rubric.missing_count} missing</span>
+      <p className="mt-2 text-sm leading-relaxed text-charcoal/70">{rubric.summary}</p>
+      <div className="mt-3 flex gap-4 text-xs">
+        <span className="font-semibold text-success">{rubric.strong_count} covered</span>
+        <span className="font-semibold text-warning">{rubric.partial_count} partial</span>
+        <span className="font-semibold text-danger">{rubric.missing_count} missing</span>
       </div>
       <div className="mt-5 space-y-3">
         {rubric.criteria.map((criterion, i) => (
-          <div key={i} className="rounded-soft border border-navy/8 bg-mist px-4 py-3">
+          <div key={i} className="rounded-card border border-border-base bg-mist px-4 py-3">
             <div className="flex items-start justify-between gap-3">
               <p className="text-sm text-charcoal">{criterion.criterion}</p>
               <CoveragePill coverage={criterion.coverage} />
@@ -112,25 +126,25 @@ function RubricPanel({ rubric }: { rubric: RubricMatchResult }) {
 /** Skeleton card shown while analysis is loading. */
 function SkeletonPanel() {
   return (
-    <aside className="space-y-5 animate-pulse">
-      <div className="rounded-[2rem] border border-navy/10 bg-white p-6 shadow-soft sm:p-8">
+    <aside className="animate-pulse space-y-5">
+      <div className="rounded-card border border-border-base bg-white p-6 shadow-soft sm:p-8">
         <div className="flex items-center gap-6">
-          <div className="h-36 w-36 rounded-full bg-navy/8" />
+          <div className="h-36 w-36 rounded-full bg-border-base" />
           <div className="flex-1 space-y-3">
-            <div className="h-3 w-24 rounded bg-navy/8" />
-            <div className="h-6 w-40 rounded bg-navy/8" />
-            <div className="h-3 w-32 rounded bg-navy/8" />
+            <div className="h-3 w-24 rounded bg-border-base" />
+            <div className="h-6 w-40 rounded bg-border-base" />
+            <div className="h-3 w-32 rounded bg-border-base" />
           </div>
         </div>
-        <div className="mt-6 h-16 rounded-soft bg-mist" />
+        <div className="mt-6 h-16 rounded-card bg-mist" />
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-16 rounded-soft bg-mist" />
+            <div key={i} className="h-16 rounded-card bg-mist" />
           ))}
         </div>
       </div>
-      <div className="h-28 rounded-[2rem] border border-navy/10 bg-white shadow-soft" />
-      <div className="h-48 rounded-[2rem] border border-navy/10 bg-white shadow-soft" />
+      <div className="h-28 rounded-card border border-border-base bg-white shadow-soft" />
+      <div className="h-48 rounded-card border border-border-base bg-white shadow-soft" />
     </aside>
   );
 }
@@ -140,21 +154,20 @@ export function ResultsPanel({ results, loading = false }: ResultsPanelProps) {
 
   if (!results) {
     return (
-      <aside className="rounded-[2rem] border border-dashed border-navy/15 bg-mist p-8">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-soft">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-navy/60">
+      <aside className="rounded-card border border-dashed border-border-base bg-white p-8">
+        <div className="flex h-14 w-14 items-center justify-center rounded-card bg-mist">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-navy/50">
             <path d="M9 12h6M9 16h6M9 8h6M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" strokeLinecap="round" />
           </svg>
         </div>
-        <h3 className="mt-5 text-2xl font-semibold tracking-tight text-navy">
-          Paste your writing, get honest feedback
+        <h3 className="mt-5 text-xl font-bold tracking-tight text-navy">
+          Paste something to get started
         </h3>
-        <p className="mt-3 max-w-md text-base leading-7 text-charcoal/70">
-          Your score, confidence level, flagged sentences, and writing tips will
-          appear here — calm, clear, and sentence-by-sentence.
+        <p className="mt-3 max-w-md text-sm leading-7 text-charcoal/70">
+          Your score, flagged sentences, and writing tips will appear here.
         </p>
         <ul className="mt-5 space-y-2 text-sm text-charcoal/60">
-          {["AI-likelihood score with visual indicator", "Flagged sentences with signal strength", "Red flags and actionable writing tips"].map(item => (
+          {["Rubric alignment score", "Flagged sentences with signal strength", "Actionable writing tips"].map(item => (
             <li key={item} className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-accent" />
               {item}
@@ -167,27 +180,27 @@ export function ResultsPanel({ results, loading = false }: ResultsPanelProps) {
 
   return (
     <aside className="space-y-5">
-      {/* Score + summary */}
-      <section className="rounded-[2rem] border border-navy/10 bg-white p-6 shadow-soft sm:p-8">
+      {/* Score card — gradient based on score */}
+      <section className={`rounded-card bg-gradient-to-br p-6 shadow-card sm:p-8 ${scoreGradient(results.score)}`}>
         <div className="flex flex-wrap items-center gap-6">
           <ScoreArc score={results.score} />
           <div className="flex-1">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-charcoal/60">
+            <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/60">
               AI-pattern score
             </p>
-            <p className="mt-1 text-lg font-semibold text-navy">
-              {results.score >= 70 ? "High pattern match" : results.score >= 40 ? "Moderate pattern match" : "Low pattern match"}
+            <p className="mt-1 text-lg font-bold text-navy">
+              {scoreLabel(results.score)}
             </p>
-            <div className={`mt-3 inline-block rounded-full px-4 py-1.5 text-sm font-semibold ${confidenceTone(results.confidence)}`}>
+            <div className={`mt-3 inline-block rounded-full px-3 py-1 text-xs font-semibold ${confidenceTone(results.confidence)}`}>
               Confidence: {results.confidence}
             </div>
           </div>
         </div>
-        <p className="mt-5 rounded-soft bg-mist px-5 py-4 text-base leading-7 text-charcoal">
+        <p className="mt-5 rounded-card border border-white/60 bg-white/60 px-4 py-3 text-sm leading-7 text-charcoal">
           {results.summary}
         </p>
-        {/* All 8 stats */}
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        {/* Stats grid */}
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <StatCard label="Word count" value={results.stats.word_count.toString()} />
           <StatCard label="Sentence count" value={results.stats.sentence_count.toString()} />
           <StatCard label="Avg sentence length" value={`${results.stats.avg_sentence_length.toFixed(1)} words`} />
@@ -199,66 +212,68 @@ export function ResultsPanel({ results, loading = false }: ResultsPanelProps) {
         </div>
       </section>
 
-      {/* Red flags */}
-      <section className="rounded-[2rem] border border-navy/10 bg-white p-6 shadow-soft">
-        <h4 className="text-lg font-semibold text-navy">Pattern signals</h4>
-        <div className="mt-4 flex flex-wrap gap-3">
-          {results.red_flags.map((flag) => (
-            <span key={flag} className="rounded-full border border-accent/45 bg-accent/20 px-4 py-2 text-sm text-charcoal">
-              {flag}
-            </span>
-          ))}
-        </div>
-      </section>
+      {/* Pattern signals */}
+      {results.red_flags.length > 0 && (
+        <section className="rounded-card border border-border-base bg-white p-6 shadow-soft">
+          <h4 className="text-base font-semibold text-navy">Pattern signals</h4>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {results.red_flags.map((flag) => (
+              <span key={flag} className="rounded-full border border-warning/30 bg-warning/10 px-3 py-1.5 text-xs font-medium text-charcoal">
+                {flag}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* Flagged sentences with signal bars */}
-      <section className="rounded-[2rem] border border-navy/10 bg-white p-6 shadow-soft">
-        <h4 className="text-lg font-semibold text-navy">Flagged sentences</h4>
+      {/* Flagged sentences */}
+      <section className="rounded-card border border-border-base bg-white p-6 shadow-soft">
+        <h4 className="text-base font-semibold text-navy">Flagged sentences</h4>
         <div className="mt-4 space-y-4">
           {results.flagged_sentences.length ? (
             results.flagged_sentences.map((sentence) => (
-              <article key={`${sentence.index}-${sentence.text}`} className="rounded-soft border border-accent/35 bg-accent/10 p-4">
-                <p className="text-sm font-semibold text-navy">Sentence {sentence.index + 1}</p>
+              <article
+                key={`${sentence.index}-${sentence.text}`}
+                className="rounded-card border-l-[3px] border-danger bg-danger/5 px-4 py-3"
+                style={{ borderLeftColor: "#EF4444" }}
+              >
+                <p className="text-xs font-semibold uppercase tracking-wider text-danger">Sentence {sentence.index + 1}</p>
                 <SignalBar score={sentence.score} />
-                <p className="mt-3 text-base leading-7 text-charcoal">{sentence.text}</p>
-                <p className="mt-2 text-sm text-charcoal/70">{sentence.reason}</p>
+                <p className="mt-3 text-sm leading-7 text-charcoal">{sentence.text}</p>
+                <p className="mt-1.5 text-xs text-charcoal/60">{sentence.reason}</p>
               </article>
             ))
           ) : (
             <p className="text-sm text-charcoal/70">
-              No individual sentence strongly stood out. The overall score reflects combined document-level patterns.
+              No individual sentences strongly flagged. Score reflects combined document-level patterns.
             </p>
           )}
         </div>
       </section>
 
       {/* Writing tips */}
-      <section className="rounded-[2rem] border border-navy/10 bg-white p-6 shadow-soft">
-        <h4 className="text-lg font-semibold text-navy">Writing tips</h4>
+      <section className="rounded-card border border-border-base bg-white p-6 shadow-soft">
+        <h4 className="text-base font-semibold text-navy">Writing tips</h4>
         <div className="mt-4 space-y-3">
           {results.basic_tips.map((tip) => (
-            <p key={tip} className="rounded-soft bg-mist px-4 py-3 text-sm leading-6 text-charcoal">
+            <p key={tip} className="rounded-card bg-mist px-4 py-3 text-sm leading-6 text-charcoal">
               {tip}
             </p>
           ))}
         </div>
       </section>
 
-      {/* Rubric alignment — only shown when rubric was provided */}
+      {/* Rubric alignment */}
       {results.rubric_result && <RubricPanel rubric={results.rubric_result} />}
 
-      {/* Pro CTA */}
-      <section className="rounded-[2rem] border border-navy/10 bg-navy p-6 text-white shadow-soft">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/55">
-          Pro — coming soon
-        </p>
-        <h4 className="mt-3 text-2xl font-semibold">{results.pro_prompt.title}</h4>
-        <p className="mt-3 max-w-md text-sm leading-7 text-white/75">
-          {results.pro_prompt.message}
-        </p>
+      {/* Pro CTA — subtle */}
+      <section className="rounded-card border border-border-base bg-mist p-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/50">Pro</p>
+        <h4 className="mt-2 text-base font-semibold text-navy">{results.pro_prompt.title}</h4>
+        <p className="mt-2 text-sm leading-6 text-charcoal/70">{results.pro_prompt.message}</p>
         <a
-          href="#waitlist"
-          className="mt-5 inline-block rounded-2xl bg-accent px-5 py-3 text-sm font-semibold text-navy transition hover:bg-accent/90"
+          href="#faq"
+          className="mt-4 inline-block rounded-lg bg-accent px-5 py-2.5 text-sm font-bold text-navy transition hover:bg-accent-dark"
         >
           {results.pro_prompt.cta_label}
         </a>
@@ -275,10 +290,10 @@ type StatCardProps = {
 
 function StatCard({ label, value, hint }: StatCardProps) {
   return (
-    <div className="rounded-soft border border-navy/8 bg-mist px-4 py-3">
+    <div className="rounded-card border border-white/60 bg-white/60 px-4 py-3">
       <p className="text-xs font-medium text-charcoal/60">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-navy">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-charcoal/55">{hint}</p> : null}
+      <p className="mt-1 text-lg font-bold text-navy">{value}</p>
+      {hint ? <p className="mt-1 text-xs text-charcoal/50">{hint}</p> : null}
     </div>
   );
 }

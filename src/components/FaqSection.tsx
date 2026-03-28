@@ -31,39 +31,34 @@ export function FaqSection() {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <section id="faq" className="mx-auto max-w-7xl px-6 py-16 lg:px-10 lg:py-20">
+    <section id="faq" className="bg-white px-6 py-16 lg:px-10 lg:py-20">
       <div className="mx-auto max-w-2xl">
-        <h2 className="text-3xl font-semibold tracking-tight text-navy">
+        <h2 className="text-[1.75rem] font-bold tracking-tight text-navy lg:text-[2rem]">
           Questions
         </h2>
         <p className="mt-2 text-sm text-charcoal/65">
           Everything you'd want to know before you paste anything.
         </p>
 
-        <div className="mt-10 divide-y divide-navy/8">
+        <div className="mt-10 divide-y divide-border-base">
           {FAQS.map((faq, i) => (
             <div key={faq.q} className="py-5">
               <button
                 type="button"
                 onClick={() => setOpen(open === i ? null : i)}
-                className="flex w-full items-center justify-between gap-4 text-left"
+                className="flex w-full items-center justify-between gap-4 text-left transition hover:text-navy"
               >
-                <span className="text-base font-medium text-navy">{faq.q}</span>
+                <span className="text-base font-semibold text-navy">{faq.q}</span>
                 <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
+                  width="18" height="18" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                   className={`shrink-0 text-charcoal/40 transition-transform ${open === i ? "rotate-180" : ""}`}
                 >
                   <path d="M6 9l6 6 6-6" />
                 </svg>
               </button>
               {open === i && (
-                <p className="mt-3 max-w-xl text-sm leading-7 text-charcoal/70">
+                <p className="mt-3 max-w-xl text-sm leading-7 text-charcoal/75">
                   {faq.a}
                 </p>
               )}

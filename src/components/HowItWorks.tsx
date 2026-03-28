@@ -18,13 +18,13 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="bg-mist">
+    <section id="how-it-works" className="bg-white">
       <div className="mx-auto max-w-7xl px-6 py-16 lg:px-10 lg:py-20">
         <div className="mx-auto max-w-xl text-center">
-          <h2 className="text-3xl font-semibold tracking-tight text-navy">
+          <h2 className="text-[1.75rem] font-bold tracking-tight text-navy lg:text-[2rem]">
             How it works
           </h2>
-          <p className="mt-3 text-base text-charcoal/70">
+          <p className="mt-3 text-base leading-relaxed text-charcoal/70">
             Three steps. No setup. Takes 30 seconds.
           </p>
         </div>
@@ -33,12 +33,13 @@ export function HowItWorks() {
           {steps.map((step) => (
             <div
               key={step.number}
-              className="rounded-[2rem] border border-navy/8 bg-white p-8"
+              className="rounded-card border border-border-base bg-white p-6 shadow-soft transition hover:shadow-soft-md hover:-translate-y-0.5"
             >
-              <span className="text-4xl font-semibold tracking-tight text-accent">
-                {step.number}
-              </span>
-              <h3 className="mt-4 text-lg font-semibold text-navy">
+              {/* Yellow number circle */}
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent">
+                <span className="text-base font-bold text-navy">{step.number}</span>
+              </div>
+              <h3 className="mt-5 text-lg font-semibold text-navy">
                 {step.title}
               </h3>
               <p className="mt-2 text-sm leading-7 text-charcoal/75">

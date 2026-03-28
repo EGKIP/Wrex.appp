@@ -1,24 +1,26 @@
 export function Hero() {
   return (
-    <section className="mx-auto max-w-4xl px-6 pb-16 pt-20 text-center lg:px-10 lg:pb-24 lg:pt-28">
-      <h1 className="text-5xl font-semibold tracking-tight text-navy sm:text-6xl">
-        Know if your writing<br />actually answers the question.
-      </h1>
-      <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-charcoal/75">
-        Paste your draft and your rubric. Wrex tells you what you've covered,
-        what's thin, and what's missing — before you submit.
-      </p>
-      <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-        <a
-          href="#analyzer"
-          className="rounded-2xl bg-navy px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-navy/90"
-        >
-          Try it free →
-        </a>
+    <section className="bg-gradient-to-b from-mist to-white px-6 pb-24 pt-24 text-center lg:px-10 lg:pb-32 lg:pt-32">
+      <div className="mx-auto max-w-4xl">
+        <h1 className="text-[3rem] font-bold leading-[1.2] tracking-tight text-navy sm:text-[3.5rem]">
+          Write to your rubric.<br />Every time.
+        </h1>
+        <p className="mx-auto mt-6 max-w-[600px] text-lg leading-relaxed text-charcoal/80">
+          Paste your draft. Wrex shows you what you've covered, what's thin,
+          and exactly what to fix — before you submit.
+        </p>
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+          <a
+            href="#analyzer"
+            className="rounded-lg bg-accent px-8 py-3.5 text-base font-bold text-navy shadow-card transition hover:bg-accent-dark hover:scale-[1.02]"
+          >
+            Try it now — no signup needed
+          </a>
+        </div>
+        <p className="mt-4 text-sm text-charcoal/50">
+          Free forever · 3 analyses/day with account
+        </p>
       </div>
-      <p className="mt-4 text-xs text-charcoal/55">
-        No account needed · Free to start · 3 analyses per day
-      </p>
     </section>
   );
 }
