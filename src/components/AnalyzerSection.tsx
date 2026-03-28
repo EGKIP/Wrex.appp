@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { analyzeText } from "../lib/api";
-import type { AnalyzeResponse, QuotaInfo } from "../types";
+import { useEffect, useState } from "react";
+import { analyzeText, getHistory } from "../lib/api";
+import type { AnalyzeResponse, QuotaInfo, SubmissionRecord } from "../types";
+import { HistoryPanel } from "./HistoryPanel";
 import { ResultsPanel } from "./ResultsPanel";
 
 const SAMPLE_TEXT = `In today's academic environment, technology has become an increasingly important part of how students learn and communicate. Moreover, it offers convenience and efficiency in many different contexts. However, it is also important to think carefully about how writing can remain personal, specific, and grounded in real understanding.`;
@@ -22,8 +23,29 @@ export function AnalyzerSection({ accessToken, onQuotaUpdate, onAuthRequired }: 
   const [results, setResults] = useState<AnalyzeResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [history, setHistory] = useState<SubmissionRecord[]>([]);
 
   const wordCount = countWords(text);
+
+  async function fetchHistory() {
+    if (!accessToken) return;
+    try {
+      const data = await getHistory(accessToken);
+      setHistory(data.submissions);
+    } catch {
+      // non-critical — just skip
+    }
+  }
+
+  // Load history when the user logs in (accessToken changes)
+  useEffect(() => {
+    if (accessToken) {
+      void fetchHistory();
+    } else {
+      setHistory([]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken]);
 
   async function onAnalyze() {
     setLoading(true);
@@ -38,6 +60,9 @@ export function AnalyzerSection({ accessToken, onQuotaUpdate, onAuthRequired }: 
       setResults(response);
       if (response.quota) onQuotaUpdate?.(response.quota);
 
+      // Refresh history after a successful authenticated analysis
+      if (accessToken) void fetchHistory();
+
       // If anon and limit reached, nudge them to sign up next time
       if (response.quota && response.quota.remaining === 0 && !response.quota.is_authenticated) {
         onAuthRequired?.();
@@ -51,6 +76,16 @@ export function AnalyzerSection({ accessToken, onQuotaUpdate, onAuthRequired }: 
     } finally {
       setLoading(false);
     }
+  }
+
+  function loadFromHistory(textPreview: string, rubricPreview: string | null) {
+    setText(textPreview);
+    if (rubricPreview) {
+      setRubric(rubricPreview);
+      setShowRubric(true);
+    }
+    setResults(null);
+    window.scrollTo({ top: document.getElementById("analyzer")?.offsetTop ?? 0, behavior: "smooth" });
   }
 
   return (
@@ -156,6 +191,16 @@ export function AnalyzerSection({ accessToken, onQuotaUpdate, onAuthRequired }: 
 
           <ResultsPanel results={results} loading={loading} />
         </div>
+
+        {/* History panel — shown only when logged in and history exists */}
+        {accessToken && (
+          <HistoryPanel
+            submissions={history}
+            accessToken={accessToken}
+            onSelect={loadFromHistory}
+            onRefresh={fetchHistory}
+          />
+        )}
       </div>
     </section>
   );

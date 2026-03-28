@@ -1,4 +1,4 @@
-import type { AnalyzeResponse, WaitlistResponse } from "../types";
+import type { AnalyzeResponse, SubmissionList, WaitlistResponse } from "../types";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -47,4 +47,24 @@ export async function joinWaitlist(email: string): Promise<WaitlistResponse> {
   return handleResponse<WaitlistResponse>(response);
 }
 
+export async function getHistory(accessToken: string): Promise<SubmissionList> {
+  const response = await fetch(`${API_BASE_URL}/history`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  return handleResponse<SubmissionList>(response);
+}
 
+export async function deleteHistoryItem(
+  id: string,
+  accessToken: string,
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/history/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  await handleResponse<{ message: string }>(response);
+}

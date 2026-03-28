@@ -2,6 +2,23 @@ export type WaitlistResponse = {
   message: string;
 };
 
+export type SubmissionRecord = {
+  id: string;
+  user_id: string;
+  text_preview: string;
+  rubric_preview: string | null;
+  score: number;
+  confidence: "Low" | "Medium" | "High";
+  rubric_score: number | null;
+  word_count: number;
+  created_at: string;
+};
+
+export type SubmissionList = {
+  submissions: SubmissionRecord[];
+  total: number;
+};
+
 export type CriterionResult = {
   criterion: string;
   coverage: "strong" | "partial" | "missing";
