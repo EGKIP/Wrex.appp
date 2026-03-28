@@ -49,6 +49,13 @@ class RubricMatchResult(BaseModel):
     summary: str
 
 
+class QuotaInfo(BaseModel):
+    used: int
+    limit: int
+    remaining: int
+    is_authenticated: bool
+
+
 class AnalyzeResponse(BaseModel):
     score: int
     confidence: str
@@ -59,6 +66,7 @@ class AnalyzeResponse(BaseModel):
     basic_tips: list[str]
     pro_prompt: ProPrompt
     rubric_result: Optional[RubricMatchResult] = None
+    quota: Optional[QuotaInfo] = None
 
 
 class WaitlistRequest(BaseModel):

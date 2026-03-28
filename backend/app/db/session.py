@@ -21,4 +21,15 @@ def init_db() -> None:
             )
             """
         )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS anonymous_usage (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ip TEXT NOT NULL,
+                usage_date TEXT NOT NULL,
+                count INTEGER NOT NULL DEFAULT 1,
+                UNIQUE(ip, usage_date)
+            )
+            """
+        )
         connection.commit()

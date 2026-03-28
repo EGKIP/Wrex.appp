@@ -19,6 +19,13 @@ export type RubricMatchResult = {
   summary: string;
 };
 
+export type QuotaInfo = {
+  used: number;
+  limit: number;
+  remaining: number;
+  is_authenticated: boolean;
+};
+
 export type AnalyzeResponse = {
   score: number;
   confidence: "Low" | "Medium" | "High";
@@ -47,4 +54,5 @@ export type AnalyzeResponse = {
     cta_label: string;
   };
   rubric_result: RubricMatchResult | null;
+  quota: QuotaInfo | null;
 };

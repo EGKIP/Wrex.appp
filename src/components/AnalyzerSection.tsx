@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { analyzeText } from "../lib/api";
-import type { AnalyzeResponse } from "../types";
+import type { AnalyzeResponse, QuotaInfo } from "../types";
 import { ResultsPanel } from "./ResultsPanel";
 
 const SAMPLE_TEXT = `In today's academic environment, technology has become an increasingly important part of how students learn and communicate. Moreover, it offers convenience and efficiency in many different contexts. However, it is also important to think carefully about how writing can remain personal, specific, and grounded in real understanding.`;
@@ -9,7 +9,13 @@ function countWords(text: string) {
   return text.trim() ? text.trim().split(/\s+/).length : 0;
 }
 
-export function AnalyzerSection() {
+interface AnalyzerSectionProps {
+  accessToken?: string | null;
+  onQuotaUpdate?: (quota: QuotaInfo) => void;
+  onAuthRequired?: () => void;
+}
+
+export function AnalyzerSection({ accessToken, onQuotaUpdate, onAuthRequired }: AnalyzerSectionProps) {
   const [text, setText] = useState(SAMPLE_TEXT);
   const [rubric, setRubric] = useState("");
   const [showRubric, setShowRubric] = useState(false);
@@ -24,14 +30,24 @@ export function AnalyzerSection() {
     setError("");
 
     try {
-      const response = await analyzeText(text, showRubric && rubric.trim() ? rubric : undefined);
+      const response = await analyzeText(
+        text,
+        showRubric && rubric.trim() ? rubric : undefined,
+        accessToken,
+      );
       setResults(response);
+      if (response.quota) onQuotaUpdate?.(response.quota);
+
+      // If anon and limit reached, nudge them to sign up next time
+      if (response.quota && response.quota.remaining === 0 && !response.quota.is_authenticated) {
+        onAuthRequired?.();
+      }
     } catch (requestError) {
-      setError(
+      const msg =
         requestError instanceof Error
           ? requestError.message
-          : "Unable to analyze this text right now.",
-      );
+          : "Unable to analyze this text right now.";
+      setError(msg);
     } finally {
       setLoading(false);
     }

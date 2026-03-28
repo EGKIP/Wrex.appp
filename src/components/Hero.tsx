@@ -5,7 +5,11 @@ const FEATURES = [
   { icon: "💡", label: "Writing tips", desc: "Concrete suggestions to improve your draft" },
 ];
 
-export function Hero() {
+interface HeroProps {
+  onTryFree?: () => void;
+}
+
+export function Hero({ onTryFree }: HeroProps) {
   return (
     <section className="relative overflow-hidden px-6 pb-20 pt-20 lg:px-10 lg:pb-28 lg:pt-28">
       {/* Background gradient */}
@@ -41,12 +45,12 @@ export function Hero() {
               and exactly what to fix — before you submit.
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-4">
-              <a
-                href="#analyzer"
+              <button
+                onClick={onTryFree}
                 className="btn-shine rounded-soft bg-gradient-to-br from-accent to-accent-dark px-8 py-3.5 text-base font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97]"
               >
                 Try it now — free
-              </a>
+              </button>
               <a href="#how-it-works" className="text-sm font-medium text-charcoal/60 underline-offset-4 transition hover:text-navy hover:underline">
                 See how it works →
               </a>

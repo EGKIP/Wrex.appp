@@ -28,9 +28,20 @@ class Settings(BaseSettings):
     # ── Analysis limits ────────────────────────────────────────────────────────
     min_text_words: int = 25
     max_text_words: int = 2500
+    anon_daily_limit: int = 1
+    free_daily_limit: int = 3
 
-    # ── Database ───────────────────────────────────────────────────────────────
+    # ── SQLite (waitlist + anon usage) ─────────────────────────────────────────
     sqlite_path: Path = DATA_DIR / "wrex.db"
+
+    # ── Supabase ────────────────────────────────────────────────────────────────
+    supabase_url: str = ""
+    supabase_anon_key: str = ""
+    supabase_service_role_key: str = ""
+
+    @property
+    def supabase_configured(self) -> bool:
+        return bool(self.supabase_url and self.supabase_service_role_key)
 
     # ── Derived helpers ────────────────────────────────────────────────────────
     @field_validator("log_level")

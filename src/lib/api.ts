@@ -17,12 +17,18 @@ async function handleResponse<T>(response: Response): Promise<T> {
 export async function analyzeText(
   text: string,
   rubric?: string,
+  accessToken?: string | null,
 ): Promise<AnalyzeResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (accessToken) {
+    headers["Authorization"] = `Bearer ${accessToken}`;
+  }
+
   const response = await fetch(`${API_BASE_URL}/analyze`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify({ text, rubric: rubric ?? null }),
   });
 

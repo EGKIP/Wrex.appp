@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
+from app.api.auth_routes import router as auth_router
 from app.api.free_routes import router as free_router
 from app.api.pro_routes import router as pro_router
 from app.api.waitlist_routes import router as waitlist_router
@@ -74,6 +75,7 @@ def create_app() -> FastAPI:
         return response
 
     application.include_router(free_router)
+    application.include_router(auth_router)
     application.include_router(waitlist_router)
     application.include_router(pro_router)
 

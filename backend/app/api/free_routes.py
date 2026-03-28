@@ -1,7 +1,10 @@
-from fastapi import APIRouter, HTTPException, Request, status
+from typing import Optional
 
-from app.core.limiter import limiter
-from app.schemas.free import AnalyzeRequest, AnalyzeResponse
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+
+from app.core.auth import AuthUser, get_optional_user
+from app.core.usage import QuotaInfo, check_quota
+from app.schemas.free import AnalyzeRequest, AnalyzeResponse, QuotaInfo as QuotaInfoSchema
 from app.services.free_detector.detector import analyze_document
 
 router = APIRouter(tags=["free"])
@@ -13,9 +16,19 @@ def healthcheck() -> dict[str, str]:
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
-@limiter.limit("10/minute")
-def analyze_text(request: Request, payload: AnalyzeRequest) -> AnalyzeResponse:
+def analyze_text(
+    request: Request,
+    payload: AnalyzeRequest,
+    user: Optional[AuthUser] = Depends(get_optional_user),
+) -> AnalyzeResponse:
+    quota_info: QuotaInfo = check_quota(request, user)
+
     try:
-        return analyze_document(payload.text, rubric=payload.rubric)
+        result = analyze_document(payload.text, rubric=payload.rubric)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
+
+    result.quota = QuotaInfoSchema(**quota_info)
+    return result
