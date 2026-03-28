@@ -1,7 +1,10 @@
+import time
 from typing import Optional
 
 from app.core.config import settings
+from app.core.logging import get_logger
 from app.core.rate_limit import get_rate_limit_context
+from app.core.sanitizer import sanitize
 from app.schemas.free import AnalyzeResponse, DocumentStats, ProPrompt
 from app.services.free_detector.feature_extractor import extract_features
 from app.services.free_detector.preprocessor import preprocess_text
@@ -9,9 +12,12 @@ from app.services.free_detector.red_flags import build_flagged_sentences, build_
 from app.services.free_detector.scorer import score_document
 from app.services.rubric_matcher.matcher import match_rubric
 
+logger = get_logger(__name__)
 
-def validate_text(text: str) -> str:
-    cleaned = text.strip()
+
+def validate_text(raw: str) -> str:
+    """Sanitise and validate the user-submitted text. Returns clean text or raises ValueError."""
+    cleaned = sanitize(raw)
     if not cleaned:
         raise ValueError("Please paste some writing before analyzing.")
 
@@ -44,10 +50,13 @@ def build_tips(score: int) -> list[str]:
 
 
 def analyze_document(text: str, rubric: Optional[str] = None) -> AnalyzeResponse:
-    validate_text(text)
-    _rate_limit_context = get_rate_limit_context()
+    cleaned_text = validate_text(text)
+    # Rate-limit context is prepared for Phase 1.5 (Supabase auth + quotas)
+    get_rate_limit_context()
 
-    processed = preprocess_text(text)
+    t0 = time.perf_counter()
+
+    processed = preprocess_text(cleaned_text)
     features = extract_features(processed)
     score, confidence = score_document(features)
 
@@ -63,8 +72,9 @@ def analyze_document(text: str, rubric: Optional[str] = None) -> AnalyzeResponse
     )
 
     rubric_result = None
-    if rubric and rubric.strip():
-        raw = match_rubric(draft=text, rubric=rubric)
+    clean_rubric = sanitize(rubric) if rubric else None
+    if clean_rubric:
+        raw = match_rubric(draft=cleaned_text, rubric=clean_rubric)
         from app.schemas.free import CriterionResult, RubricMatchResult  # local to avoid circular
         rubric_result = RubricMatchResult(
             overall_score=raw.overall_score,
@@ -83,6 +93,18 @@ def analyze_document(text: str, rubric: Optional[str] = None) -> AnalyzeResponse
                 for c in raw.criteria
             ],
         )
+
+    duration_ms = round((time.perf_counter() - t0) * 1000, 1)
+    logger.info(
+        "analyze_complete",
+        extra={
+            "score": score,
+            "confidence": confidence,
+            "word_count": features.word_count,
+            "has_rubric": rubric_result is not None,
+            "duration_ms": duration_ms,
+        },
+    )
 
     return AnalyzeResponse(
         score=score,
