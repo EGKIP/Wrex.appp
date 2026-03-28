@@ -1,10 +1,9 @@
 import { AnalyzerSection } from "./components/AnalyzerSection";
-import { DisclaimerSection } from "./components/DisclaimerSection";
+import { FaqSection } from "./components/FaqSection";
 import { Footer } from "./components/Footer";
 import { Hero } from "./components/Hero";
+import { HowItWorks } from "./components/HowItWorks";
 import { Navbar } from "./components/Navbar";
-import { ProPreview } from "./components/ProPreview";
-import { WaitlistSection } from "./components/WaitlistSection";
 
 function App() {
   return (
@@ -12,10 +11,9 @@ function App() {
       <Navbar />
       <main>
         <Hero />
+        <HowItWorks />
         <AnalyzerSection />
-        <ProPreview />
-        <WaitlistSection />
-        <DisclaimerSection />
+        <FaqSection />
       </main>
       <Footer />
     </div>

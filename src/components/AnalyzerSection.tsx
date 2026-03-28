@@ -37,17 +37,22 @@ export function AnalyzerSection() {
   }
 
   return (
-    <section id="analyzer" className="mx-auto max-w-7xl px-6 py-10 lg:px-10 lg:py-16">
+    <section id="analyzer" className="mx-auto max-w-7xl px-6 py-16 lg:px-10 lg:py-20">
+      <div className="mx-auto mb-10 max-w-xl text-center">
+        <h2 className="text-3xl font-semibold tracking-tight text-navy">Try it now</h2>
+        <p className="mt-2 text-sm text-charcoal/55">
+          Free — no account needed for your first analysis.
+        </p>
+      </div>
+
       <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="rounded-[2rem] border border-navy/10 bg-white p-6 shadow-soft sm:p-8">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold tracking-tight text-navy">
-              Check your writing
-            </h2>
+            <p className="text-sm font-medium text-charcoal/50">Your writing</p>
             <button
               type="button"
               onClick={() => setText("")}
-              className="text-sm text-charcoal/45 transition hover:text-navy"
+              className="text-xs text-charcoal/40 transition hover:text-navy"
             >
               Clear
             </button>
@@ -56,11 +61,11 @@ export function AnalyzerSection() {
             value={text}
             onChange={(event) => setText(event.target.value)}
             placeholder="Paste your draft here…"
-            className="mt-5 min-h-[320px] w-full rounded-soft border border-navy/10 bg-mist px-5 py-4 text-base leading-7 text-charcoal outline-none transition placeholder:text-charcoal/35 focus:border-accent focus:ring-2 focus:ring-accent/40"
+            className="mt-3 min-h-[320px] w-full rounded-soft border border-navy/10 bg-mist px-5 py-4 text-base leading-7 text-charcoal outline-none transition placeholder:text-charcoal/35 focus:border-accent focus:ring-2 focus:ring-accent/40"
           />
-          <div className="mt-3 flex items-center justify-between text-xs text-charcoal/45">
-            <span>{wordCount} words · {characterCount} chars</span>
-            <span>Educational use only</span>
+          <div className="mt-2 flex items-center justify-between text-xs text-charcoal/40">
+            <span>{wordCount} words</span>
+            <span>For study use only</span>
           </div>
           {error ? (
             <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-charcoal">
@@ -83,7 +88,7 @@ export function AnalyzerSection() {
                   Analyzing…
                 </>
               ) : (
-                "Analyze"
+                "Analyze my writing"
               )}
             </button>
           </div>

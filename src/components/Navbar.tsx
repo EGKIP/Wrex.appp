@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Brand } from "./Brand";
 
 const NAV_LINKS = [
+  { label: "How it works", href: "#how-it-works" },
   { label: "Try it", href: "#analyzer" },
-  { label: "Pro", href: "#pro-preview" },
+  { label: "FAQ", href: "#faq" },
 ];
 
 export function Navbar() {
@@ -11,13 +12,13 @@ export function Navbar() {
   const [active, setActive] = useState("");
 
   useEffect(() => {
-    const sections = ["analyzer", "pro-preview", "waitlist"];
+    const sections = ["how-it-works", "analyzer", "faq"];
     const observers = sections.map((id) => {
       const el = document.getElementById(id);
       if (!el) return null;
       const observer = new IntersectionObserver(
         ([entry]) => { if (entry.isIntersecting) setActive(`#${id}`); },
-        { threshold: 0.4 },
+        { threshold: 0.3 },
       );
       observer.observe(el);
       return observer;
@@ -36,16 +37,16 @@ export function Navbar() {
             <a
               key={href}
               href={href}
-              className={`transition ${active === href ? "font-semibold text-navy" : "text-charcoal/70 hover:text-navy"}`}
+              className={`transition ${active === href ? "font-semibold text-navy" : "text-charcoal/60 hover:text-navy"}`}
             >
               {label}
             </a>
           ))}
           <a
-            href="#waitlist"
+            href="#analyzer"
             className="rounded-2xl bg-navy px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy/90"
           >
-            Get early access
+            Sign in
           </a>
         </nav>
 
@@ -68,7 +69,7 @@ export function Navbar() {
         </button>
       </div>
 
-      {/* Mobile slide-in drawer */}
+      {/* Mobile drawer */}
       {menuOpen && (
         <div className="border-t border-navy/5 bg-white px-6 pb-6 pt-4 md:hidden">
           <nav className="flex flex-col gap-4 text-sm">
@@ -77,17 +78,17 @@ export function Navbar() {
                 key={href}
                 href={href}
                 onClick={() => setMenuOpen(false)}
-                className="text-charcoal/75 transition hover:text-navy"
+                className="text-charcoal/70 transition hover:text-navy"
               >
                 {label}
               </a>
             ))}
             <a
-              href="#waitlist"
+              href="#analyzer"
               onClick={() => setMenuOpen(false)}
               className="mt-1 rounded-2xl bg-navy px-4 py-3 text-center text-sm font-semibold text-white"
             >
-              Get early access
+              Sign in
             </a>
           </nav>
         </div>
