@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { deleteHistoryItem } from "../lib/api";
+import { useToast } from "../context/toast";
 import type { SubmissionRecord } from "../types";
 
 interface HistoryPanelProps {
   submissions: SubmissionRecord[];
   accessToken: string;
+  loading?: boolean;
   onSelect: (text_preview: string, rubric_preview: string | null) => void;
   onRefresh: () => void;
 }
@@ -27,9 +29,11 @@ function formatDate(iso: string): string {
 export function HistoryPanel({
   submissions,
   accessToken,
+  loading = false,
   onSelect,
   onRefresh,
 }: HistoryPanelProps) {
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -38,15 +42,14 @@ export function HistoryPanel({
     setDeleting(id);
     try {
       await deleteHistoryItem(id, accessToken);
+      toast("Submission deleted", "info");
       onRefresh();
     } catch {
-      // silent — item will still show until refresh
+      toast("Could not delete — please try again", "error");
     } finally {
       setDeleting(null);
     }
   }
-
-  if (submissions.length === 0) return null;
 
   return (
     <div className="mt-6 rounded-modal border border-charcoal/10 bg-white shadow-float">
@@ -57,14 +60,28 @@ export function HistoryPanel({
       >
         <span className="font-semibold text-navy text-sm">
           Past submissions
-          <span className="ml-2 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-bold text-navy">
-            {submissions.length}
-          </span>
+          {!loading && submissions.length > 0 && (
+            <span className="ml-2 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-bold text-navy">
+              {submissions.length}
+            </span>
+          )}
         </span>
-        <span className="text-charcoal/40 text-xs">{open ? "▲ hide" : "▼ show"}</span>
+        {loading ? (
+          <svg className="h-3.5 w-3.5 animate-spin text-charcoal/40" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+        ) : (
+          <span className="text-charcoal/40 text-xs">{open ? "▲ hide" : "▼ show"}</span>
+        )}
       </button>
 
-      {open && (
+      {open && !loading && submissions.length === 0 && (
+        <p className="border-t border-charcoal/10 px-5 py-6 text-sm text-charcoal/45 text-center">
+          No submissions yet. Run an analysis to start your history.
+        </p>
+      )}
+      {open && !loading && submissions.length > 0 && (
         <ul className="divide-y divide-charcoal/8 border-t border-charcoal/10">
           {submissions.map((s) => (
             <li

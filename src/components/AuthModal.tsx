@@ -11,6 +11,7 @@ interface Props {
 
 export function AuthModal({ open, onClose, auth, defaultTab = "signin" }: Props) {
   const [tab, setTab] = useState<"signin" | "signup">(defaultTab);
+  const [showForgot, setShowForgot] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -22,6 +23,7 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin" }: Props)
       setTab(defaultTab);
       setEmail("");
       setPassword("");
+      setShowForgot(false);
       auth.clearError();
       setTimeout(() => emailRef.current?.focus(), 50);
     }
@@ -32,17 +34,20 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin" }: Props)
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    if (tab === "signin") {
+    if (showForgot) {
+      await auth.resetPassword(email);
+    } else if (tab === "signin") {
       await auth.signIn(email, password);
     } else {
       await auth.signUp(email, password);
     }
     setSubmitting(false);
     // Close on successful sign-in (session will be set by the hook)
-    if (!auth.error && tab === "signin") onClose();
+    if (!auth.error && tab === "signin" && !showForgot) onClose();
   }
 
-  const isInfo = auth.error?.toLowerCase().includes("check your email");
+  const isInfo = auth.error?.toLowerCase().includes("check your email")
+    || auth.error?.toLowerCase().includes("password reset");
 
   return (
     <div
@@ -70,63 +75,92 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin" }: Props)
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-charcoal mb-1">
-              Email
-            </label>
-            <input
-              ref={emailRef}
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@university.edu"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-charcoal mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-            />
-          </div>
-
-          {auth.error && (
-            <p className={`text-sm rounded-lg px-3 py-2 ${isInfo ? "bg-blue-50 text-blue-700" : "bg-red-50 text-red-600"}`}>
-              {auth.error}
+        {/* Forgot-password sub-view */}
+        {showForgot ? (
+          <>
+            <p className="mb-4 text-sm text-charcoal/70">
+              Enter your email and we'll send a reset link.
             </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full bg-navy text-white font-semibold rounded-lg py-2.5 text-sm hover:bg-navy/90 transition-colors disabled:opacity-50"
-          >
-            {submitting
-              ? "Please wait…"
-              : tab === "signin"
-              ? "Sign in"
-              : "Create free account"}
-          </button>
-        </form>
-
-        <p className="mt-4 text-xs text-center text-charcoal/40">
-          {tab === "signin" ? (
-            <>No account? <button onClick={() => setTab("signup")} className="underline">Sign up free</button></>
-          ) : (
-            <>Already have an account? <button onClick={() => setTab("signin")} className="underline">Sign in</button></>
-          )}
-        </p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <input
+                ref={emailRef}
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@university.edu"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+              />
+              {auth.error && (
+                <p className={`text-sm rounded-lg px-3 py-2 ${isInfo ? "bg-blue-50 text-blue-700" : "bg-red-50 text-red-600"}`}>
+                  {auth.error}
+                </p>
+              )}
+              <button type="submit" disabled={submitting}
+                className="w-full bg-navy text-white font-semibold rounded-lg py-2.5 text-sm hover:bg-navy/90 transition-colors disabled:opacity-50">
+                {submitting ? "Sending…" : "Send reset link"}
+              </button>
+            </form>
+            <p className="mt-4 text-xs text-center text-charcoal/40">
+              <button onClick={() => { setShowForgot(false); auth.clearError(); }} className="underline">
+                Back to sign in
+              </button>
+            </p>
+          </>
+        ) : (
+          <>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-charcoal mb-1">Email</label>
+                <input
+                  ref={emailRef}
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@university.edu"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-sm font-medium text-charcoal">Password</label>
+                  {tab === "signin" && (
+                    <button type="button" onClick={() => { setShowForgot(true); auth.clearError(); }}
+                      className="text-xs text-charcoal/45 hover:text-charcoal underline">
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                />
+              </div>
+              {auth.error && (
+                <p className={`text-sm rounded-lg px-3 py-2 ${isInfo ? "bg-blue-50 text-blue-700" : "bg-red-50 text-red-600"}`}>
+                  {auth.error}
+                </p>
+              )}
+              <button type="submit" disabled={submitting}
+                className="w-full bg-navy text-white font-semibold rounded-lg py-2.5 text-sm hover:bg-navy/90 transition-colors disabled:opacity-50">
+                {submitting ? "Please wait…" : tab === "signin" ? "Sign in" : "Create free account"}
+              </button>
+            </form>
+            <p className="mt-4 text-xs text-center text-charcoal/40">
+              {tab === "signin" ? (
+                <>No account? <button onClick={() => setTab("signup")} className="underline">Sign up free</button></>
+              ) : (
+                <>Already have an account? <button onClick={() => setTab("signin")} className="underline">Sign in</button></>
+              )}
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

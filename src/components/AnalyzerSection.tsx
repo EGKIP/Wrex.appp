@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { analyzeText, getHistory } from "../lib/api";
+import { ApiError, analyzeText, getHistory } from "../lib/api";
+import { useToast } from "../context/toast";
 import type { AnalyzeResponse, QuotaInfo, SubmissionRecord } from "../types";
 import { HistoryPanel } from "./HistoryPanel";
 import { ResultsPanel } from "./ResultsPanel";
@@ -17,23 +18,29 @@ interface AnalyzerSectionProps {
 }
 
 export function AnalyzerSection({ accessToken, onQuotaUpdate, onAuthRequired }: AnalyzerSectionProps) {
+  const { toast } = useToast();
   const [text, setText] = useState(SAMPLE_TEXT);
   const [rubric, setRubric] = useState("");
   const [showRubric, setShowRubric] = useState(false);
   const [results, setResults] = useState<AnalyzeResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [quotaHit, setQuotaHit] = useState<"anon" | "auth" | null>(null);
   const [history, setHistory] = useState<SubmissionRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const wordCount = countWords(text);
 
   async function fetchHistory() {
     if (!accessToken) return;
+    setHistoryLoading(true);
     try {
       const data = await getHistory(accessToken);
       setHistory(data.submissions);
     } catch {
       // non-critical — just skip
+    } finally {
+      setHistoryLoading(false);
     }
   }
 
@@ -50,6 +57,7 @@ export function AnalyzerSection({ accessToken, onQuotaUpdate, onAuthRequired }: 
   async function onAnalyze() {
     setLoading(true);
     setError("");
+    setQuotaHit(null);
 
     try {
       const response = await analyzeText(
@@ -60,19 +68,26 @@ export function AnalyzerSection({ accessToken, onQuotaUpdate, onAuthRequired }: 
       setResults(response);
       if (response.quota) onQuotaUpdate?.(response.quota);
 
-      // Refresh history after a successful authenticated analysis
-      if (accessToken) void fetchHistory();
+      // Toast on successful analysis save
+      if (accessToken) {
+        toast("Analysis saved to your history ✓", "success");
+        void fetchHistory();
+      }
 
       // If anon and limit reached, nudge them to sign up next time
       if (response.quota && response.quota.remaining === 0 && !response.quota.is_authenticated) {
         onAuthRequired?.();
       }
     } catch (requestError) {
-      const msg =
-        requestError instanceof Error
-          ? requestError.message
-          : "Unable to analyze this text right now.";
-      setError(msg);
+      if (requestError instanceof ApiError && requestError.status === 429) {
+        setQuotaHit(accessToken ? "auth" : "anon");
+      } else {
+        const msg =
+          requestError instanceof Error
+            ? requestError.message
+            : "Unable to analyze this text right now.";
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -161,6 +176,29 @@ export function AnalyzerSection({ accessToken, onQuotaUpdate, onAuthRequired }: 
               )}
             </div>
 
+            {quotaHit === "anon" && (
+              <div className="mt-4 rounded-input border border-accent/40 bg-accent/10 px-4 py-3 text-sm">
+                <p className="font-semibold text-navy">You've used your free analysis for today.</p>
+                <p className="mt-1 text-charcoal/70">
+                  Create a free account to get 3 analyses per day.
+                </p>
+                <button
+                  type="button"
+                  onClick={onAuthRequired}
+                  className="mt-3 rounded-soft bg-navy px-4 py-2 text-xs font-bold text-white transition hover:bg-navy/80"
+                >
+                  Sign up free →
+                </button>
+              </div>
+            )}
+            {quotaHit === "auth" && (
+              <div className="mt-4 rounded-input border border-accent/40 bg-accent/10 px-4 py-3 text-sm">
+                <p className="font-semibold text-navy">You've used all 3 analyses for today.</p>
+                <p className="mt-1 text-charcoal/70">
+                  Your quota resets at midnight. Come back then — or explore Pro for unlimited access.
+                </p>
+              </div>
+            )}
             {error ? (
               <p className="mt-4 rounded-input border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
                 {error}
@@ -192,11 +230,12 @@ export function AnalyzerSection({ accessToken, onQuotaUpdate, onAuthRequired }: 
           <ResultsPanel results={results} loading={loading} />
         </div>
 
-        {/* History panel — shown only when logged in and history exists */}
+        {/* History panel — shown whenever user is logged in */}
         {accessToken && (
           <HistoryPanel
             submissions={history}
             accessToken={accessToken}
+            loading={historyLoading}
             onSelect={loadFromHistory}
             onRefresh={fetchHistory}
           />

@@ -49,8 +49,13 @@ export default {
         "fade-in-up": "fadeInUp 0.6s cubic-bezier(0.4,0,0.2,1) forwards",
         shimmer: "shimmer 2s infinite",
         "pulse-once": "pulseOnce 1.5s ease-in-out 1",
+        "fade-in": "fadeIn 0.2s ease-out forwards",
       },
       keyframes: {
+        fadeIn: {
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
         float: {
           "0%, 100%": { transform: "rotate(3deg) translateY(0px)" },
           "50%": { transform: "rotate(3deg) translateY(-12px)" },

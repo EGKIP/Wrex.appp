@@ -9,6 +9,7 @@ export interface AuthState {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   error: string | null;
   clearError: () => void;
 }
@@ -62,10 +63,22 @@ export function useAuth(): AuthState {
     await supabase.auth.signOut();
   }
 
+  async function resetPassword(email: string): Promise<void> {
+    setError(null);
+    const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (authError) {
+      setError(authError.message);
+    } else {
+      setError("Check your email for a password reset link.");
+    }
+  }
+
   function clearError(): void {
     setError(null);
   }
 
-  return { session, user, loading, signIn, signUp, signOut, error, clearError };
+  return { session, user, loading, signIn, signUp, signOut, resetPassword, error, clearError };
 }
 

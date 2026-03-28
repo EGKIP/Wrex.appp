@@ -6,6 +6,8 @@ import { Footer } from "./components/Footer";
 import { Hero } from "./components/Hero";
 import { HowItWorks } from "./components/HowItWorks";
 import { Navbar } from "./components/Navbar";
+import { Toaster } from "./components/Toaster";
+import { ToastProvider } from "./context/toast";
 import { useAuth } from "./hooks/useAuth";
 import type { QuotaInfo } from "./types";
 
@@ -21,26 +23,29 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-charcoal">
-      <Navbar auth={auth} quota={quota} onOpenAuth={openAuth} />
-      <main>
-        <Hero onTryFree={() => openAuth("signup")} />
-        <HowItWorks />
-        <AnalyzerSection
-          accessToken={auth.session?.access_token ?? null}
-          onQuotaUpdate={setQuota}
-          onAuthRequired={() => openAuth("signup")}
+    <ToastProvider>
+      <div className="min-h-screen bg-white text-charcoal">
+        <Navbar auth={auth} quota={quota} onOpenAuth={openAuth} />
+        <main>
+          <Hero onTryFree={() => openAuth("signup")} />
+          <HowItWorks />
+          <AnalyzerSection
+            accessToken={auth.session?.access_token ?? null}
+            onQuotaUpdate={setQuota}
+            onAuthRequired={() => openAuth("signup")}
+          />
+          <FaqSection />
+        </main>
+        <Footer />
+        <AuthModal
+          open={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          auth={auth}
+          defaultTab={authModalTab}
         />
-        <FaqSection />
-      </main>
-      <Footer />
-      <AuthModal
-        open={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        auth={auth}
-        defaultTab={authModalTab}
-      />
-    </div>
+        <Toaster />
+      </div>
+    </ToastProvider>
   );
 }
 

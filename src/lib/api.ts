@@ -3,12 +3,26 @@ import type { AnalyzeResponse, SubmissionList, WaitlistResponse } from "../types
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 
+/** Typed error that carries the HTTP status code for UI branching (e.g. 429 quota wall). */
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as
       | { detail?: string }
       | null;
-    throw new Error(payload?.detail ?? "Something went wrong.");
+    throw new ApiError(
+      response.status,
+      payload?.detail ?? "Something went wrong.",
+    );
   }
 
   return (await response.json()) as T;
