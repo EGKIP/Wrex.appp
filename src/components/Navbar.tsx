@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import { Brand } from "./Brand";
 
 const NAV_LINKS = [
-  { label: "Detector", href: "#analyzer" },
+  { label: "Try it", href: "#analyzer" },
   { label: "Pro", href: "#pro-preview" },
-  { label: "Waitlist", href: "#waitlist" },
 ];
 
 export function Navbar() {

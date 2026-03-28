@@ -1,9 +1,20 @@
 const features = [
-  "Humanize writing",
-  "Improve clarity and flow",
-  "Grammar and style suggestions",
-  "Rubric-based writing help",
-  "Curated writing templates",
+  {
+    title: "Rubric alignment",
+    desc: "Paste your assignment brief. Wrex maps every criterion to your draft and flags the gaps.",
+  },
+  {
+    title: "Gap detection",
+    desc: "See exactly which rubric points are missing, weak, or well-covered — at a glance.",
+  },
+  {
+    title: "Paragraph rewrites",
+    desc: "Get targeted rewrites for sections that don't meet the rubric, not generic suggestions.",
+  },
+  {
+    title: "Humanizing support",
+    desc: "Strengthen natural phrasing in sentences flagged as likely AI-generated.",
+  },
 ];
 
 export function ProPreview() {
@@ -14,39 +25,40 @@ export function ProPreview() {
     >
       <div className="rounded-[2rem] border border-navy/10 bg-mist p-8 shadow-soft lg:p-10">
         <div className="flex flex-wrap items-start justify-between gap-6">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-navy/10 bg-white px-4 py-2 text-sm font-medium text-charcoal/80">
-              <span className="inline-block h-2.5 w-2.5 rounded-full bg-accent" />
-              Locked Pro writing preview
-            </div>
-            <h2 className="mt-5 text-3xl font-semibold tracking-tight text-navy">
-              Improve your writing with Pro when deeper support launches.
+          <div className="max-w-xl">
+            <h2 className="text-3xl font-semibold tracking-tight text-navy">
+              Pro — built around your rubric.
             </h2>
-            <p className="mt-4 max-w-2xl text-base leading-8 text-charcoal/75">
-              The free detector helps identify likely issues. Pro is where Wrex
-              will offer guided revision help, natural phrasing support, grammar
-              feedback, and structure-aware writing assistance.
+            <p className="mt-3 text-base leading-7 text-charcoal/70">
+              The free tier checks patterns. Pro takes your actual assignment
+              criteria and tells you exactly what your draft is missing.
             </p>
+            <a
+              href="#waitlist"
+              className="mt-5 inline-block rounded-2xl bg-navy px-5 py-3 text-sm font-semibold text-white transition hover:bg-navy/90"
+            >
+              Get early access
+            </a>
           </div>
-          <div className="rounded-soft border border-white/80 bg-white px-5 py-4 text-sm text-charcoal shadow-sm">
-            <p className="text-charcoal/55">Student pricing preview</p>
-            <p className="mt-2 text-2xl font-semibold text-navy">$8/month</p>
-            <p className="mt-3 text-charcoal/60">Regular: $12/month</p>
+          <div className="rounded-soft border border-white/80 bg-white px-5 py-5 text-sm text-charcoal shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/45">
+              Pricing
+            </p>
+            <p className="mt-3 text-2xl font-semibold text-navy">$8/month</p>
+            <p className="text-sm text-charcoal/55">Student</p>
+            <p className="mt-3 text-base font-medium text-charcoal/70">$12/month</p>
+            <p className="text-sm text-charcoal/55">Regular</p>
           </div>
         </div>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {features.map((feature) => (
             <div
-              key={feature}
-              className="relative overflow-hidden rounded-soft border border-navy/10 bg-white p-5"
+              key={feature.title}
+              className="rounded-soft border border-navy/10 bg-white p-5"
             >
-              <span className="absolute right-4 top-4 rounded-full border border-navy/10 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-charcoal/45">
-                Locked
-              </span>
-              <p className="max-w-[11rem] pt-8 text-base font-medium text-navy">
-                {feature}
-              </p>
+              <p className="text-sm font-semibold text-navy">{feature.title}</p>
+              <p className="mt-2 text-sm leading-6 text-charcoal/65">{feature.desc}</p>
             </div>
           ))}
         </div>

@@ -40,19 +40,14 @@ export function AnalyzerSection() {
     <section id="analyzer" className="mx-auto max-w-7xl px-6 py-10 lg:px-10 lg:py-16">
       <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="rounded-[2rem] border border-navy/10 bg-white p-6 shadow-soft sm:p-8">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-charcoal/45">
-                Free detector
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-navy">
-                Review writing for AI-associated patterns
-              </h2>
-            </div>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold tracking-tight text-navy">
+              Check your writing
+            </h2>
             <button
               type="button"
               onClick={() => setText("")}
-              className="text-sm text-charcoal/55 transition hover:text-navy"
+              className="text-sm text-charcoal/45 transition hover:text-navy"
             >
               Clear
             </button>
@@ -60,22 +55,19 @@ export function AnalyzerSection() {
           <textarea
             value={text}
             onChange={(event) => setText(event.target.value)}
-            placeholder="Paste writing here to review sentence patterns, consistency, and phrasing."
-            className="mt-6 min-h-[320px] w-full rounded-soft border border-navy/10 bg-mist px-5 py-4 text-base leading-7 text-charcoal outline-none transition placeholder:text-charcoal/35 focus:border-accent focus:ring-2 focus:ring-accent/40"
+            placeholder="Paste your draft here…"
+            className="mt-5 min-h-[320px] w-full rounded-soft border border-navy/10 bg-mist px-5 py-4 text-base leading-7 text-charcoal outline-none transition placeholder:text-charcoal/35 focus:border-accent focus:ring-2 focus:ring-accent/40"
           />
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-4 text-sm text-charcoal/65">
-            <div className="flex flex-wrap gap-4">
-              <span>{wordCount} words</span>
-              <span>{characterCount} characters</span>
-            </div>
-            <p>Results are probabilistic and for educational use.</p>
+          <div className="mt-3 flex items-center justify-between text-xs text-charcoal/45">
+            <span>{wordCount} words · {characterCount} chars</span>
+            <span>Educational use only</span>
           </div>
           {error ? (
             <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-charcoal">
               {error}
             </p>
           ) : null}
-          <div className="mt-6 flex flex-wrap items-center gap-4">
+          <div className="mt-5">
             <button
               type="button"
               onClick={onAnalyze}
@@ -91,15 +83,9 @@ export function AnalyzerSection() {
                   Analyzing…
                 </>
               ) : (
-                "Analyze Writing"
+                "Analyze"
               )}
             </button>
-            <p className="max-w-sm text-sm text-charcoal/65">
-              Rubric alignment and humanizing guidance coming in Pro.{" "}
-              <a href="#waitlist" className="font-medium text-navy underline underline-offset-2">
-                Join the waitlist.
-              </a>
-            </p>
           </div>
         </div>
         <ResultsPanel results={results} loading={loading} />
