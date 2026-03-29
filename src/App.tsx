@@ -19,6 +19,36 @@ function App() {
   const [authModalTab, setAuthModalTab] = useState<"signin" | "signup">("signin");
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
 
+  // Handle Supabase email-confirmation redirect (?type=signup or #access_token in URL)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams(window.location.hash.replace("#", "?"));
+    const type = params.get("type") || hash.get("type");
+    const hasToken = hash.get("access_token");
+
+    if (type === "signup" || (hasToken && type !== "recovery")) {
+      // Clean up the URL so the params don't persist on refresh
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState(null, "", cleanUrl);
+      // Wait a tick for auth state to settle, then toast
+      setTimeout(() => {
+        toast("Email confirmed! You're all set 🎉", "success");
+        setAuthModalOpen(false);
+      }, 400);
+    }
+
+    if (type === "recovery" && hasToken) {
+      // Password reset link — open auth modal on the sign-in tab
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState(null, "", cleanUrl);
+      setTimeout(() => {
+        toast("Set your new password below 🔑", "info");
+        openAuth("signin");
+      }, 400);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Fire toasts on sign-in / sign-out transitions
   const prevUser = useRef<User | null | undefined>(undefined);
   useEffect(() => {
