@@ -32,15 +32,12 @@ export function WaitlistSection() {
     <section id="waitlist" className="mx-auto max-w-7xl px-6 py-10 lg:px-10 lg:py-16">
       <div className="grid gap-8 rounded-[2rem] border border-navy/10 bg-white p-8 shadow-soft lg:grid-cols-[0.9fr_1.1fr] lg:p-10">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-charcoal/45">
-            Waitlist
-          </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-navy">
-            Get notified when Pro launches.
+          <h2 className="text-3xl font-semibold tracking-tight text-navy">
+            Get Pro when it launches.
           </h2>
-          <p className="mt-4 max-w-md text-base leading-8 text-charcoal/75">
-            Join for a one-time launch email. No spam, no crowded newsletter,
-            just an update when Pro writing tools become available.
+          <p className="mt-3 max-w-sm text-base leading-7 text-charcoal/65">
+            Rubric alignment, gap detection, and humanizing guidance. One email
+            when it's ready.
           </p>
         </div>
         <form onSubmit={onSubmit} className="rounded-soft bg-mist p-6">

@@ -24,7 +24,6 @@ export function Brand({ logoSrc = "/logo.png" }: BrandProps) {
       </div>
       <div>
         <p className="text-base font-semibold tracking-tight text-navy">Wrex.app</p>
-        <p className="text-sm text-charcoal/70">Educational AI text analysis</p>
       </div>
     </div>
   );

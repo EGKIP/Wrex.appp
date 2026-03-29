@@ -1,8 +1,11 @@
+from typing import Optional
+
 from pydantic import BaseModel, EmailStr, Field
 
 
 class AnalyzeRequest(BaseModel):
     text: str = Field(..., min_length=1)
+    rubric: Optional[str] = Field(default=None)
 
 
 class DocumentStats(BaseModel):
@@ -29,6 +32,30 @@ class ProPrompt(BaseModel):
     cta_label: str
 
 
+class CriterionResult(BaseModel):
+    criterion: str
+    coverage: str
+    score: float
+    matched_terms: list[str]
+    total_terms: int
+
+
+class RubricMatchResult(BaseModel):
+    overall_score: int
+    strong_count: int
+    partial_count: int
+    missing_count: int
+    criteria: list[CriterionResult]
+    summary: str
+
+
+class QuotaInfo(BaseModel):
+    used: int
+    limit: int
+    remaining: int
+    is_authenticated: bool
+
+
 class AnalyzeResponse(BaseModel):
     score: int
     confidence: str
@@ -38,6 +65,8 @@ class AnalyzeResponse(BaseModel):
     flagged_sentences: list[FlaggedSentence]
     basic_tips: list[str]
     pro_prompt: ProPrompt
+    rubric_result: Optional[RubricMatchResult] = None
+    quota: Optional[QuotaInfo] = None
 
 
 class WaitlistRequest(BaseModel):

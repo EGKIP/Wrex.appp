@@ -1,13 +1,13 @@
-@import url("https://fonts.cdnfonts.com/css/satoshi");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  color: #2d3748;
+  color: #334155;
   background: #ffffff;
-  font-family: "Satoshi", Inter, ui-sans-serif, system-ui, sans-serif;
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 html {
@@ -17,11 +17,71 @@ html {
 body {
   margin: 0;
   min-width: 320px;
-  background:
-    radial-gradient(circle at top, rgba(255, 217, 61, 0.12), transparent 28%),
-    linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
+  background: #ffffff;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* Floating glass nav */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.06);
+}
+
+/* Yellow shine CTA button */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+  transition: left 0s;
+}
+.btn-shine:hover::before {
+  left: 100%;
+  transition: left 0.5s ease;
+}
+
+/* Skeleton shimmer */
+.skeleton {
+  background: linear-gradient(90deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Heading font utility — Inter bold */
+.font-heading {
+  font-family: "Inter", ui-sans-serif, sans-serif;
+  font-weight: 700;
+}
+
+/* Mono stat utility */
+.font-stat {
+  font-family: "JetBrains Mono", monospace;
+}
+
+/* Pulse animation on flagged sentences */
+.flagged-pulse {
+  animation: pulseOnce 1.5s ease-in-out 1;
+}
+
+/* Yellow blob background accent */
+.blob-yellow {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(251,191,36,0.18) 0%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
 }

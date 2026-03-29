@@ -1,3 +1,48 @@
+export type WaitlistResponse = {
+  message: string;
+};
+
+export type SubmissionRecord = {
+  id: string;
+  user_id: string;
+  text_preview: string;
+  rubric_preview: string | null;
+  score: number;
+  confidence: "Low" | "Medium" | "High";
+  rubric_score: number | null;
+  word_count: number;
+  created_at: string;
+};
+
+export type SubmissionList = {
+  submissions: SubmissionRecord[];
+  total: number;
+};
+
+export type CriterionResult = {
+  criterion: string;
+  coverage: "strong" | "partial" | "missing";
+  score: number;
+  matched_terms: string[];
+  total_terms: number;
+};
+
+export type RubricMatchResult = {
+  overall_score: number;
+  strong_count: number;
+  partial_count: number;
+  missing_count: number;
+  criteria: CriterionResult[];
+  summary: string;
+};
+
+export type QuotaInfo = {
+  used: number;
+  limit: number;
+  remaining: number;
+  is_authenticated: boolean;
+};
+
 export type AnalyzeResponse = {
   score: number;
   confidence: "Low" | "Medium" | "High";
@@ -25,4 +70,6 @@ export type AnalyzeResponse = {
     message: string;
     cta_label: string;
   };
+  rubric_result: RubricMatchResult | null;
+  quota: QuotaInfo | null;
 };
