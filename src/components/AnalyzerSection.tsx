@@ -352,7 +352,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               <button
                 type="button"
                 onClick={onAnalyze}
-                disabled={loading}
+                disabled={loading || text.trim().length < 10}
                 className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-8 py-3.5 text-base font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {loading ? (
@@ -370,7 +370,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
             </div>
           </div>
 
-          <ResultsPanel results={results} loading={loading} />
+          <ResultsPanel results={results} loading={loading} isPro={isPro} />
         </div>
 
         {/* Pro AI panel — shown below grid when results exist */}
@@ -447,7 +447,16 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                             <p className="mt-1 text-sm leading-6 text-charcoal">{s.sentence}</p>
                             <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-warning">Issue</p>
                             <p className="mt-1 text-sm leading-6 text-charcoal/70">{s.issue}</p>
-                            <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-success">Rewrite</p>
+                            <div className="mt-3 flex items-start justify-between gap-3">
+                              <p className="text-xs font-semibold uppercase tracking-wider text-success">Rewrite</p>
+                              <button
+                                type="button"
+                                onClick={() => void navigator.clipboard.writeText(s.rewrite)}
+                                className="shrink-0 rounded bg-white px-2 py-0.5 text-[11px] font-medium text-charcoal/50 shadow-sm transition hover:text-navy hover:shadow"
+                              >
+                                Copy
+                              </button>
+                            </div>
                             <p className="mt-1 text-sm leading-6 text-charcoal">{s.rewrite}</p>
                           </div>
                         ))}
@@ -483,7 +492,22 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                           <p className="mt-1 text-sm text-charcoal/70">{humanizeResult.changes_summary}</p>
                         </div>
                         <div className="rounded-input border border-border-base bg-mist p-4">
-                          <p className="text-xs font-semibold uppercase tracking-wider text-charcoal/45 mb-2">Rewritten text</p>
+                          <div className="mb-2 flex items-center justify-between gap-3">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-charcoal/45">Rewritten text</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setText(humanizeResult.rewritten);
+                                setHumanizeResult(null);
+                                setResults(null);
+                                window.scrollTo({ top: document.getElementById("analyzer")?.offsetTop ?? 0, behavior: "smooth" });
+                                toast("Text updated — re-analyze to see your new score ✓", "success");
+                              }}
+                              className="shrink-0 rounded-soft bg-navy px-3 py-1 text-xs font-bold text-white transition hover:bg-navy/80"
+                            >
+                              Use this text ↑
+                            </button>
+                          </div>
                           <p className="whitespace-pre-wrap text-sm leading-7 text-charcoal">{humanizeResult.rewritten}</p>
                         </div>
                         <button type="button" onClick={() => setHumanizeResult(null)} className="text-xs text-charcoal/40 hover:underline">
