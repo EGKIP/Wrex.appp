@@ -82,3 +82,21 @@ export async function deleteHistoryItem(
   });
   await handleResponse<{ message: string }>(response);
 }
+
+export async function getProStatus(accessToken: string): Promise<{ is_pro: boolean }> {
+  const response = await fetch(`${API_BASE_URL}/pro/status`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return handleResponse<{ is_pro: boolean }>(response);
+}
+
+export async function createCheckoutSession(accessToken: string): Promise<{ url: string }> {
+  const response = await fetch(`${API_BASE_URL}/pro/checkout`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+  return handleResponse<{ url: string }>(response);
+}

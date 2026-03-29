@@ -12,10 +12,11 @@ const NAV_LINKS = [
 interface NavbarProps {
   auth: AuthState;
   quota: QuotaInfo | null;
+  isPro?: boolean;
   onOpenAuth: (tab?: "signin" | "signup") => void;
 }
 
-export function Navbar({ auth, quota, onOpenAuth }: NavbarProps) {
+export function Navbar({ auth, quota, isPro = false, onOpenAuth }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState("");
 
@@ -91,7 +92,10 @@ export function Navbar({ auth, quota, onOpenAuth }: NavbarProps) {
                     {quota.remaining}/{quota.limit} analyses left
                   </span>
                 )}
-                <span className="text-sm text-charcoal/70 max-w-[140px] truncate">
+                <span className="flex items-center gap-1.5 text-sm text-charcoal/70 max-w-[160px] truncate">
+                  {isPro && (
+                    <span title="Wrex Pro" className="text-accent text-base leading-none">👑</span>
+                  )}
                   {auth.user.email}
                 </span>
                 <button
@@ -154,7 +158,10 @@ export function Navbar({ auth, quota, onOpenAuth }: NavbarProps) {
               ))}
               {auth.user ? (
                 <>
-                  <span className="text-sm text-charcoal/60 truncate">{auth.user.email}</span>
+                  <span className="flex items-center gap-1.5 text-sm text-charcoal/60 truncate">
+                  {isPro && <span title="Wrex Pro" className="text-accent">👑</span>}
+                  {auth.user.email}
+                </span>
                   {quota && (
                     <span className="text-xs text-charcoal/40">{quota.remaining}/{quota.limit} analyses left today</span>
                   )}

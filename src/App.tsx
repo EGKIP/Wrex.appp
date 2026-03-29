@@ -9,6 +9,7 @@ import { Navbar } from "./components/Navbar";
 import { Toaster } from "./components/Toaster";
 import { useToast } from "./context/toast";
 import { useAuth } from "./hooks/useAuth";
+import { useProStatus } from "./hooks/useProStatus";
 import type { QuotaInfo } from "./types";
 import type { User } from "@supabase/supabase-js";
 
@@ -18,13 +19,24 @@ function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<"signin" | "signup">("signin");
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
+  const { isPro } = useProStatus(auth.session?.access_token);
 
-  // Handle Supabase email-confirmation redirect (?type=signup or #access_token in URL)
+  // Handle URL params on load (Supabase auth callbacks + Stripe redirects)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const hash = new URLSearchParams(window.location.hash.replace("#", "?"));
     const type = params.get("type") || hash.get("type");
     const hasToken = hash.get("access_token");
+    const pro = params.get("pro");
+
+    // Stripe checkout result
+    if (pro === "success") {
+      window.history.replaceState(null, "", window.location.pathname);
+      setTimeout(() => toast("You're now a Pro member! 🎉 Enjoy unlimited analyses.", "success"), 400);
+    } else if (pro === "cancel") {
+      window.history.replaceState(null, "", window.location.pathname);
+      setTimeout(() => toast("Upgrade cancelled — you can upgrade any time.", "info"), 400);
+    }
 
     if (type === "signup" || (hasToken && type !== "recovery")) {
       // Clean up the URL so the params don't persist on refresh
@@ -81,12 +93,13 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white text-charcoal">
-      <Navbar auth={auth} quota={quota} onOpenAuth={openAuth} />
+      <Navbar auth={auth} quota={quota} isPro={isPro} onOpenAuth={openAuth} />
       <main>
         <Hero onTryFree={() => openAuth("signup")} />
         <HowItWorks />
         <AnalyzerSection
           accessToken={auth.session?.access_token ?? null}
+          isPro={isPro}
           onQuotaUpdate={setQuota}
           onAuthRequired={() => openAuth("signup")}
         />

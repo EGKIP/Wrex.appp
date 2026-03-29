@@ -43,6 +43,15 @@ class Settings(BaseSettings):
     def supabase_configured(self) -> bool:
         return bool(self.supabase_url and self.supabase_service_role_key)
 
+    # ── Stripe ──────────────────────────────────────────────────────────────────
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_id: str = ""
+
+    @property
+    def stripe_configured(self) -> bool:
+        return bool(self.stripe_secret_key and not self.stripe_secret_key.endswith("REPLACE_ME"))
+
     # ── Derived helpers ────────────────────────────────────────────────────────
     @field_validator("log_level")
     @classmethod

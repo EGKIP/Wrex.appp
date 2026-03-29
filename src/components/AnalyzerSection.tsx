@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ApiError, analyzeText, getHistory } from "../lib/api";
+import { ApiError, analyzeText, createCheckoutSession, getHistory } from "../lib/api";
 import { useToast } from "../context/toast";
 import type { AnalyzeResponse, QuotaInfo, SubmissionRecord } from "../types";
 import { HistoryPanel } from "./HistoryPanel";
@@ -13,17 +13,19 @@ function countWords(text: string) {
 
 interface AnalyzerSectionProps {
   accessToken?: string | null;
+  isPro?: boolean;
   onQuotaUpdate?: (quota: QuotaInfo) => void;
   onAuthRequired?: () => void;
 }
 
-export function AnalyzerSection({ accessToken, onQuotaUpdate, onAuthRequired }: AnalyzerSectionProps) {
+export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onAuthRequired }: AnalyzerSectionProps) {
   const { toast } = useToast();
   const [text, setText] = useState(SAMPLE_TEXT);
   const [rubric, setRubric] = useState("");
   const [showRubric, setShowRubric] = useState(false);
   const [results, setResults] = useState<AnalyzeResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
   const [error, setError] = useState("");
   const [quotaHit, setQuotaHit] = useState<"anon" | "auth" | null>(null);
   const [history, setHistory] = useState<SubmissionRecord[]>([]);
@@ -101,6 +103,18 @@ export function AnalyzerSection({ accessToken, onQuotaUpdate, onAuthRequired }: 
     }
     setResults(null);
     window.scrollTo({ top: document.getElementById("analyzer")?.offsetTop ?? 0, behavior: "smooth" });
+  }
+
+  async function handleUpgrade() {
+    if (!accessToken) { onAuthRequired?.(); return; }
+    setUpgrading(true);
+    try {
+      const { url } = await createCheckoutSession(accessToken);
+      window.location.href = url;
+    } catch {
+      toast("Could not start checkout. Please try again.", "error");
+      setUpgrading(false);
+    }
   }
 
   return (
@@ -191,12 +205,30 @@ export function AnalyzerSection({ accessToken, onQuotaUpdate, onAuthRequired }: 
                 </button>
               </div>
             )}
-            {quotaHit === "auth" && (
+            {quotaHit === "auth" && !isPro && (
               <div className="mt-4 rounded-input border border-accent/40 bg-accent/10 px-4 py-3 text-sm">
                 <p className="font-semibold text-navy">You've used all 3 analyses for today.</p>
                 <p className="mt-1 text-charcoal/70">
-                  Your quota resets at midnight. Come back then — or explore Pro for unlimited access.
+                  Upgrade to <strong>Wrex Pro</strong> for unlimited analyses, priority processing, and more.
                 </p>
+                <button
+                  type="button"
+                  onClick={handleUpgrade}
+                  disabled={upgrading}
+                  className="btn-shine mt-3 flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {upgrading ? (
+                    <>
+                      <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                      Redirecting…
+                    </>
+                  ) : (
+                    <>👑 Upgrade to Pro — $9/month</>
+                  )}
+                </button>
               </div>
             )}
             {error ? (
