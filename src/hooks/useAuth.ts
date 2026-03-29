@@ -10,6 +10,7 @@ export interface AuthState {
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   error: string | null;
   clearError: () => void;
 }
@@ -63,6 +64,15 @@ export function useAuth(): AuthState {
     await supabase.auth.signOut();
   }
 
+  async function signInWithGoogle(): Promise<void> {
+    setError(null);
+    const { error: authError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    });
+    if (authError) setError(authError.message);
+  }
+
   async function resetPassword(email: string): Promise<void> {
     setError(null);
     const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
@@ -79,6 +89,6 @@ export function useAuth(): AuthState {
     setError(null);
   }
 
-  return { session, user, loading, signIn, signUp, signOut, resetPassword, error, clearError };
+  return { session, user, loading, signIn, signUp, signOut, resetPassword, signInWithGoogle, error, clearError };
 }
 

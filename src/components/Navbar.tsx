@@ -12,10 +12,11 @@ const NAV_LINKS = [
 interface NavbarProps {
   auth: AuthState;
   quota: QuotaInfo | null;
+  isPro?: boolean;
   onOpenAuth: (tab?: "signin" | "signup") => void;
 }
 
-export function Navbar({ auth, quota, onOpenAuth }: NavbarProps) {
+export function Navbar({ auth, quota, isPro = false, onOpenAuth }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState("");
 
@@ -34,8 +35,29 @@ export function Navbar({ auth, quota, onOpenAuth }: NavbarProps) {
     return () => observers.forEach((o) => o?.disconnect());
   }, []);
 
+  // Quota progress bar: pct of daily quota consumed (0-100)
+  const quotaPct = quota?.is_authenticated
+    ? Math.round((quota.used / quota.limit) * 100)
+    : null;
+
   return (
     <header className="sticky top-0 z-20 px-4 pt-3 pb-1.5 lg:px-6">
+      {/* Quota progress bar — thin strip above the pill, only for logged-in free users */}
+      {quotaPct !== null && (
+        <div className="absolute inset-x-0 top-0 h-[3px] overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-700 ease-out"
+            style={{
+              width: `${quotaPct}%`,
+              background: quotaPct >= 100
+                ? "#ef4444"
+                : quotaPct >= 66
+                ? "#f59e0b"
+                : "#10b981",
+            }}
+          />
+        </div>
+      )}
       <div className="mx-auto max-w-7xl">
         <div className="glass-nav flex items-center justify-between px-5 py-3">
           <Brand />
@@ -58,11 +80,22 @@ export function Navbar({ auth, quota, onOpenAuth }: NavbarProps) {
             {auth.user ? (
               <>
                 {quota && (
-                  <span className="text-xs font-medium text-charcoal/50">
-                    {quota.remaining}/{quota.limit} left today
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      quota.remaining === 0
+                        ? "bg-red-100 text-red-600"
+                        : quota.remaining === 1
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-emerald-100 text-emerald-700"
+                    }`}
+                  >
+                    {quota.remaining}/{quota.limit} analyses left
                   </span>
                 )}
-                <span className="text-sm text-charcoal/70 max-w-[140px] truncate">
+                <span className="flex items-center gap-1.5 text-sm text-charcoal/70 max-w-[160px] truncate">
+                  {isPro && (
+                    <span title="Wrex Pro" className="text-accent text-base leading-none">👑</span>
+                  )}
                   {auth.user.email}
                 </span>
                 <button
@@ -125,7 +158,10 @@ export function Navbar({ auth, quota, onOpenAuth }: NavbarProps) {
               ))}
               {auth.user ? (
                 <>
-                  <span className="text-sm text-charcoal/60 truncate">{auth.user.email}</span>
+                  <span className="flex items-center gap-1.5 text-sm text-charcoal/60 truncate">
+                  {isPro && <span title="Wrex Pro" className="text-accent">👑</span>}
+                  {auth.user.email}
+                </span>
                   {quota && (
                     <span className="text-xs text-charcoal/40">{quota.remaining}/{quota.limit} analyses left today</span>
                   )}

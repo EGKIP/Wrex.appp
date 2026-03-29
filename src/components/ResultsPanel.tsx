@@ -3,6 +3,7 @@ import type { AnalyzeResponse, CriterionResult, RubricMatchResult } from "../typ
 type ResultsPanelProps = {
   results: AnalyzeResponse | null;
   loading?: boolean;
+  isPro?: boolean;
 };
 
 function confidenceTone(confidence: AnalyzeResponse["confidence"]) {
@@ -148,7 +149,7 @@ function SkeletonPanel() {
   );
 }
 
-export function ResultsPanel({ results, loading = false }: ResultsPanelProps) {
+export function ResultsPanel({ results, loading = false, isPro = false }: ResultsPanelProps) {
   if (loading) return <SkeletonPanel />;
 
   if (!results) {
@@ -268,18 +269,20 @@ export function ResultsPanel({ results, loading = false }: ResultsPanelProps) {
       {/* Rubric alignment */}
       {results.rubric_result && <RubricPanel rubric={results.rubric_result} />}
 
-      {/* Pro CTA — subtle */}
-      <section className="rounded-modal border border-border-base bg-canvas p-5">
-        <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/45">Pro</p>
-        <h4 className="font-heading mt-2 text-base font-semibold text-navy">{results.pro_prompt.title}</h4>
-        <p className="mt-2 text-sm leading-6 text-charcoal/65">{results.pro_prompt.message}</p>
-        <a
-          href="#faq"
-          className="btn-shine mt-4 inline-block rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2.5 text-sm font-bold text-navy transition hover:shadow-glow hover:scale-[1.02]"
-        >
-          {results.pro_prompt.cta_label}
-        </a>
-      </section>
+      {/* Pro CTA — only shown to free users */}
+      {!isPro && (
+        <section className="rounded-modal border border-border-base bg-canvas p-5">
+          <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/45">Pro</p>
+          <h4 className="font-heading mt-2 text-base font-semibold text-navy">{results.pro_prompt.title}</h4>
+          <p className="mt-2 text-sm leading-6 text-charcoal/65">{results.pro_prompt.message}</p>
+          <a
+            href="#upgrade"
+            className="btn-shine mt-4 inline-block rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2.5 text-sm font-bold text-navy transition hover:shadow-glow hover:scale-[1.02]"
+          >
+            {results.pro_prompt.cta_label}
+          </a>
+        </section>
+      )}
     </aside>
   );
 }
