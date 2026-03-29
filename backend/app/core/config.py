@@ -52,6 +52,14 @@ class Settings(BaseSettings):
     def stripe_configured(self) -> bool:
         return bool(self.stripe_secret_key and not self.stripe_secret_key.endswith("REPLACE_ME"))
 
+    # ── OpenAI ──────────────────────────────────────────────────────────────────
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
+
+    @property
+    def openai_configured(self) -> bool:
+        return bool(self.openai_api_key and not self.openai_api_key.endswith("REPLACE_ME"))
+
     # ── Derived helpers ────────────────────────────────────────────────────────
     @field_validator("log_level")
     @classmethod

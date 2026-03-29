@@ -1,7 +1,22 @@
-import { useEffect, useState } from "react";
-import { ApiError, analyzeText, createCheckoutSession, getHistory } from "../lib/api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ApiError,
+  analyzeText,
+  checkGrammar,
+  createCheckoutSession,
+  getHistory,
+  proHumanize,
+  proImprove,
+} from "../lib/api";
 import { useToast } from "../context/toast";
-import type { AnalyzeResponse, QuotaInfo, SubmissionRecord } from "../types";
+import type {
+  AnalyzeResponse,
+  GrammarMatch,
+  HumanizeResponse,
+  ImproveSuggestion,
+  QuotaInfo,
+  SubmissionRecord,
+} from "../types";
 import { HistoryPanel } from "./HistoryPanel";
 import { ResultsPanel } from "./ResultsPanel";
 
@@ -32,6 +47,58 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const wordCount = countWords(text);
+
+  // ── Grammar check state ────────────────────────────────────────────────────
+  const [grammarMatches, setGrammarMatches] = useState<GrammarMatch[]>([]);
+  const [grammarLoading, setGrammarLoading] = useState(false);
+  const grammarTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounce: run grammar check 900ms after the user stops typing (min 50 chars)
+  useEffect(() => {
+    if (grammarTimer.current) clearTimeout(grammarTimer.current);
+    if (text.trim().length < 50) { setGrammarMatches([]); return; }
+    grammarTimer.current = setTimeout(async () => {
+      setGrammarLoading(true);
+      try {
+        const result = await checkGrammar(text);
+        setGrammarMatches(result.matches);
+      } catch {
+        // non-critical — silently skip
+      } finally {
+        setGrammarLoading(false);
+      }
+    }, 900);
+    return () => { if (grammarTimer.current) clearTimeout(grammarTimer.current); };
+  }, [text]);
+
+  // ── Pro AI state ───────────────────────────────────────────────────────────
+  const [proTab, setProTab] = useState<"improve" | "humanize">("improve");
+  const [improveResult, setImproveResult] = useState<ImproveSuggestion[] | null>(null);
+  const [humanizeResult, setHumanizeResult] = useState<HumanizeResponse | null>(null);
+  const [proLoading, setProLoading] = useState(false);
+  const [proError, setProError] = useState("");
+
+  const runProImprove = useCallback(async () => {
+    if (!accessToken) return;
+    setProLoading(true); setProError("");
+    try {
+      const res = await proImprove(text, rubric || undefined, accessToken);
+      setImproveResult(res.suggestions);
+    } catch (e) {
+      setProError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally { setProLoading(false); }
+  }, [accessToken, text, rubric]);
+
+  const runProHumanize = useCallback(async () => {
+    if (!accessToken) return;
+    setProLoading(true); setProError("");
+    try {
+      const res = await proHumanize(text, accessToken);
+      setHumanizeResult(res);
+    } catch (e) {
+      setProError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally { setProLoading(false); }
+  }, [accessToken, text]);
 
   async function fetchHistory() {
     if (!accessToken) return;
@@ -150,9 +217,53 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               placeholder="Paste your text here to analyze..."
               className="mt-3 min-h-[300px] w-full rounded-input border border-border-base bg-white px-4 py-3 text-base leading-7 text-charcoal placeholder:text-charcoal/30 outline-none transition focus:border-accent focus:ring-[3px] focus:ring-accent/15"
             />
-            <div className="mt-2 flex items-center text-xs text-charcoal/40">
+            <div className="mt-2 flex items-center justify-between text-xs text-charcoal/40">
               <span>{wordCount} words</span>
+              {grammarLoading && <span className="animate-pulse">Checking grammar…</span>}
+              {!grammarLoading && grammarMatches.length > 0 && (
+                <span>
+                  <span className="font-semibold text-danger">
+                    {grammarMatches.filter((m) => m.match_type === "error").length} errors
+                  </span>
+                  {" · "}
+                  <span className="font-semibold text-warning">
+                    {grammarMatches.filter((m) => m.match_type === "suggestion").length} suggestions
+                  </span>
+                </span>
+              )}
             </div>
+
+            {/* Grammar matches list */}
+            {grammarMatches.length > 0 && (
+              <div className="mt-3 max-h-[200px] space-y-2 overflow-y-auto rounded-input border border-border-base bg-mist p-3">
+                {grammarMatches.slice(0, 12).map((m, i) => (
+                  <div key={i} className="flex items-start gap-2.5 text-sm">
+                    <span
+                      className="mt-1 h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: m.match_type === "error" ? "#EF4444" : "#F59E0B" }}
+                    />
+                    <div className="min-w-0">
+                      <p className="leading-snug text-charcoal">{m.message}</p>
+                      {m.replacements.length > 0 && (
+                        <p className="mt-0.5 text-xs text-charcoal/50">
+                          Suggest:{" "}
+                          {m.replacements.slice(0, 3).map((r, ri) => (
+                            <span key={ri} className="mr-1 rounded bg-white px-1 py-0.5 font-mono text-[11px] text-navy shadow-sm">
+                              {r}
+                            </span>
+                          ))}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {grammarMatches.length > 12 && (
+                  <p className="pt-1 text-center text-xs text-charcoal/40">
+                    +{grammarMatches.length - 12} more issues
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Rubric toggle */}
             <div className="mt-5 border-t border-border-base pt-5">
@@ -261,6 +372,137 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
 
           <ResultsPanel results={results} loading={loading} />
         </div>
+
+        {/* Pro AI panel — shown below grid when results exist */}
+        {results && (
+          <div className="mt-8 rounded-modal border border-border-base bg-white p-6 shadow-soft sm:p-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">👑</span>
+                <h3 className="font-heading text-base font-semibold text-navy">Pro writing tools</h3>
+              </div>
+              {/* Tab switcher */}
+              {isPro && (
+                <div className="flex rounded-input border border-border-base text-sm">
+                  {(["improve", "humanize"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => { setProTab(tab); setImproveResult(null); setHumanizeResult(null); setProError(""); }}
+                      className={`px-4 py-1.5 font-medium capitalize transition first:rounded-l-input last:rounded-r-input ${
+                        proTab === tab
+                          ? "bg-navy text-white"
+                          : "text-charcoal/60 hover:bg-mist"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {!isPro ? (
+              /* Locked state for free users */
+              <div className="mt-5 rounded-input border border-dashed border-accent/40 bg-accent/5 p-5 text-center">
+                <p className="text-sm font-semibold text-navy">Unlock AI-powered rewrites</p>
+                <p className="mt-2 text-sm text-charcoal/65">
+                  Pro members can get sentence-level improvement suggestions and full humanized rewrites
+                  aligned to their rubric — powered by GPT-4o mini.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleUpgrade}
+                  disabled={upgrading}
+                  className="btn-shine mt-4 inline-flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-6 py-2.5 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-50"
+                >
+                  {upgrading ? "Redirecting…" : "👑 Upgrade to Pro — $9/month"}
+                </button>
+              </div>
+            ) : (
+              /* Pro content */
+              <div className="mt-5">
+                {proTab === "improve" && (
+                  <>
+                    <p className="mb-4 text-sm text-charcoal/65">
+                      Get sentence-level suggestions to strengthen your writing and better address your rubric.
+                    </p>
+                    {!improveResult && (
+                      <button
+                        type="button"
+                        onClick={runProImprove}
+                        disabled={proLoading}
+                        className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2.5 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-40"
+                      >
+                        {proLoading ? (
+                          <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Analyzing…</>
+                        ) : "✨ Get improvement suggestions"}
+                      </button>
+                    )}
+                    {improveResult && (
+                      <div className="space-y-4">
+                        {improveResult.map((s, i) => (
+                          <div key={i} className="rounded-input border border-border-base bg-mist p-4">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-charcoal/45">Original</p>
+                            <p className="mt-1 text-sm leading-6 text-charcoal">{s.sentence}</p>
+                            <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-warning">Issue</p>
+                            <p className="mt-1 text-sm leading-6 text-charcoal/70">{s.issue}</p>
+                            <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-success">Rewrite</p>
+                            <p className="mt-1 text-sm leading-6 text-charcoal">{s.rewrite}</p>
+                          </div>
+                        ))}
+                        <button type="button" onClick={() => setImproveResult(null)} className="text-xs text-charcoal/40 hover:underline">
+                          Run again
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {proTab === "humanize" && (
+                  <>
+                    <p className="mb-4 text-sm text-charcoal/65">
+                      Rewrite your text to sound more natural and varied — reducing detectable AI patterns.
+                    </p>
+                    {!humanizeResult && (
+                      <button
+                        type="button"
+                        onClick={runProHumanize}
+                        disabled={proLoading}
+                        className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2.5 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-40"
+                      >
+                        {proLoading ? (
+                          <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Rewriting…</>
+                        ) : "✨ Humanize my text"}
+                      </button>
+                    )}
+                    {humanizeResult && (
+                      <div className="space-y-4">
+                        <div className="rounded-input border border-success/30 bg-success/5 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-wider text-success">Changes made</p>
+                          <p className="mt-1 text-sm text-charcoal/70">{humanizeResult.changes_summary}</p>
+                        </div>
+                        <div className="rounded-input border border-border-base bg-mist p-4">
+                          <p className="text-xs font-semibold uppercase tracking-wider text-charcoal/45 mb-2">Rewritten text</p>
+                          <p className="whitespace-pre-wrap text-sm leading-7 text-charcoal">{humanizeResult.rewritten}</p>
+                        </div>
+                        <button type="button" onClick={() => setHumanizeResult(null)} className="text-xs text-charcoal/40 hover:underline">
+                          Run again
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {proError && (
+                  <p className="mt-4 rounded-input border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+                    {proError}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* History panel — shown whenever user is logged in */}
         {accessToken && (

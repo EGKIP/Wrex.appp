@@ -1,9 +1,12 @@
 """
-Pro feature routes — Stripe checkout, webhook, and status.
+Pro feature routes — Stripe checkout, webhook, status, and AI writing tools.
 
-POST /pro/checkout  — create a Stripe Checkout session (auth required)
-POST /pro/webhook   — handle Stripe events (no auth, uses Stripe signature)
-GET  /pro/status    — return { is_pro: bool } for the current user
+POST /pro/checkout       — create a Stripe Checkout session (auth required)
+POST /pro/webhook        — handle Stripe events (no auth, uses Stripe signature)
+GET  /pro/status         — return { is_pro: bool } for the current user
+POST /pro/improve        — GPT-4o mini improvement suggestions (Pro only)
+POST /pro/humanize       — GPT-4o mini humanise rewrite (Pro only)
+POST /pro/rubric-rewrite — GPT-4o mini rewrite to hit rubric criteria (Pro only)
 """
 
 from __future__ import annotations
@@ -15,7 +18,15 @@ from pydantic import BaseModel
 from app.core.auth import AuthUser, get_required_user
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.schemas.common import MessageResponse
+from app.schemas.pro import (
+    HumanizeRequest,
+    HumanizeResponse,
+    ImproveRequest,
+    ImproveResponse,
+    ImproveSuggestion,
+    RubricRewriteRequest,
+    RubricRewriteResponse,
+)
 
 router = APIRouter(prefix="/pro", tags=["pro"])
 logger = get_logger(__name__)
@@ -159,28 +170,71 @@ def get_pro_status(
     return ProStatusResponse(is_pro=is_pro)
 
 
-# ── Legacy placeholder stubs (kept for backward compat) ───────────────────────
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
-@router.post("/improve", response_model=MessageResponse)
-def pro_improve_placeholder() -> MessageResponse:
-    return MessageResponse(message="Pro writing tools are coming soon.")
-
-
-@router.post("/humanize", response_model=MessageResponse)
-def pro_humanize_placeholder() -> MessageResponse:
-    return MessageResponse(message="Humanising support is planned for a future phase.")
-
-
-@router.post("/grammar-check", response_model=MessageResponse)
-def pro_grammar_placeholder() -> MessageResponse:
-    return MessageResponse(message="Grammar guidance is planned for a future phase.")
-
-
-@router.post("/rubric-rewrite", response_model=MessageResponse)
-def pro_rubric_placeholder() -> MessageResponse:
-    return MessageResponse(message="Rubric-based writing help is planned for a future phase.")
+def _require_pro(user: AuthUser) -> None:
+    """Raise 403 if the user is not a Pro subscriber."""
+    sb = _supabase()
+    profile = (
+        sb.table("profiles")
+        .select("is_pro")
+        .eq("id", user.id)
+        .maybe_single()
+        .execute()
+    )
+    if not (profile.data and profile.data.get("is_pro")):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This feature requires a Wrex Pro subscription.",
+        )
 
 
-@router.post("/templates", response_model=MessageResponse)
-def pro_templates_placeholder() -> MessageResponse:
-    return MessageResponse(message="Curated writing templates are planned for a future phase.")
+def _require_openai() -> None:
+    """Raise 503 if the OpenAI key has not been configured yet."""
+    if not settings.openai_configured:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI writing features are not yet configured. Please add your OpenAI API key.",
+        )
+
+
+# ── Pro AI endpoints ──────────────────────────────────────────────────────────
+
+@router.post("/improve", response_model=ImproveResponse)
+def pro_improve(
+    payload: ImproveRequest,
+    user: AuthUser = Depends(get_required_user),
+) -> ImproveResponse:
+    """Return sentence-level improvement suggestions (Pro only, GPT-4o mini)."""
+    _require_pro(user)
+    _require_openai()
+
+    from app.services.pro_writer.writing_service import get_improve_suggestions
+    suggestions = get_improve_suggestions(payload.text, payload.rubric)
+    return ImproveResponse(suggestions=suggestions)
+
+
+@router.post("/humanize", response_model=HumanizeResponse)
+def pro_humanize(
+    payload: HumanizeRequest,
+    user: AuthUser = Depends(get_required_user),
+) -> HumanizeResponse:
+    """Rewrite text to sound more natural/human (Pro only, GPT-4o mini)."""
+    _require_pro(user)
+    _require_openai()
+
+    from app.services.pro_writer.humanizer import humanize_text
+    return humanize_text(payload.text)
+
+
+@router.post("/rubric-rewrite", response_model=RubricRewriteResponse)
+def pro_rubric_rewrite(
+    payload: RubricRewriteRequest,
+    user: AuthUser = Depends(get_required_user),
+) -> RubricRewriteResponse:
+    """Rewrite text to address rubric criteria (Pro only, GPT-4o mini)."""
+    _require_pro(user)
+    _require_openai()
+
+    from app.services.pro_writer.rubric_rewriter import rewrite_for_rubric
+    return rewrite_for_rubric(payload.text, payload.rubric)

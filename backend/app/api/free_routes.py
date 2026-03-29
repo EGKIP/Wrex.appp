@@ -1,12 +1,14 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
 
 from app.core.auth import AuthUser, get_optional_user
 from app.core.logging import get_logger
 from app.core.usage import QuotaInfo, check_quota
 from app.schemas.free import AnalyzeRequest, AnalyzeResponse, QuotaInfo as QuotaInfoSchema
 from app.services.free_detector.detector import analyze_document
+from app.services.pro_writer.grammar_service import check_grammar, GrammarMatch as GrammarMatchModel
 
 router = APIRouter(tags=["free"])
 logger = get_logger(__name__)
@@ -64,3 +66,45 @@ def analyze_text(
         _save_submission(user.id, payload, result)
 
     return result
+
+
+# ── Grammar check (free tier — LanguageTool, no key required) ─────────────────
+
+class GrammarMatchOut(BaseModel):
+    offset: int
+    length: int
+    message: str
+    replacements: list[str]
+    match_type: str   # "error" | "suggestion"
+    rule_id: str
+
+
+class GrammarCheckRequest(BaseModel):
+    text: str
+    language: str = "en-US"
+
+
+class GrammarCheckResponse(BaseModel):
+    matches: list[GrammarMatchOut]
+    language: str
+
+
+@router.post("/grammar-check", response_model=GrammarCheckResponse)
+def grammar_check(payload: GrammarCheckRequest) -> GrammarCheckResponse:
+    """
+    Proxy LanguageTool to return spelling and grammar matches.
+    Available to all users (free tier). No API key needed.
+    """
+    raw_matches = check_grammar(payload.text, payload.language)
+    out = [
+        GrammarMatchOut(
+            offset=m.offset,
+            length=m.length,
+            message=m.message,
+            replacements=m.replacements,
+            match_type=m.match_type,
+            rule_id=m.rule_id,
+        )
+        for m in raw_matches
+    ]
+    return GrammarCheckResponse(matches=out, language=payload.language)

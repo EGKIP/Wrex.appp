@@ -1,4 +1,11 @@
-import type { AnalyzeResponse, SubmissionList, WaitlistResponse } from "../types";
+import type {
+  AnalyzeResponse,
+  GrammarCheckResponse,
+  HumanizeResponse,
+  ImproveResponse,
+  SubmissionList,
+  WaitlistResponse,
+} from "../types";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -99,4 +106,47 @@ export async function createCheckoutSession(accessToken: string): Promise<{ url:
     },
   });
   return handleResponse<{ url: string }>(response);
+}
+
+export async function checkGrammar(
+  text: string,
+  language = "en-US",
+): Promise<GrammarCheckResponse> {
+  const response = await fetch(`${API_BASE_URL}/grammar-check`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, language }),
+  });
+  return handleResponse<GrammarCheckResponse>(response);
+}
+
+export async function proImprove(
+  text: string,
+  rubric: string | undefined,
+  accessToken: string,
+): Promise<ImproveResponse> {
+  const response = await fetch(`${API_BASE_URL}/pro/improve`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ text, rubric: rubric ?? null }),
+  });
+  return handleResponse<ImproveResponse>(response);
+}
+
+export async function proHumanize(
+  text: string,
+  accessToken: string,
+): Promise<HumanizeResponse> {
+  const response = await fetch(`${API_BASE_URL}/pro/humanize`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ text }),
+  });
+  return handleResponse<HumanizeResponse>(response);
 }

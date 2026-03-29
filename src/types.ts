@@ -2,6 +2,37 @@ export type WaitlistResponse = {
   message: string;
 };
 
+// ── Grammar ──────────────────────────────────────────────────────────────────
+export type GrammarMatch = {
+  offset: number;
+  length: number;
+  message: string;
+  replacements: string[];
+  match_type: "error" | "suggestion";
+  rule_id: string;
+};
+
+export type GrammarCheckResponse = {
+  matches: GrammarMatch[];
+  language: string;
+};
+
+// ── Pro AI ────────────────────────────────────────────────────────────────────
+export type ImproveSuggestion = {
+  sentence: string;
+  issue: string;
+  rewrite: string;
+};
+
+export type ImproveResponse = {
+  suggestions: ImproveSuggestion[];
+};
+
+export type HumanizeResponse = {
+  rewritten: string;
+  changes_summary: string;
+};
+
 export type SubmissionRecord = {
   id: string;
   user_id: string;
