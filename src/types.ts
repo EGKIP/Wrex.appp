@@ -33,6 +33,11 @@ export type HumanizeResponse = {
   changes_summary: string;
 };
 
+export type RubricRewriteResponse = {
+  rewritten: string;
+  criteria_addressed: string[];
+};
+
 export type SubmissionRecord = {
   id: string;
   user_id: string;

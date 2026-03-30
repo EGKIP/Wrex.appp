@@ -3,6 +3,7 @@ import type {
   GrammarCheckResponse,
   HumanizeResponse,
   ImproveResponse,
+  RubricRewriteResponse,
   SubmissionList,
   WaitlistResponse,
 } from "../types";
@@ -149,4 +150,20 @@ export async function proHumanize(
     body: JSON.stringify({ text }),
   });
   return handleResponse<HumanizeResponse>(response);
+}
+
+export async function proRubricRewrite(
+  text: string,
+  rubric: string,
+  accessToken: string,
+): Promise<RubricRewriteResponse> {
+  const response = await fetch(`${API_BASE_URL}/pro/rubric-rewrite`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ text, rubric }),
+  });
+  return handleResponse<RubricRewriteResponse>(response);
 }

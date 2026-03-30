@@ -12,6 +12,7 @@ from app.api.free_routes import router as free_router
 from app.api.history_routes import router as history_router
 from app.api.pro_routes import router as pro_router
 from app.api.waitlist_routes import router as waitlist_router
+from app.api.webhook_routes import router as webhook_router
 from app.core.config import settings
 from app.core.limiter import limiter
 from app.core.logging import configure_logging, get_logger
@@ -80,6 +81,7 @@ def create_app() -> FastAPI:
     application.include_router(history_router)
     application.include_router(waitlist_router)
     application.include_router(pro_router)
+    application.include_router(webhook_router)
 
     return application
 

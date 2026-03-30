@@ -7,6 +7,7 @@ import {
   getHistory,
   proHumanize,
   proImprove,
+  proRubricRewrite,
 } from "../lib/api";
 import { useToast } from "../context/toast";
 import type {
@@ -15,6 +16,7 @@ import type {
   HumanizeResponse,
   ImproveSuggestion,
   QuotaInfo,
+  RubricRewriteResponse,
   SubmissionRecord,
 } from "../types";
 import { HistoryPanel } from "./HistoryPanel";
@@ -25,6 +27,29 @@ const SAMPLE_TEXT = `In today's academic environment, technology has become an i
 function countWords(text: string) {
   return text.trim() ? text.trim().split(/\s+/).length : 0;
 }
+
+const RUBRIC_TEMPLATES: { label: string; value: string }[] = [
+  {
+    label: "5-Paragraph Essay",
+    value:
+      "1. Clear introductory paragraph with a thesis statement\n2. First body paragraph with supporting evidence\n3. Second body paragraph with supporting evidence\n4. Third body paragraph with supporting evidence\n5. Concluding paragraph that restates the thesis",
+  },
+  {
+    label: "Argumentative Essay",
+    value:
+      "1. Present a clear, debatable claim or thesis\n2. Provide at least two pieces of evidence supporting the argument\n3. Address and refute at least one counterargument\n4. Use credible, cited sources\n5. Conclude with a persuasive summary and call to action",
+  },
+  {
+    label: "Lab Report",
+    value:
+      "1. State the hypothesis clearly in the introduction\n2. Describe the experimental method in sufficient detail to be reproducible\n3. Present results with appropriate data tables or figures\n4. Discuss results in relation to the hypothesis\n5. Conclude with limitations and suggestions for further research",
+  },
+  {
+    label: "Literary Analysis",
+    value:
+      "1. Introduce the literary work and author with relevant context\n2. State a focused analytical thesis\n3. Analyze at least two specific literary devices (e.g., symbolism, tone, imagery)\n4. Support claims with direct textual evidence and quotations\n5. Synthesize the analysis in a concluding paragraph",
+  },
+];
 
 interface AnalyzerSectionProps {
   accessToken?: string | null;
@@ -43,8 +68,11 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const [upgrading, setUpgrading] = useState(false);
   const [error, setError] = useState("");
   const [quotaHit, setQuotaHit] = useState<"anon" | "auth" | null>(null);
+  const [quota, setQuota] = useState<QuotaInfo | null>(null);
+  const [resetCountdown, setResetCountdown] = useState("");
   const [history, setHistory] = useState<SubmissionRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [showRubricNudge, setShowRubricNudge] = useState(false);
 
   const wordCount = countWords(text);
 
@@ -71,12 +99,61 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     return () => { if (grammarTimer.current) clearTimeout(grammarTimer.current); };
   }, [text]);
 
+  // ── Midnight reset countdown ───────────────────────────────────────────────
+  // Formats the time remaining until the next local midnight as "Xh Ym"
+  useEffect(() => {
+    const quotaBlocked = accessToken && !isPro && quota?.remaining === 0;
+    if (!quotaBlocked) { setResetCountdown(""); return; }
+
+    function calcCountdown() {
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      const diffSec = Math.floor((midnight.getTime() - now.getTime()) / 1000);
+      const h = Math.floor(diffSec / 3600);
+      const m = Math.floor((diffSec % 3600) / 60);
+      return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    }
+
+    setResetCountdown(calcCountdown());
+    const id = setInterval(() => setResetCountdown(calcCountdown()), 60_000);
+    return () => clearInterval(id);
+  }, [accessToken, isPro, quota]);
+
+  // ── Rubric nudge — shown once per session after 2 s ──────────────────────
+  useEffect(() => {
+    if (sessionStorage.getItem("wrex_rubric_nudge_seen")) return;
+    const show = setTimeout(() => setShowRubricNudge(true), 2000);
+    const hide = setTimeout(() => {
+      setShowRubricNudge(false);
+      sessionStorage.setItem("wrex_rubric_nudge_seen", "1");
+    }, 10000);
+    return () => { clearTimeout(show); clearTimeout(hide); };
+  }, []);
+
+  function dismissNudge() {
+    setShowRubricNudge(false);
+    sessionStorage.setItem("wrex_rubric_nudge_seen", "1");
+  }
+
   // ── Pro AI state ───────────────────────────────────────────────────────────
-  const [proTab, setProTab] = useState<"improve" | "humanize">("improve");
+  const proPanelRef = useRef<HTMLDivElement>(null);
+  const [proTab, setProTab] = useState<"improve" | "humanize" | "rubric-rewrite">("improve");
   const [improveResult, setImproveResult] = useState<ImproveSuggestion[] | null>(null);
   const [humanizeResult, setHumanizeResult] = useState<HumanizeResponse | null>(null);
+  const [rubricRewriteResult, setRubricRewriteResult] = useState<RubricRewriteResponse | null>(null);
   const [proLoading, setProLoading] = useState(false);
   const [proError, setProError] = useState("");
+  // Collapsed on mobile by default, always open on lg+
+  const [proCollapsed, setProCollapsed] = useState(() => window.innerWidth < 1024);
+
+  const switchProTab = useCallback((tab: "improve" | "humanize" | "rubric-rewrite") => {
+    setProTab(tab);
+    setImproveResult(null);
+    setHumanizeResult(null);
+    setRubricRewriteResult(null);
+    setProError("");
+  }, []);
 
   const runProImprove = useCallback(async () => {
     if (!accessToken) return;
@@ -100,6 +177,25 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     } finally { setProLoading(false); }
   }, [accessToken, text]);
 
+  const runProRubricRewrite = useCallback(async () => {
+    if (!accessToken) return;
+    setProLoading(true); setProError("");
+    try {
+      const res = await proRubricRewrite(text, rubric, accessToken);
+      setRubricRewriteResult(res);
+    } catch (e) {
+      setProError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally { setProLoading(false); }
+  }, [accessToken, text, rubric]);
+
+  /** Called from ResultsPanel rubric nudge button — scroll to Pro panel + switch tab */
+  const handleRubricRewriteNudge = useCallback(() => {
+    switchProTab("rubric-rewrite");
+    setTimeout(() => {
+      proPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }, [switchProTab]);
+
   async function fetchHistory() {
     if (!accessToken) return;
     setHistoryLoading(true);
@@ -119,6 +215,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
       void fetchHistory();
     } else {
       setHistory([]);
+      setQuota(null);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken]);
@@ -135,7 +232,10 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
         accessToken,
       );
       setResults(response);
-      if (response.quota) onQuotaUpdate?.(response.quota);
+      if (response.quota) {
+        onQuotaUpdate?.(response.quota);
+        setQuota(response.quota);
+      }
 
       // Toast on successful analysis save
       if (accessToken) {
@@ -235,7 +335,11 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
 
             {/* Grammar matches list */}
             {grammarMatches.length > 0 && (
-              <div className="mt-3 max-h-[200px] space-y-2 overflow-y-auto rounded-input border border-border-base bg-mist p-3">
+              <div className="mt-3">
+                <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-charcoal/40">
+                  Grammar &amp; spelling
+                </p>
+                <div className="max-h-[200px] space-y-2 overflow-y-auto rounded-input border border-border-base bg-mist p-3">
                 {grammarMatches.slice(0, 12).map((m, i) => (
                   <div key={i} className="flex items-start gap-2.5 text-sm">
                     <span
@@ -263,33 +367,68 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                   </p>
                 )}
               </div>
+              </div>
             )}
 
             {/* Rubric toggle */}
             <div className="mt-5 border-t border-border-base pt-5">
-              <button
-                type="button"
-                onClick={() => setShowRubric((v) => !v)}
-                className="flex items-center gap-2 text-sm font-medium text-charcoal/70 transition hover:text-navy"
-              >
-                <span
-                  className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition ${
-                    showRubric ? "border-accent bg-accent" : "border-border-base"
-                  }`}
+              <div className="relative inline-block">
+                <button
+                  type="button"
+                  onClick={() => { setShowRubric((v) => !v); dismissNudge(); }}
+                  className="flex items-center gap-2 text-sm font-medium text-charcoal/70 transition hover:text-navy"
                 >
-                  {showRubric && (
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                      <path d="M2 5l2 2 4-4" stroke="#0F172A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                </span>
-                Add rubric or assignment brief
-              </button>
+                  <span
+                    className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition ${
+                      showRubric ? "border-accent bg-accent" : "border-border-base"
+                    }`}
+                  >
+                    {showRubric && (
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M2 5l2 2 4-4" stroke="#0F172A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </span>
+                  Add rubric or assignment brief
+                </button>
+                {/* One-time onboarding nudge tooltip */}
+                {showRubricNudge && !showRubric && (
+                  <div
+                    role="tooltip"
+                    className="absolute bottom-full left-0 z-20 mb-2 flex w-max max-w-[240px] items-start gap-2 rounded-soft bg-navy px-3 py-2.5 text-xs text-white shadow-lg"
+                  >
+                    <span className="shrink-0 text-base leading-none">✨</span>
+                    <span>Add your rubric here — Wrex will check every criterion and rewrite your essay to hit them all.</span>
+                    <button
+                      type="button"
+                      onClick={dismissNudge}
+                      aria-label="Dismiss tip"
+                      className="ml-1 shrink-0 text-white/50 hover:text-white"
+                    >
+                      ✕
+                    </button>
+                    {/* Arrow */}
+                    <span className="absolute -bottom-1.5 left-4 h-3 w-3 rotate-45 bg-navy" />
+                  </div>
+                )}
+              </div>
               {showRubric && (
                 <div className="mt-3">
-                  <p className="mb-2 text-xs text-charcoal/50">
-                    Paste your marking criteria — one requirement per line.
-                  </p>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs text-charcoal/50">
+                      Paste your marking criteria — one requirement per line.
+                    </p>
+                    <select
+                      value=""
+                      onChange={(e) => { if (e.target.value) setRubric(e.target.value); }}
+                      className="rounded border border-border-base bg-white px-2 py-1 text-xs text-charcoal/70 outline-none transition focus:border-accent focus:ring-[2px] focus:ring-accent/15 cursor-pointer"
+                    >
+                      <option value="">Load template…</option>
+                      {RUBRIC_TEMPLATES.map((t) => (
+                        <option key={t.label} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                  </div>
                   <textarea
                     value={rubric}
                     onChange={(e) => setRubric(e.target.value)}
@@ -348,61 +487,123 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               </p>
             ) : null}
 
-            <div className="mt-6">
-              <button
-                type="button"
-                onClick={onAnalyze}
-                disabled={loading || text.trim().length < 10}
-                className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-8 py-3.5 text-base font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {loading ? (
-                  <>
-                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                    </svg>
-                    Analyzing…
-                  </>
-                ) : (
-                  "Analyze my text"
+            {/* Hard quota block — logged-in free user, 0 remaining */}
+            {accessToken && !isPro && quota?.remaining === 0 ? (
+              <div className="mt-6">
+                <button
+                  type="button"
+                  disabled
+                  className="flex cursor-not-allowed items-center gap-2 rounded-soft bg-charcoal/10 px-8 py-3.5 text-base font-bold text-charcoal/40"
+                >
+                  <svg className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+                  </svg>
+                  Limit reached
+                </button>
+                <p className="mt-2 text-xs text-charcoal/50 tabular-nums">
+                  Resets in <span className="font-semibold text-charcoal/70">{resetCountdown}</span>
+                  {" · "}
+                  <button
+                    type="button"
+                    onClick={handleUpgrade}
+                    disabled={upgrading}
+                    className="font-semibold text-accent underline-offset-2 hover:underline disabled:opacity-50"
+                  >
+                    {upgrading ? "Redirecting…" : "Upgrade for unlimited →"}
+                  </button>
+                </p>
+              </div>
+            ) : (
+              <div className="mt-6 flex flex-wrap items-center gap-4">
+                <button
+                  type="button"
+                  onClick={onAnalyze}
+                  disabled={loading || text.trim().length < 10}
+                  className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-8 py-3.5 text-base font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                      Analyzing…
+                    </>
+                  ) : (
+                    "Analyze my text"
+                  )}
+                </button>
+
+                {/* Usage counter — logged-in free users only */}
+                {accessToken && !isPro && quota && (
+                  <span className={`text-xs font-medium tabular-nums ${
+                    quota.remaining === 1 ? "text-warning" : "text-charcoal/50"
+                  }`}>
+                    {quota.used} / {quota.limit} analyses used today
+                    <span className="ml-1 text-charcoal/35">· {quota.remaining} left</span>
+                  </span>
                 )}
-              </button>
-            </div>
+              </div>
+            )}
           </div>
 
-          <ResultsPanel results={results} loading={loading} isPro={isPro} />
+          <ResultsPanel results={results} loading={loading} isPro={isPro} onRubricRewrite={handleRubricRewriteNudge} />
         </div>
 
         {/* Pro AI panel — shown below grid when results exist */}
         {results && (
-          <div className="mt-8 rounded-modal border border-border-base bg-white p-6 shadow-soft sm:p-8">
-            <div className="flex items-center justify-between">
+          <div ref={proPanelRef} className="mt-8 rounded-modal border border-border-base bg-white p-6 shadow-soft sm:p-8">
+            {/* Header row — tappable on mobile to collapse/expand */}
+            <div
+              className="flex cursor-pointer items-center justify-between lg:cursor-default"
+              onClick={() => setProCollapsed((v) => !v)}
+            >
               <div className="flex items-center gap-2">
                 <span className="text-lg">👑</span>
                 <h3 className="font-heading text-base font-semibold text-navy">Pro writing tools</h3>
               </div>
-              {/* Tab switcher */}
-              {isPro && (
-                <div className="flex rounded-input border border-border-base text-sm">
-                  {(["improve", "humanize"] as const).map((tab) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => { setProTab(tab); setImproveResult(null); setHumanizeResult(null); setProError(""); }}
-                      className={`px-4 py-1.5 font-medium capitalize transition first:rounded-l-input last:rounded-r-input ${
-                        proTab === tab
-                          ? "bg-navy text-white"
-                          : "text-charcoal/60 hover:bg-mist"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className="flex items-center gap-3">
+                {/* Tab switcher — only when expanded AND pro */}
+                {isPro && !proCollapsed && (
+                  <div
+                    className="flex rounded-input border border-border-base text-sm"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {(["improve", "humanize", "rubric-rewrite"] as const).map((tab) => {
+                      const labels: Record<string, { short: string; full: string }> = {
+                        improve: { short: "✨", full: "Improve" },
+                        humanize: { short: "🤝", full: "Humanize" },
+                        "rubric-rewrite": { short: "📝", full: "Rewrite" },
+                      };
+                      return (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => switchProTab(tab)}
+                          className={`px-3 py-1.5 font-medium transition first:rounded-l-input last:rounded-r-input sm:px-4 ${
+                            proTab === tab ? "bg-navy text-white" : "text-charcoal/60 hover:bg-mist"
+                          }`}
+                        >
+                          <span className="sm:hidden">{labels[tab].short}</span>
+                          <span className="hidden sm:inline">{labels[tab].full}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {/* Chevron — only on mobile */}
+                <svg
+                  className={`h-4 w-4 shrink-0 text-charcoal/40 transition-transform lg:hidden ${proCollapsed ? "" : "rotate-180"}`}
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </div>
             </div>
 
-            {!isPro ? (
+            {/* Collapsible body — hidden on mobile when collapsed */}
+            {!proCollapsed && (!isPro ? (
               /* Locked state for free users */
               <div className="mt-5 rounded-input border border-dashed border-accent/40 bg-accent/5 p-5 text-center">
                 <p className="text-sm font-semibold text-navy">Unlock AI-powered rewrites</p>
@@ -518,13 +719,95 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                   </>
                 )}
 
+                {proTab === "rubric-rewrite" && (
+                  <>
+                    {/* Guard: no rubric entered */}
+                    {(!showRubric || !rubric.trim()) ? (
+                      <div className="rounded-input border border-dashed border-border-base bg-mist p-5 text-center">
+                        <p className="text-sm font-semibold text-navy">No rubric added yet</p>
+                        <p className="mt-2 text-sm text-charcoal/65">
+                          Add your assignment criteria above to use the rubric rewrite feature.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowRubric(true);
+                            window.scrollTo({ top: document.getElementById("analyzer")?.offsetTop ?? 0, behavior: "smooth" });
+                          }}
+                          className="mt-3 rounded-soft bg-navy px-4 py-2 text-xs font-bold text-white transition hover:bg-navy/80"
+                        >
+                          Add rubric ↑
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="mb-4 text-sm text-charcoal/65">
+                          Rewrite your entire essay so it explicitly addresses every criterion in your rubric — keeps your voice, hits all the marks.
+                        </p>
+                        {!rubricRewriteResult && (
+                          <button
+                            type="button"
+                            onClick={runProRubricRewrite}
+                            disabled={proLoading}
+                            className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2.5 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-40"
+                          >
+                            {proLoading ? (
+                              <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Rewriting…</>
+                            ) : "✨ Rewrite to rubric"}
+                          </button>
+                        )}
+                        {rubricRewriteResult && (
+                          <div className="space-y-4">
+                            {/* Criteria addressed pills */}
+                            {rubricRewriteResult.criteria_addressed.length > 0 && (
+                              <div className="rounded-input border border-success/30 bg-success/5 p-4">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-success">Criteria addressed</p>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {rubricRewriteResult.criteria_addressed.map((c, i) => (
+                                    <span key={i} className="rounded-full border border-success/20 bg-success/10 px-3 py-1 text-xs font-medium text-success">
+                                      ✓ {c}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {/* Rewritten text + Use this text button */}
+                            <div className="rounded-input border border-border-base bg-mist p-4">
+                              <div className="mb-2 flex items-center justify-between gap-3">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-charcoal/45">Rewritten text</p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setText(rubricRewriteResult.rewritten);
+                                    setRubricRewriteResult(null);
+                                    setResults(null);
+                                    window.scrollTo({ top: document.getElementById("analyzer")?.offsetTop ?? 0, behavior: "smooth" });
+                                    toast("Text updated — re-analyze to see your new score ✓", "success");
+                                  }}
+                                  className="shrink-0 rounded-soft bg-navy px-3 py-1 text-xs font-bold text-white transition hover:bg-navy/80"
+                                >
+                                  Use this text ↑
+                                </button>
+                              </div>
+                              <p className="whitespace-pre-wrap text-sm leading-7 text-charcoal">{rubricRewriteResult.rewritten}</p>
+                            </div>
+                            <button type="button" onClick={() => setRubricRewriteResult(null)} className="text-xs text-charcoal/40 hover:underline">
+                              Run again
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+
                 {proError && (
                   <p className="mt-4 rounded-input border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
                     {proError}
                   </p>
                 )}
               </div>
-            )}
+            ))}
           </div>
         )}
 

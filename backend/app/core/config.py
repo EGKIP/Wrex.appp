@@ -60,6 +60,18 @@ class Settings(BaseSettings):
     def openai_configured(self) -> bool:
         return bool(self.openai_api_key and not self.openai_api_key.endswith("REPLACE_ME"))
 
+    # ── Email (Resend) ───────────────────────────────────────────────────────────
+    resend_api_key: str = ""
+    # Use onboarding@resend.dev (Resend shared domain) until a custom domain is verified
+    resend_from: str = "onboarding@resend.dev"
+
+    @property
+    def resend_configured(self) -> bool:
+        return bool(self.resend_api_key and not self.resend_api_key.endswith("REPLACE_ME"))
+
+    # ── Webhook security ────────────────────────────────────────────────────────
+    webhook_secret: str = ""  # shared secret used to verify Supabase auth hook calls
+
     # ── Derived helpers ────────────────────────────────────────────────────────
     @field_validator("log_level")
     @classmethod
