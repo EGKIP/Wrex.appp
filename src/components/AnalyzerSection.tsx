@@ -7,6 +7,7 @@ import {
   getHistory,
   proHumanize,
   proImprove,
+  proRubricRewrite,
 } from "../lib/api";
 import { useToast } from "../context/toast";
 import type {
@@ -15,6 +16,7 @@ import type {
   HumanizeResponse,
   ImproveSuggestion,
   QuotaInfo,
+  RubricRewriteResponse,
   SubmissionRecord,
 } from "../types";
 import { HistoryPanel } from "./HistoryPanel";
@@ -72,11 +74,21 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   }, [text]);
 
   // ── Pro AI state ───────────────────────────────────────────────────────────
-  const [proTab, setProTab] = useState<"improve" | "humanize">("improve");
+  const proPanelRef = useRef<HTMLDivElement>(null);
+  const [proTab, setProTab] = useState<"improve" | "humanize" | "rubric-rewrite">("improve");
   const [improveResult, setImproveResult] = useState<ImproveSuggestion[] | null>(null);
   const [humanizeResult, setHumanizeResult] = useState<HumanizeResponse | null>(null);
+  const [rubricRewriteResult, setRubricRewriteResult] = useState<RubricRewriteResponse | null>(null);
   const [proLoading, setProLoading] = useState(false);
   const [proError, setProError] = useState("");
+
+  const switchProTab = useCallback((tab: "improve" | "humanize" | "rubric-rewrite") => {
+    setProTab(tab);
+    setImproveResult(null);
+    setHumanizeResult(null);
+    setRubricRewriteResult(null);
+    setProError("");
+  }, []);
 
   const runProImprove = useCallback(async () => {
     if (!accessToken) return;
@@ -99,6 +111,25 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
       setProError(e instanceof Error ? e.message : "Something went wrong.");
     } finally { setProLoading(false); }
   }, [accessToken, text]);
+
+  const runProRubricRewrite = useCallback(async () => {
+    if (!accessToken) return;
+    setProLoading(true); setProError("");
+    try {
+      const res = await proRubricRewrite(text, rubric, accessToken);
+      setRubricRewriteResult(res);
+    } catch (e) {
+      setProError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally { setProLoading(false); }
+  }, [accessToken, text, rubric]);
+
+  /** Called from ResultsPanel rubric nudge button — scroll to Pro panel + switch tab */
+  const handleRubricRewriteNudge = useCallback(() => {
+    switchProTab("rubric-rewrite");
+    setTimeout(() => {
+      proPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }, [switchProTab]);
 
   async function fetchHistory() {
     if (!accessToken) return;
@@ -370,12 +401,12 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
             </div>
           </div>
 
-          <ResultsPanel results={results} loading={loading} isPro={isPro} />
+          <ResultsPanel results={results} loading={loading} isPro={isPro} onRubricRewrite={handleRubricRewriteNudge} />
         </div>
 
         {/* Pro AI panel — shown below grid when results exist */}
         {results && (
-          <div className="mt-8 rounded-modal border border-border-base bg-white p-6 shadow-soft sm:p-8">
+          <div ref={proPanelRef} className="mt-8 rounded-modal border border-border-base bg-white p-6 shadow-soft sm:p-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-lg">👑</span>
@@ -384,18 +415,18 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               {/* Tab switcher */}
               {isPro && (
                 <div className="flex rounded-input border border-border-base text-sm">
-                  {(["improve", "humanize"] as const).map((tab) => (
+                  {(["improve", "humanize", "rubric-rewrite"] as const).map((tab) => (
                     <button
                       key={tab}
                       type="button"
-                      onClick={() => { setProTab(tab); setImproveResult(null); setHumanizeResult(null); setProError(""); }}
-                      className={`px-4 py-1.5 font-medium capitalize transition first:rounded-l-input last:rounded-r-input ${
+                      onClick={() => switchProTab(tab)}
+                      className={`px-4 py-1.5 font-medium transition first:rounded-l-input last:rounded-r-input ${
                         proTab === tab
                           ? "bg-navy text-white"
                           : "text-charcoal/60 hover:bg-mist"
                       }`}
                     >
-                      {tab}
+                      {tab === "rubric-rewrite" ? "Rewrite" : tab.charAt(0).toUpperCase() + tab.slice(1)}
                     </button>
                   ))}
                 </div>
@@ -514,6 +545,88 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                           Run again
                         </button>
                       </div>
+                    )}
+                  </>
+                )}
+
+                {proTab === "rubric-rewrite" && (
+                  <>
+                    {/* Guard: no rubric entered */}
+                    {(!showRubric || !rubric.trim()) ? (
+                      <div className="rounded-input border border-dashed border-border-base bg-mist p-5 text-center">
+                        <p className="text-sm font-semibold text-navy">No rubric added yet</p>
+                        <p className="mt-2 text-sm text-charcoal/65">
+                          Add your assignment criteria above to use the rubric rewrite feature.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowRubric(true);
+                            window.scrollTo({ top: document.getElementById("analyzer")?.offsetTop ?? 0, behavior: "smooth" });
+                          }}
+                          className="mt-3 rounded-soft bg-navy px-4 py-2 text-xs font-bold text-white transition hover:bg-navy/80"
+                        >
+                          Add rubric ↑
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="mb-4 text-sm text-charcoal/65">
+                          Rewrite your entire essay so it explicitly addresses every criterion in your rubric — keeps your voice, hits all the marks.
+                        </p>
+                        {!rubricRewriteResult && (
+                          <button
+                            type="button"
+                            onClick={runProRubricRewrite}
+                            disabled={proLoading}
+                            className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2.5 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-40"
+                          >
+                            {proLoading ? (
+                              <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Rewriting…</>
+                            ) : "✨ Rewrite to rubric"}
+                          </button>
+                        )}
+                        {rubricRewriteResult && (
+                          <div className="space-y-4">
+                            {/* Criteria addressed pills */}
+                            {rubricRewriteResult.criteria_addressed.length > 0 && (
+                              <div className="rounded-input border border-success/30 bg-success/5 p-4">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-success">Criteria addressed</p>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {rubricRewriteResult.criteria_addressed.map((c, i) => (
+                                    <span key={i} className="rounded-full border border-success/20 bg-success/10 px-3 py-1 text-xs font-medium text-success">
+                                      ✓ {c}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {/* Rewritten text + Use this text button */}
+                            <div className="rounded-input border border-border-base bg-mist p-4">
+                              <div className="mb-2 flex items-center justify-between gap-3">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-charcoal/45">Rewritten text</p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setText(rubricRewriteResult.rewritten);
+                                    setRubricRewriteResult(null);
+                                    setResults(null);
+                                    window.scrollTo({ top: document.getElementById("analyzer")?.offsetTop ?? 0, behavior: "smooth" });
+                                    toast("Text updated — re-analyze to see your new score ✓", "success");
+                                  }}
+                                  className="shrink-0 rounded-soft bg-navy px-3 py-1 text-xs font-bold text-white transition hover:bg-navy/80"
+                                >
+                                  Use this text ↑
+                                </button>
+                              </div>
+                              <p className="whitespace-pre-wrap text-sm leading-7 text-charcoal">{rubricRewriteResult.rewritten}</p>
+                            </div>
+                            <button type="button" onClick={() => setRubricRewriteResult(null)} className="text-xs text-charcoal/40 hover:underline">
+                              Run again
+                            </button>
+                          </div>
+                        )}
+                      </>
                     )}
                   </>
                 )}

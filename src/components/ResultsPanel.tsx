@@ -4,6 +4,7 @@ type ResultsPanelProps = {
   results: AnalyzeResponse | null;
   loading?: boolean;
   isPro?: boolean;
+  onRubricRewrite?: () => void;
 };
 
 function confidenceTone(confidence: AnalyzeResponse["confidence"]) {
@@ -88,7 +89,7 @@ function CoveragePill({ coverage }: { coverage: CriterionResult["coverage"] }) {
   );
 }
 
-function RubricPanel({ rubric }: { rubric: RubricMatchResult }) {
+function RubricPanel({ rubric, onRubricRewrite }: { rubric: RubricMatchResult; onRubricRewrite?: () => void }) {
   const color =
     rubric.overall_score >= 70 ? "text-success" : rubric.overall_score >= 40 ? "text-warning" : "text-danger";
 
@@ -99,10 +100,19 @@ function RubricPanel({ rubric }: { rubric: RubricMatchResult }) {
         <span className={`font-stat text-2xl font-bold ${color}`}>{rubric.overall_score}%</span>
       </div>
       <p className="mt-2 text-sm leading-relaxed text-charcoal/65">{rubric.summary}</p>
-      <div className="mt-3 flex gap-4 text-xs">
+      <div className="mt-3 flex flex-wrap items-center gap-4 text-xs">
         <span className="font-semibold text-success">{rubric.strong_count} covered</span>
         <span className="font-semibold text-warning">{rubric.partial_count} partial</span>
         <span className="font-semibold text-danger">{rubric.missing_count} missing</span>
+        {rubric.missing_count > 0 && onRubricRewrite && (
+          <button
+            type="button"
+            onClick={onRubricRewrite}
+            className="ml-auto rounded-soft bg-navy px-3 py-1 text-[11px] font-bold text-white transition hover:bg-navy/80"
+          >
+            ✨ Rewrite to fix missing
+          </button>
+        )}
       </div>
       <div className="mt-5 space-y-3">
         {rubric.criteria.map((criterion, i) => (
@@ -149,7 +159,7 @@ function SkeletonPanel() {
   );
 }
 
-export function ResultsPanel({ results, loading = false, isPro = false }: ResultsPanelProps) {
+export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite }: ResultsPanelProps) {
   if (loading) return <SkeletonPanel />;
 
   if (!results) {
@@ -267,7 +277,7 @@ export function ResultsPanel({ results, loading = false, isPro = false }: Result
       </section>
 
       {/* Rubric alignment */}
-      {results.rubric_result && <RubricPanel rubric={results.rubric_result} />}
+      {results.rubric_result && <RubricPanel rubric={results.rubric_result} onRubricRewrite={onRubricRewrite} />}
 
       {/* Pro CTA — only shown to free users */}
       {!isPro && (
