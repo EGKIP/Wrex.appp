@@ -6,10 +6,13 @@ export interface AuthState {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  /** Returns the error message string on failure, or null on success. */
+  signIn: (email: string, password: string) => Promise<string | null>;
+  /** Returns the error message string on failure, or null on success (email confirmation sent). */
+  signUp: (email: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
+  /** Returns the error message string on failure, or null on success (reset link sent). */
+  resetPassword: (email: string) => Promise<string | null>;
   signInWithGoogle: () => Promise<void>;
   error: string | null;
   clearError: () => void;
@@ -22,41 +25,37 @@ export function useAuth(): AuthState {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Initialise from persisted session
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth state changes (sign in, sign out, token refresh)
+    // onAuthStateChange fires INITIAL_SESSION immediately — use it as the
+    // canonical source of truth so we never race with getSession().
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
+      // Clear loading on the very first event (INITIAL_SESSION or SIGNED_IN)
+      if (event === "INITIAL_SESSION") setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  async function signIn(email: string, password: string): Promise<void> {
+  async function signIn(email: string, password: string): Promise<string | null> {
     setError(null);
     const { error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    if (authError) setError(authError.message);
+    if (authError) { setError(authError.message); return authError.message; }
+    return null;
   }
 
-  async function signUp(email: string, password: string): Promise<void> {
+  async function signUp(email: string, password: string): Promise<string | null> {
     setError(null);
     const { error: authError } = await supabase.auth.signUp({ email, password });
-    if (authError) {
-      setError(authError.message);
-    } else {
-      setError("Check your email to confirm your account.");
-    }
+    if (authError) { setError(authError.message); return authError.message; }
+    // No real error — set info message for display, return null (success)
+    setError("Check your email to confirm your account.");
+    return null;
   }
 
   async function signOut(): Promise<void> {
@@ -73,16 +72,14 @@ export function useAuth(): AuthState {
     if (authError) setError(authError.message);
   }
 
-  async function resetPassword(email: string): Promise<void> {
+  async function resetPassword(email: string): Promise<string | null> {
     setError(null);
     const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    if (authError) {
-      setError(authError.message);
-    } else {
-      setError("Check your email for a password reset link.");
-    }
+    if (authError) { setError(authError.message); return authError.message; }
+    setError("Check your email for a password reset link.");
+    return null;
   }
 
   function clearError(): void {

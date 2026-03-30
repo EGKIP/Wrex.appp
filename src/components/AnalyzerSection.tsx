@@ -85,6 +85,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const autoAnalyzeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasUserEdited = useRef(false);       // don't fire on the pre-loaded sample
   const lastAnalyzedText = useRef("");       // skip if text hasn't changed
+  const isAutoAnalyze = useRef(false);       // suppress toast/history for silent runs
   // Keep a fresh ref to onAnalyze so the debounce always calls the latest closure
   const onAnalyzeRef = useRef<() => Promise<void>>(async () => {});
 
@@ -243,7 +244,8 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     autoAnalyzeTimer.current = setTimeout(() => {
       if (loading) return;                         // manual analyze in flight — skip
       lastAnalyzedText.current = text;
-      void onAnalyzeRef.current();
+      isAutoAnalyze.current = true;
+      void onAnalyzeRef.current().finally(() => { isAutoAnalyze.current = false; });
     }, 800);
 
     return () => { if (autoAnalyzeTimer.current) clearTimeout(autoAnalyzeTimer.current); };
@@ -267,8 +269,8 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
         setQuota(response.quota);
       }
 
-      // Toast on successful analysis save
-      if (accessToken) {
+      // Toast + history refresh on successful save (suppress for silent auto-analyze)
+      if (accessToken && !isAutoAnalyze.current) {
         toast("Analysis saved to your history ✓", "success");
         void fetchHistory();
       }

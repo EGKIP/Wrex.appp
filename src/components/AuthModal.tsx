@@ -37,16 +37,16 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin" }: Props)
     e.preventDefault();
     setSubmitting(true);
     if (showForgot) {
-      await auth.resetPassword(email);
-      if (!auth.error) toast("Reset link sent — check your inbox 📬", "info");
+      const err = await auth.resetPassword(email);
+      if (!err) toast("Reset link sent — check your inbox 📬", "info");
     } else if (tab === "signin") {
-      await auth.signIn(email, password);
-      // sign-in success toast fires from App.tsx via auth.user change
-      if (!auth.error) onClose();
+      const err = await auth.signIn(email, password);
+      // success toast fires from App.tsx via auth.user change; just close the modal
+      if (!err) onClose();
     } else {
-      await auth.signUp(email, password);
-      // auth.error holds the "check your email" confirmation message for sign-up
-      if (auth.error?.toLowerCase().includes("check your email")) {
+      const err = await auth.signUp(email, password);
+      if (!err) {
+        // null return = no API error = confirmation email sent
         toast("Account created! Check your email to confirm 📧", "success");
       }
     }
