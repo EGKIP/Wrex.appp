@@ -44,6 +44,7 @@ export function Navbar({ auth, quota, isPro = false, onOpenAuth, onUpgrade }: Na
     : null;
 
   return (
+    <>
     <header className="sticky top-0 z-20 px-4 pt-3 pb-1.5 lg:px-6">
       {/* Quota progress bar — thin strip above the pill, only for logged-in free users */}
       {quotaPct !== null && (
@@ -199,5 +200,6 @@ export function Navbar({ auth, quota, isPro = false, onOpenAuth, onUpgrade }: Na
       quota={quota}
       onUpgrade={onUpgrade ?? (() => {})}
     />
+    </>
   );
 }
