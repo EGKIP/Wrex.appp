@@ -1,4 +1,6 @@
+import { useState } from "react";
 import type { AnalyzeResponse, CriterionResult, RubricMatchResult } from "../types";
+import { proHumanize } from "../lib/api";
 
 type ResultsPanelProps = {
   results: AnalyzeResponse | null;
@@ -7,6 +9,7 @@ type ResultsPanelProps = {
   onRubricRewrite?: () => void;
   onUpgrade?: () => void;
   text?: string;
+  accessToken?: string | null;
 };
 
 // ── Sentence splitter (mirrors backend preprocessor.py logic) ─────────────────
@@ -46,14 +49,63 @@ function splitSentences(text: string): string[] {
 
 type FlaggedMap = Map<number, { score: number; reason: string }>;
 
+type RewriteState = {
+  idx: number;
+  rewritten: string;
+  summary: string;
+} | null;
+
 function SentenceHighlighter({
   text,
   flagged,
+  isPro,
+  accessToken,
+  onUpgrade,
 }: {
   text: string;
   flagged: FlaggedMap;
+  isPro?: boolean;
+  accessToken?: string | null;
+  onUpgrade?: () => void;
 }) {
   const sentences = splitSentences(text);
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const [rewriting, setRewriting] = useState(false);
+  const [rewrite, setRewrite] = useState<RewriteState>(null);
+  const [copied, setCopied] = useState(false);
+  const [rewriteError, setRewriteError] = useState("");
+
+  async function handleSentenceClick(sentence: string, idx: number) {
+    // Toggle off if already open
+    if (activeIdx === idx) {
+      setActiveIdx(null);
+      setRewrite(null);
+      setRewriteError("");
+      return;
+    }
+    setActiveIdx(idx);
+    setRewrite(null);
+    setRewriteError("");
+
+    if (!isPro || !accessToken) return; // free users: just open the nudge card
+
+    setRewriting(true);
+    try {
+      const res = await proHumanize(sentence, accessToken);
+      setRewrite({ idx, rewritten: res.rewritten, summary: res.changes_summary });
+    } catch {
+      setRewriteError("Couldn't generate a rewrite right now. Try again.");
+    } finally {
+      setRewriting(false);
+    }
+  }
+
+  function handleCopy(txt: string) {
+    navigator.clipboard.writeText(txt).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   return (
     <section className="rounded-modal border border-border-base bg-white p-6 shadow-soft">
@@ -64,38 +116,97 @@ function SentenceHighlighter({
           <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400" />Sounds natural</span>
         </div>
       </div>
-      <p className="leading-8 text-sm text-charcoal">
+
+      <div className="space-y-1 text-sm text-charcoal leading-8">
         {sentences.map((sentence, i) => {
           const flag = flagged.get(i);
+          const isActive = activeIdx === i;
+
           if (!flag) {
             return (
               <span
                 key={i}
-                title="Sounds natural"
-                className="rounded px-0.5 transition-colors hover:bg-emerald-50"
+                className="rounded px-0.5 transition-colors"
                 style={{ borderBottom: "2px solid #6ee7b7" }}
               >
                 {sentence}{" "}
               </span>
             );
           }
-          const pct = Math.round(flag.score * 100);
-          const isHigh = pct >= 75;
-          const bg = isHigh ? "rgba(245,158,11,0.10)" : "rgba(245,158,11,0.07)";
-          const border = "#f59e0b";
+
           return (
-            <span
-              key={i}
-              title={`Could be stronger — ${flag.reason}`}
-              className="cursor-default rounded px-0.5 transition-colors hover:bg-amber-100"
-              style={{ background: bg, borderBottom: `2px solid ${border}` }}
-            >
-              {sentence}{" "}
+            <span key={i} className="inline">
+              <button
+                type="button"
+                onClick={() => handleSentenceClick(sentence, i)}
+                title={isPro ? "Click to rewrite this sentence" : "Upgrade to Pro to rewrite"}
+                className={`rounded px-0.5 text-left transition-colors hover:bg-amber-100 cursor-pointer ${isActive ? "bg-amber-100" : ""}`}
+                style={{ background: isActive ? "rgba(245,158,11,0.15)" : "rgba(245,158,11,0.08)", borderBottom: "2px solid #f59e0b" }}
+              >
+                {sentence}
+              </button>
+              {" "}
+              {isActive && (
+                <span className="block mt-2 mb-3">
+                  {!isPro ? (
+                    /* Free user nudge */
+                    <span className="flex items-start gap-3 rounded-input border border-accent/30 bg-accent/5 px-4 py-3">
+                      <span className="text-base">✨</span>
+                      <span className="flex-1">
+                        <span className="block text-xs font-semibold text-navy">Pro feature</span>
+                        <span className="block text-xs text-charcoal/65 mt-0.5">Click to rewrite this sentence with AI — available on Wrex Pro.</span>
+                        <button
+                          type="button"
+                          onClick={onUpgrade}
+                          className="mt-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-3 py-1 text-xs font-bold text-navy transition hover:opacity-90"
+                        >
+                          Upgrade to Pro
+                        </button>
+                      </span>
+                      <button type="button" onClick={() => setActiveIdx(null)} className="text-charcoal/30 hover:text-charcoal/60 text-base leading-none">×</button>
+                    </span>
+                  ) : rewriting ? (
+                    /* Loading */
+                    <span className="flex items-center gap-2 rounded-input bg-mist px-4 py-3 text-xs text-charcoal/60">
+                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+                      Rewriting…
+                    </span>
+                  ) : rewriteError ? (
+                    /* Error */
+                    <span className="flex items-center justify-between rounded-input border border-danger/20 bg-danger/5 px-4 py-3 text-xs text-danger">
+                      {rewriteError}
+                      <button type="button" onClick={() => { setActiveIdx(null); setRewriteError(""); }} className="ml-3 text-charcoal/40 hover:text-charcoal/70">×</button>
+                    </span>
+                  ) : rewrite?.idx === i ? (
+                    /* Rewrite result */
+                    <span className="block rounded-input border border-emerald-200 bg-emerald-50 px-4 py-3">
+                      <span className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-semibold text-emerald-700">✦ Suggested rewrite</span>
+                        <button type="button" onClick={() => { setActiveIdx(null); setRewrite(null); }} className="text-charcoal/30 hover:text-charcoal/60 text-base leading-none">×</button>
+                      </span>
+                      <span className="block text-sm leading-7 text-charcoal">{rewrite.rewritten}</span>
+                      {rewrite.summary && (
+                        <span className="block mt-2 text-xs text-charcoal/50 italic">{rewrite.summary}</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(rewrite.rewritten)}
+                        className="mt-3 rounded-soft border border-emerald-300 bg-white px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                      >
+                        {copied ? "Copied!" : "Copy rewrite"}
+                      </button>
+                    </span>
+                  ) : null}
+                </span>
+              )}
             </span>
           );
         })}
+      </div>
+
+      <p className="mt-4 text-xs text-charcoal/40">
+        {isPro ? "Click any amber sentence to get an AI rewrite." : "Click any amber sentence to see rewrite options."}
       </p>
-      <p className="mt-3 text-xs text-charcoal/40">Hover a sentence for a tip. Click to get a one-click rewrite (coming soon).</p>
     </section>
   );
 }
@@ -252,7 +363,7 @@ function SkeletonPanel() {
   );
 }
 
-export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, onUpgrade, text }: ResultsPanelProps) {
+export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, onUpgrade, text, accessToken }: ResultsPanelProps) {
   if (loading) return <SkeletonPanel />;
 
   if (!results) {
@@ -327,7 +438,7 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
         const flaggedMap: FlaggedMap = new Map(
           results.flagged_sentences.map((s) => [s.index, { score: s.score, reason: s.reason }])
         );
-        return <SentenceHighlighter text={text} flagged={flaggedMap} />;
+        return <SentenceHighlighter text={text} flagged={flaggedMap} isPro={isPro} accessToken={accessToken} onUpgrade={onUpgrade} />;
       })()}
 
       {/* Sentences to strengthen — detail view */}
