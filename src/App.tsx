@@ -50,15 +50,9 @@ function App() {
       }, 400);
     }
 
-    if (type === "recovery" && hasToken) {
-      // Password reset link — open auth modal on the sign-in tab
-      const cleanUrl = window.location.pathname;
-      window.history.replaceState(null, "", cleanUrl);
-      setTimeout(() => {
-        toast("Set your new password below 🔑", "info");
-        openAuth("signin");
-      }, 400);
-    }
+    // PASSWORD_RECOVERY is handled automatically via useAuth's onAuthStateChange listener.
+    // The isRecovery flag triggers the modal open via a dedicated useEffect above.
+    void (type === "recovery" && hasToken); // suppress unused-var lint
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -82,6 +76,13 @@ function App() {
     prevUser.current = curr;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.user, auth.loading]);
+
+  // Open the set-password modal automatically when Supabase fires PASSWORD_RECOVERY
+  useEffect(() => {
+    if (auth.isRecovery) {
+      setAuthModalOpen(true);
+    }
+  }, [auth.isRecovery]);
 
   function openAuth(tab: "signin" | "signup" = "signin") {
     setAuthModalTab(tab);
@@ -122,6 +123,7 @@ function App() {
         onClose={handleAuthModalClose}
         auth={auth}
         defaultTab={authModalTab}
+        isRecovery={auth.isRecovery}
       />
       <Toaster />
     </div>

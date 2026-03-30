@@ -6,6 +6,8 @@ export interface AuthState {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  /** True when Supabase fires the PASSWORD_RECOVERY event — show set-password UI. */
+  isRecovery: boolean;
   /** Returns the error message string on failure, or null on success. */
   signIn: (email: string, password: string) => Promise<string | null>;
   /** Returns the error message string on failure, or null on success (email confirmation sent). */
@@ -13,6 +15,8 @@ export interface AuthState {
   signOut: () => Promise<void>;
   /** Returns the error message string on failure, or null on success (reset link sent). */
   resetPassword: (email: string) => Promise<string | null>;
+  /** Set a new password when in recovery mode. Returns error string or null on success. */
+  updatePassword: (newPassword: string) => Promise<string | null>;
   signInWithGoogle: () => Promise<void>;
   error: string | null;
   clearError: () => void;
@@ -23,6 +27,7 @@ export function useAuth(): AuthState {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRecovery, setIsRecovery] = useState(false);
 
   useEffect(() => {
     // onAuthStateChange fires INITIAL_SESSION immediately — use it as the
@@ -32,8 +37,9 @@ export function useAuth(): AuthState {
     } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
-      // Clear loading on the very first event (INITIAL_SESSION or SIGNED_IN)
       if (event === "INITIAL_SESSION") setLoading(false);
+      if (event === "PASSWORD_RECOVERY") setIsRecovery(true);
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") setIsRecovery(false);
     });
 
     return () => subscription.unsubscribe();
@@ -72,6 +78,14 @@ export function useAuth(): AuthState {
     if (authError) setError(authError.message);
   }
 
+  async function updatePassword(newPassword: string): Promise<string | null> {
+    setError(null);
+    const { error: authError } = await supabase.auth.updateUser({ password: newPassword });
+    if (authError) { setError(authError.message); return authError.message; }
+    setIsRecovery(false);
+    return null;
+  }
+
   async function resetPassword(email: string): Promise<string | null> {
     setError(null);
     const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
@@ -86,6 +100,6 @@ export function useAuth(): AuthState {
     setError(null);
   }
 
-  return { session, user, loading, signIn, signUp, signOut, resetPassword, signInWithGoogle, error, clearError };
+  return { session, user, loading, isRecovery, signIn, signUp, signOut, resetPassword, updatePassword, signInWithGoogle, error, clearError };
 }
 

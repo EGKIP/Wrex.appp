@@ -8,15 +8,19 @@ interface Props {
   auth: AuthState;
   /** If true the modal opens on the Sign Up tab */
   defaultTab?: "signin" | "signup";
+  /** If true, show the "Set your new password" view (post-reset-link flow) */
+  isRecovery?: boolean;
 }
 
-export function AuthModal({ open, onClose, auth, defaultTab = "signin" }: Props) {
+export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecovery = false }: Props) {
   const { toast } = useToast();
   const [tab, setTab] = useState<"signin" | "signup">(defaultTab);
   const [showForgot, setShowForgot] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
 
   // Reset form when opened/tab changed
@@ -25,18 +29,36 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin" }: Props)
       setTab(defaultTab);
       setEmail("");
       setPassword("");
+      setConfirmPassword("");
       setShowForgot(false);
       auth.clearError();
-      setTimeout(() => emailRef.current?.focus(), 50);
+      // In recovery mode focus the password field; otherwise focus email
+      setTimeout(() => {
+        if (isRecovery) passwordRef.current?.focus();
+        else emailRef.current?.focus();
+      }, 50);
     }
-  }, [open, defaultTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, defaultTab, isRecovery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!open) return null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    if (showForgot) {
+    if (isRecovery) {
+      if (password !== confirmPassword) {
+        auth.clearError();
+        // Show inline mismatch without going through the hook
+        setSubmitting(false);
+        toast("Passwords don't match — please try again.", "error");
+        return;
+      }
+      const err = await auth.updatePassword(password);
+      if (!err) {
+        toast("Password updated! You're now signed in 🔑", "success");
+        onClose();
+      }
+    } else if (showForgot) {
       const err = await auth.resetPassword(email);
       if (!err) toast("Reset link sent — check your inbox 📬", "info");
     } else if (tab === "signin") {
@@ -59,12 +81,57 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin" }: Props)
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/40 backdrop-blur-sm px-4"
-      onClick={onClose}
+      onClick={isRecovery ? undefined : onClose}
     >
       <div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* ── Recovery / set-new-password view ─────────────────────────── */}
+        {isRecovery ? (
+          <>
+            <div className="mb-6 text-center">
+              <div className="text-3xl mb-2">🔑</div>
+              <h2 className="text-lg font-bold text-navy">Set your new password</h2>
+              <p className="text-sm text-charcoal/60 mt-1">Choose a password you'll remember.</p>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-charcoal mb-1">New password</label>
+                <input
+                  ref={passwordRef}
+                  type="password"
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-charcoal mb-1">Confirm password</label>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                />
+              </div>
+              {auth.error && (
+                <p className="text-sm rounded-lg px-3 py-2 bg-red-50 text-red-600">{auth.error}</p>
+              )}
+              <button type="submit" disabled={submitting}
+                className="w-full bg-navy text-white font-semibold rounded-lg py-2.5 text-sm hover:bg-navy/90 transition-colors disabled:opacity-50">
+                {submitting ? "Saving…" : "Update password"}
+              </button>
+            </form>
+          </>
+        ) : (
+          <>
         {/* Tabs */}
         <div className="flex rounded-lg overflow-hidden border border-gray-200 mb-6">
           {(["signin", "signup"] as const).map((t) => (
@@ -193,6 +260,8 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin" }: Props)
                 <>Already have an account? <button onClick={() => setTab("signin")} className="underline">Sign in</button></>
               )}
             </p>
+          </>
+        )}
           </>
         )}
       </div>
