@@ -547,7 +547,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
             )}
           </div>
 
-          <ResultsPanel results={results} loading={loading} isPro={isPro} onRubricRewrite={handleRubricRewriteNudge} />
+          <ResultsPanel results={results} loading={loading} isPro={isPro} onRubricRewrite={handleRubricRewriteNudge} text={text} />
         </div>
 
         {/* Pro AI panel — shown below grid when results exist */}

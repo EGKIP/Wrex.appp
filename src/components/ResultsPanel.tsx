@@ -5,7 +5,102 @@ type ResultsPanelProps = {
   loading?: boolean;
   isPro?: boolean;
   onRubricRewrite?: () => void;
+  text?: string;
 };
+
+// ── Sentence splitter (mirrors backend preprocessor.py logic) ─────────────────
+
+const ABBREVIATIONS = new Set([
+  "mr","mrs","ms","dr","prof","sr","jr","vs","etc","approx","dept","est",
+  "fig","govt","inc","ltd","max","min","no","orig","pp","pub","qty","ref",
+  "rev","st","vol","e.g","i.e","u.s","u.s.a","u.k","jan","feb","mar",
+  "apr","jun","jul","aug","sep","oct","nov","dec",
+]);
+
+function splitSentences(text: string): string[] {
+  const clean = text.replace(/\s+/g, " ").trim();
+  const splitRe = /([.!?])\s+/g;
+  const parts: string[] = [];
+  let last = 0;
+  let match: RegExpExecArray | null;
+  while ((match = splitRe.exec(clean)) !== null) {
+    const end = match.index + 1; // position just after the punctuation
+    const candidate = clean.slice(last, end).trim();
+    const beforePunct = clean.slice(last, match.index);
+    const precedingMatch = beforePunct.match(/(\S+)$/);
+    const token = precedingMatch ? precedingMatch[1].replace(/[.!?]+$/, "").toLowerCase() : "";
+    const isAbbrev = ABBREVIATIONS.has(token);
+    const isInitial = token.length === 1 && /[a-z]/i.test(token);
+    const isDecimal = /[0-9]\.$/.test(clean.slice(last, match.index + 1));
+    if (isAbbrev || isInitial || isDecimal) continue;
+    if (candidate) parts.push(candidate);
+    last = match.index + match[0].length;
+  }
+  const tail = clean.slice(last).trim();
+  if (tail) parts.push(tail);
+  return parts.length ? parts : [clean];
+}
+
+// ── Sentence highlight section ────────────────────────────────────────────────
+
+type FlaggedMap = Map<number, { score: number; reason: string }>;
+
+function SentenceHighlighter({
+  text,
+  flagged,
+}: {
+  text: string;
+  flagged: FlaggedMap;
+}) {
+  const sentences = splitSentences(text);
+
+  return (
+    <section className="rounded-modal border border-border-base bg-white p-6 shadow-soft">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="font-heading text-base font-semibold text-navy">Sentence breakdown</h4>
+        <div className="flex items-center gap-3 text-xs text-charcoal/50">
+          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-red-400" />AI-likely</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />Uncertain</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400" />Human-like</span>
+        </div>
+      </div>
+      <p className="leading-8 text-sm text-charcoal">
+        {sentences.map((sentence, i) => {
+          const flag = flagged.get(i);
+          if (!flag) {
+            // Human-like — subtle green underline
+            return (
+              <span
+                key={i}
+                title="Looks human-written"
+                className="rounded px-0.5 transition-colors hover:bg-emerald-50"
+                style={{ borderBottom: "2px solid #6ee7b7" }}
+              >
+                {sentence}{" "}
+              </span>
+            );
+          }
+          const pct = Math.round(flag.score * 100);
+          const isHigh = pct >= 75;
+          const bg = isHigh ? "rgba(239,68,68,0.10)" : "rgba(251,191,36,0.12)";
+          const border = isHigh ? "#ef4444" : "#f59e0b";
+          const hoverBg = isHigh ? "hover:bg-red-100" : "hover:bg-amber-100";
+          return (
+            <span
+              key={i}
+              title={`${pct}% AI signal — ${flag.reason}`}
+              className={`cursor-default rounded px-0.5 transition-colors ${hoverBg}`}
+              style={{ background: bg, borderBottom: `2px solid ${border}` }}
+            >
+              {sentence}{" "}
+            </span>
+          );
+        })}
+      </p>
+      <p className="mt-3 text-xs text-charcoal/40">Hover a sentence to see its signal strength and reason.</p>
+    </section>
+  );
+}
 
 function confidenceTone(confidence: AnalyzeResponse["confidence"]) {
   if (confidence === "High") return "bg-danger/10 text-danger border border-danger/20";
@@ -159,7 +254,7 @@ function SkeletonPanel() {
   );
 }
 
-export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite }: ResultsPanelProps) {
+export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, text }: ResultsPanelProps) {
   if (loading) return <SkeletonPanel />;
 
   if (!results) {
@@ -221,6 +316,14 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
           <StatCard label="Transition phrases" value={results.stats.transition_phrase_count.toString()} hint="Count of generic openers" />
         </div>
       </section>
+
+      {/* Sentence breakdown — inline highlights */}
+      {text && results.flagged_sentences.length > 0 && (() => {
+        const flaggedMap: FlaggedMap = new Map(
+          results.flagged_sentences.map((s) => [s.index, { score: s.score, reason: s.reason }])
+        );
+        return <SentenceHighlighter text={text} flagged={flaggedMap} />;
+      })()}
 
       {/* Pattern signals */}
       {results.red_flags.length > 0 && (
