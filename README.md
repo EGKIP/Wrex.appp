@@ -2,7 +2,7 @@
 
 > **Write to your rubric. Every time.**
 
-A writing coach for students — not just an AI detector. Wrex scores your draft against your assignment rubric, flags weak sentences, checks grammar, and (for Pro) rewrites your text to actually hit your criteria.
+A writing coach for students. Wrex scores your draft against your assignment rubric, flags weak sentences, checks grammar, and (for Pro) rewrites your text to actually hit your criteria.
 
 ---
 
