@@ -45,6 +45,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const [upgrading, setUpgrading] = useState(false);
   const [error, setError] = useState("");
   const [quotaHit, setQuotaHit] = useState<"anon" | "auth" | null>(null);
+  const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const [history, setHistory] = useState<SubmissionRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
@@ -150,6 +151,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
       void fetchHistory();
     } else {
       setHistory([]);
+      setQuota(null);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken]);
@@ -166,7 +168,10 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
         accessToken,
       );
       setResults(response);
-      if (response.quota) onQuotaUpdate?.(response.quota);
+      if (response.quota) {
+        onQuotaUpdate?.(response.quota);
+        setQuota(response.quota);
+      }
 
       // Toast on successful analysis save
       if (accessToken) {
@@ -379,7 +384,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               </p>
             ) : null}
 
-            <div className="mt-6">
+            <div className="mt-6 flex flex-wrap items-center gap-4">
               <button
                 type="button"
                 onClick={onAnalyze}
@@ -398,6 +403,22 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                   "Analyze my text"
                 )}
               </button>
+
+              {/* Usage counter — logged-in free users only */}
+              {accessToken && !isPro && quota && (
+                <span className={`text-xs font-medium tabular-nums ${
+                  quota.remaining === 0
+                    ? "text-danger"
+                    : quota.remaining === 1
+                      ? "text-warning"
+                      : "text-charcoal/50"
+                }`}>
+                  {quota.used} / {quota.limit} analyses used today
+                  {quota.remaining > 0 && (
+                    <span className="ml-1 text-charcoal/35">· {quota.remaining} left</span>
+                  )}
+                </span>
+              )}
             </div>
           </div>
 
