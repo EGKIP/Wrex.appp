@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { AuthState } from "../hooks/useAuth";
 import type { QuotaInfo } from "../types";
 import { Brand } from "./Brand";
+import { ProfileModal } from "./ProfileModal";
 
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
@@ -14,11 +15,13 @@ interface NavbarProps {
   quota: QuotaInfo | null;
   isPro?: boolean;
   onOpenAuth: (tab?: "signin" | "signup") => void;
+  onUpgrade?: () => void;
 }
 
-export function Navbar({ auth, quota, isPro = false, onOpenAuth }: NavbarProps) {
+export function Navbar({ auth, quota, isPro = false, onOpenAuth, onUpgrade }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState("");
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     const sections = ["how-it-works", "analyzer", "faq"];
@@ -92,17 +95,14 @@ export function Navbar({ auth, quota, isPro = false, onOpenAuth }: NavbarProps) 
                     {quota.remaining}/{quota.limit} analyses left
                   </span>
                 )}
-                <span className="flex items-center gap-1.5 text-sm text-charcoal/70 max-w-[160px] truncate">
+                <button
+                  onClick={() => setProfileOpen(true)}
+                  className="flex items-center gap-1.5 text-sm text-charcoal/70 max-w-[160px] truncate rounded-lg px-2 py-1 hover:bg-slate-100 transition-colors"
+                >
                   {isPro && (
                     <span title="Wrex Pro" className="text-accent text-base leading-none">👑</span>
                   )}
                   {auth.user.email}
-                </span>
-                <button
-                  onClick={() => auth.signOut()}
-                  className="text-sm font-medium text-charcoal/60 hover:text-navy transition-colors"
-                >
-                  Sign out
                 </button>
               </>
             ) : (
@@ -158,19 +158,16 @@ export function Navbar({ auth, quota, isPro = false, onOpenAuth }: NavbarProps) 
               ))}
               {auth.user ? (
                 <>
-                  <span className="flex items-center gap-1.5 text-sm text-charcoal/60 truncate">
-                  {isPro && <span title="Wrex Pro" className="text-accent">👑</span>}
-                  {auth.user.email}
-                </span>
+                  <button
+                    onClick={() => { setProfileOpen(true); setMenuOpen(false); }}
+                    className="flex items-center gap-1.5 text-sm text-charcoal/60 truncate rounded-lg px-2 py-1 hover:bg-slate-100 transition-colors text-left"
+                  >
+                    {isPro && <span title="Wrex Pro" className="text-accent">👑</span>}
+                    {auth.user.email}
+                  </button>
                   {quota && (
                     <span className="text-xs text-charcoal/40">{quota.remaining}/{quota.limit} analyses left today</span>
                   )}
-                  <button
-                    onClick={() => { auth.signOut(); setMenuOpen(false); }}
-                    className="font-medium text-charcoal/70 transition hover:text-navy text-left"
-                  >
-                    Sign out
-                  </button>
                 </>
               ) : (
                 <>
@@ -193,5 +190,14 @@ export function Navbar({ auth, quota, isPro = false, onOpenAuth }: NavbarProps) 
         )}
       </div>
     </header>
+
+    <ProfileModal
+      open={profileOpen}
+      onClose={() => setProfileOpen(false)}
+      auth={auth}
+      isPro={isPro}
+      quota={quota}
+      onUpgrade={onUpgrade ?? (() => {})}
+    />
   );
 }

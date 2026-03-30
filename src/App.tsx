@@ -10,6 +10,7 @@ import { Toaster } from "./components/Toaster";
 import { useToast } from "./context/toast";
 import { useAuth } from "./hooks/useAuth";
 import { useProStatus } from "./hooks/useProStatus";
+import { createCheckoutSession } from "./lib/api";
 import type { QuotaInfo } from "./types";
 import type { User } from "@supabase/supabase-js";
 
@@ -91,9 +92,19 @@ function App() {
     setAuthModalOpen(false);
   }
 
+  async function handleUpgrade() {
+    if (!auth.session?.access_token) { openAuth("signup"); return; }
+    try {
+      const { url } = await createCheckoutSession(auth.session.access_token);
+      window.location.href = url;
+    } catch {
+      toast("Could not start checkout. Please try again.", "error");
+    }
+  }
+
   return (
     <div className="min-h-screen bg-white text-charcoal">
-      <Navbar auth={auth} quota={quota} isPro={isPro} onOpenAuth={openAuth} />
+      <Navbar auth={auth} quota={quota} isPro={isPro} onOpenAuth={openAuth} onUpgrade={handleUpgrade} />
       <main>
         <Hero onTryFree={() => openAuth("signup")} />
         <HowItWorks />
