@@ -81,6 +81,13 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const [grammarLoading, setGrammarLoading] = useState(false);
   const grammarTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Auto-analyze refs ──────────────────────────────────────────────────────
+  const autoAnalyzeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasUserEdited = useRef(false);       // don't fire on the pre-loaded sample
+  const lastAnalyzedText = useRef("");       // skip if text hasn't changed
+  // Keep a fresh ref to onAnalyze so the debounce always calls the latest closure
+  const onAnalyzeRef = useRef<() => Promise<void>>(async () => {});
+
   // Debounce: run grammar check 900ms after the user stops typing (min 50 chars)
   useEffect(() => {
     if (grammarTimer.current) clearTimeout(grammarTimer.current);
@@ -220,6 +227,29 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken]);
 
+  // ── Auto-analyze debounce ─────────────────────────────────────────────────
+  // Keep the ref in sync with the latest closure every render
+  useEffect(() => {
+    onAnalyzeRef.current = onAnalyze;
+  });
+
+  useEffect(() => {
+    if (!hasUserEdited.current) return;            // skip the pre-loaded sample
+    if (autoAnalyzeTimer.current) clearTimeout(autoAnalyzeTimer.current);
+    if (wordCount < 30) return;                    // too short — skip
+    if (text === lastAnalyzedText.current) return; // unchanged — skip
+    if (quotaHit) return;                          // quota hit — don't burn retries
+
+    autoAnalyzeTimer.current = setTimeout(() => {
+      if (loading) return;                         // manual analyze in flight — skip
+      lastAnalyzedText.current = text;
+      void onAnalyzeRef.current();
+    }, 800);
+
+    return () => { if (autoAnalyzeTimer.current) clearTimeout(autoAnalyzeTimer.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text]);
+
   async function onAnalyze() {
     setLoading(true);
     setError("");
@@ -313,13 +343,14 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
 
             <textarea
               value={text}
-              onChange={(event) => setText(event.target.value)}
+              onChange={(event) => { hasUserEdited.current = true; setText(event.target.value); }}
               placeholder="Paste your text here to analyze..."
               className="mt-3 min-h-[300px] w-full rounded-input border border-border-base bg-white px-4 py-3 text-base leading-7 text-charcoal placeholder:text-charcoal/30 outline-none transition focus:border-accent focus:ring-[3px] focus:ring-accent/15"
             />
             <div className="mt-2 flex items-center justify-between text-xs text-charcoal/40">
               <span>{wordCount} words</span>
-              {grammarLoading && <span className="animate-pulse">Checking grammar…</span>}
+              {loading && hasUserEdited.current && <span className="animate-pulse text-accent">Scoring…</span>}
+              {!loading && grammarLoading && <span className="animate-pulse">Checking grammar…</span>}
               {!grammarLoading && grammarMatches.length > 0 && (
                 <span>
                   <span className="font-semibold text-danger">
