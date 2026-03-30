@@ -5,6 +5,7 @@ type ResultsPanelProps = {
   loading?: boolean;
   isPro?: boolean;
   onRubricRewrite?: () => void;
+  onUpgrade?: () => void;
   text?: string;
 };
 
@@ -57,22 +58,20 @@ function SentenceHighlighter({
   return (
     <section className="rounded-modal border border-border-base bg-white p-6 shadow-soft">
       <div className="flex items-center justify-between mb-4">
-        <h4 className="font-heading text-base font-semibold text-navy">Sentence breakdown</h4>
+        <h4 className="font-heading text-base font-semibold text-navy">Writing analysis</h4>
         <div className="flex items-center gap-3 text-xs text-charcoal/50">
-          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-red-400" />AI-likely</span>
-          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />Uncertain</span>
-          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400" />Human-like</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />Needs polish</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400" />Sounds natural</span>
         </div>
       </div>
       <p className="leading-8 text-sm text-charcoal">
         {sentences.map((sentence, i) => {
           const flag = flagged.get(i);
           if (!flag) {
-            // Human-like — subtle green underline
             return (
               <span
                 key={i}
-                title="Looks human-written"
+                title="Sounds natural"
                 className="rounded px-0.5 transition-colors hover:bg-emerald-50"
                 style={{ borderBottom: "2px solid #6ee7b7" }}
               >
@@ -82,14 +81,13 @@ function SentenceHighlighter({
           }
           const pct = Math.round(flag.score * 100);
           const isHigh = pct >= 75;
-          const bg = isHigh ? "rgba(239,68,68,0.10)" : "rgba(251,191,36,0.12)";
-          const border = isHigh ? "#ef4444" : "#f59e0b";
-          const hoverBg = isHigh ? "hover:bg-red-100" : "hover:bg-amber-100";
+          const bg = isHigh ? "rgba(245,158,11,0.10)" : "rgba(245,158,11,0.07)";
+          const border = "#f59e0b";
           return (
             <span
               key={i}
-              title={`${pct}% AI signal — ${flag.reason}`}
-              className={`cursor-default rounded px-0.5 transition-colors ${hoverBg}`}
+              title={`Could be stronger — ${flag.reason}`}
+              className="cursor-default rounded px-0.5 transition-colors hover:bg-amber-100"
               style={{ background: bg, borderBottom: `2px solid ${border}` }}
             >
               {sentence}{" "}
@@ -97,7 +95,7 @@ function SentenceHighlighter({
           );
         })}
       </p>
-      <p className="mt-3 text-xs text-charcoal/40">Hover a sentence to see its signal strength and reason.</p>
+      <p className="mt-3 text-xs text-charcoal/40">Hover a sentence for a tip. Click to get a one-click rewrite (coming soon).</p>
     </section>
   );
 }
@@ -122,9 +120,9 @@ function scoreColor(score: number) {
 }
 
 function scoreLabel(score: number) {
-  if (score >= 70) return "High AI pattern match";
-  if (score >= 40) return "Mixed signals";
-  return "Looks human";
+  if (score >= 70) return "Needs significant polish";
+  if (score >= 40) return "A few areas to strengthen";
+  return "Writing sounds natural";
 }
 
 /** Conic-gradient circular score ring */
@@ -254,7 +252,7 @@ function SkeletonPanel() {
   );
 }
 
-export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, text }: ResultsPanelProps) {
+export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, onUpgrade, text }: ResultsPanelProps) {
   if (loading) return <SkeletonPanel />;
 
   if (!results) {
@@ -269,10 +267,10 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
           Paste something to get started
         </h3>
         <p className="mt-3 max-w-md text-sm leading-7 text-charcoal/65">
-          Your score, flagged sentences, and writing tips will appear here.
+          Your rubric score, writing tips, and sentence-level feedback will appear here.
         </p>
         <ul className="mt-5 space-y-2 text-sm text-charcoal/55">
-          {["Rubric alignment score", "Flagged sentences with signal strength", "Actionable writing tips"].map(item => (
+          {["Rubric alignment score", "Actionable writing tips", "Sentence-level writing feedback"].map(item => (
             <li key={item} className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-accent" />
               {item}
@@ -285,39 +283,46 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
 
   return (
     <aside className="space-y-5">
-      {/* Score card */}
+      {/* Score card — naturalness overview */}
       <section className={`rounded-modal bg-gradient-to-br p-6 shadow-card sm:p-8 ${scoreGradient(results.score)}`}>
         <div className="flex flex-wrap items-center gap-6">
           <ScoreRing score={results.score} />
           <div className="flex-1">
             <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/55">
-              AI-pattern score
+              Writing naturalness
             </p>
             <p className="font-heading mt-1 text-xl font-bold text-navy">
               {scoreLabel(results.score)}
             </p>
             <div className={`mt-3 inline-block rounded-full px-3 py-1 text-xs font-semibold ${confidenceTone(results.confidence)}`}>
-              Confidence: {results.confidence}
+              Signal confidence: {results.confidence}
             </div>
           </div>
         </div>
         <p className="mt-5 rounded-input border border-white/60 bg-white/60 px-4 py-3 text-sm leading-7 text-charcoal">
           {results.summary}
         </p>
-        {/* Stats grid */}
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <StatCard label="Word count" value={results.stats.word_count.toString()} />
-          <StatCard label="Sentence count" value={results.stats.sentence_count.toString()} />
-          <StatCard label="Avg sentence length" value={`${results.stats.avg_sentence_length.toFixed(1)} words`} />
-          <StatCard label="Vocabulary diversity" value={(results.stats.vocabulary_diversity * 100).toFixed(0) + "%"} />
-          <StatCard label="Sentence length variance" value={results.stats.sentence_length_variance.toFixed(1)} hint="Low = suspiciously uniform" />
-          <StatCard label="Repetition index" value={(results.stats.repetition_index * 100).toFixed(0) + "%"} hint="Higher = more repeated phrasing" />
-          <StatCard label="Punctuation diversity" value={results.stats.punctuation_diversity.toFixed(2)} hint="Lower = fewer punctuation types used" />
-          <StatCard label="Transition phrases" value={results.stats.transition_phrase_count.toString()} hint="Count of generic openers" />
-        </div>
       </section>
 
-      {/* Sentence breakdown — inline highlights */}
+      {/* Rubric alignment — PRIMARY section */}
+      {results.rubric_result && <RubricPanel rubric={results.rubric_result} onRubricRewrite={onRubricRewrite} />}
+
+      {/* Writing tips — actionable first */}
+      {results.basic_tips.length > 0 && (
+        <section className="rounded-modal border border-border-base bg-white p-6 shadow-soft">
+          <h4 className="font-heading text-base font-semibold text-navy">Writing tips</h4>
+          <div className="mt-4 space-y-3">
+            {results.basic_tips.map((tip) => (
+              <p key={tip} className="flex gap-3 rounded-input bg-mist px-4 py-3 text-sm leading-6 text-charcoal">
+                <span className="shrink-0 text-accent">✦</span>
+                {tip}
+              </p>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Sentence-level writing analysis — inline highlights */}
       {text && results.flagged_sentences.length > 0 && (() => {
         const flaggedMap: FlaggedMap = new Map(
           results.flagged_sentences.map((s) => [s.index, { score: s.score, reason: s.reason }])
@@ -325,13 +330,35 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
         return <SentenceHighlighter text={text} flagged={flaggedMap} />;
       })()}
 
-      {/* Pattern signals */}
+      {/* Sentences to strengthen — detail view */}
+      {results.flagged_sentences.length > 0 && (
+        <section className="rounded-modal border border-border-base bg-white p-6 shadow-soft">
+          <h4 className="font-heading text-base font-semibold text-navy">Sentences to strengthen</h4>
+          <p className="mt-1 text-xs text-charcoal/50">These sentences have patterns that are worth revising for a more natural voice.</p>
+          <div className="mt-4 space-y-4">
+            {results.flagged_sentences.map((sentence) => (
+              <article
+                key={`${sentence.index}-${sentence.text}`}
+                className="rounded-[0_8px_8px_0] border-l-[3px] border-l-amber-400 bg-amber-50/60 px-4 py-3"
+              >
+                <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">Sentence {sentence.index + 1}</p>
+                <SignalBar score={sentence.score} />
+                <p className="mt-3 text-sm leading-7 text-charcoal">{sentence.text}</p>
+                <p className="mt-1.5 text-xs text-charcoal/55">{sentence.reason}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Writing patterns — secondary, collapsed-feeling */}
       {results.red_flags.length > 0 && (
         <section className="rounded-modal border border-border-base bg-white p-6 shadow-soft">
-          <h4 className="font-heading text-base font-semibold text-navy">Pattern signals</h4>
+          <h4 className="font-heading text-base font-semibold text-navy">Writing patterns detected</h4>
+          <p className="mt-1 text-xs text-charcoal/50">These style patterns were found in your text. They're clues, not verdicts.</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {results.red_flags.map((flag) => (
-              <span key={flag} className="rounded-full border border-warning/30 bg-warning/10 px-3 py-1.5 text-xs font-medium text-charcoal">
+              <span key={flag} className="rounded-full border border-border-base bg-mist px-3 py-1.5 text-xs font-medium text-charcoal/70">
                 {flag}
               </span>
             ))}
@@ -339,61 +366,19 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
         </section>
       )}
 
-      {/* Flagged sentences */}
-      <section className="rounded-modal border border-border-base bg-white p-6 shadow-soft">
-        <h4 className="font-heading text-base font-semibold text-navy">Flagged sentences</h4>
-        <div className="mt-4 space-y-4">
-          {results.flagged_sentences.length ? (
-            results.flagged_sentences.map((sentence) => (
-              <article
-                key={`${sentence.index}-${sentence.text}`}
-                className="flagged-pulse rounded-[0_8px_8px_0] border-l-[3px] px-4 py-3"
-                style={{
-                  borderLeftColor: "#EF4444",
-                  background: "linear-gradient(90deg, rgba(239,68,68,0.08) 0%, rgba(239,68,68,0.04) 100%)",
-                }}
-              >
-                <p className="text-xs font-semibold uppercase tracking-wider text-danger">Sentence {sentence.index + 1}</p>
-                <SignalBar score={sentence.score} />
-                <p className="mt-3 text-sm leading-7 text-charcoal">{sentence.text}</p>
-                <p className="mt-1.5 text-xs text-charcoal/55">{sentence.reason}</p>
-              </article>
-            ))
-          ) : (
-            <p className="text-sm text-charcoal/65">
-              No individual sentences strongly flagged. Score reflects combined document-level patterns.
-            </p>
-          )}
-        </div>
-      </section>
-
-      {/* Writing tips */}
-      <section className="rounded-modal border border-border-base bg-white p-6 shadow-soft">
-        <h4 className="font-heading text-base font-semibold text-navy">Writing tips</h4>
-        <div className="mt-4 space-y-3">
-          {results.basic_tips.map((tip) => (
-            <p key={tip} className="rounded-input bg-mist px-4 py-3 text-sm leading-6 text-charcoal">
-              {tip}
-            </p>
-          ))}
-        </div>
-      </section>
-
-      {/* Rubric alignment */}
-      {results.rubric_result && <RubricPanel rubric={results.rubric_result} onRubricRewrite={onRubricRewrite} />}
-
       {/* Pro CTA — only shown to free users */}
       {!isPro && (
-        <section className="rounded-modal border border-border-base bg-canvas p-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/45">Pro</p>
+        <section className="rounded-modal border border-accent/20 bg-gradient-to-br from-accent/5 to-accent/10 p-5">
+          <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/45">Wrex Pro</p>
           <h4 className="font-heading mt-2 text-base font-semibold text-navy">{results.pro_prompt.title}</h4>
           <p className="mt-2 text-sm leading-6 text-charcoal/65">{results.pro_prompt.message}</p>
-          <a
-            href="#upgrade"
+          <button
+            type="button"
+            onClick={onUpgrade}
             className="btn-shine mt-4 inline-block rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2.5 text-sm font-bold text-navy transition hover:shadow-glow hover:scale-[1.02]"
           >
             {results.pro_prompt.cta_label}
-          </a>
+          </button>
         </section>
       )}
     </aside>
