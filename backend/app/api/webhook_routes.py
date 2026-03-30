@@ -82,6 +82,7 @@ def _send_welcome_email(to_email: str) -> None:
         headers={
             "Authorization": f"Bearer {settings.resend_api_key}",
             "Content-Type": "application/json",
+            "User-Agent": "wrex-backend/1.0",  # required — Cloudflare blocks urllib's default UA
         },
         method="POST",
     )

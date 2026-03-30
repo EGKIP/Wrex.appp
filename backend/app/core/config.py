@@ -62,7 +62,8 @@ class Settings(BaseSettings):
 
     # ── Email (Resend) ───────────────────────────────────────────────────────────
     resend_api_key: str = ""
-    resend_from: str = "Wrex <hello@wrex.app>"
+    # Use onboarding@resend.dev (Resend shared domain) until a custom domain is verified
+    resend_from: str = "onboarding@resend.dev"
 
     @property
     def resend_configured(self) -> bool:
