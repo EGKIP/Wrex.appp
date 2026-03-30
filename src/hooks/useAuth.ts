@@ -37,7 +37,13 @@ export function useAuth(): AuthState {
     } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
-      if (event === "INITIAL_SESSION") setLoading(false);
+      // Clear loading on the first event. INITIAL_SESSION fires immediately on
+      // registration. SIGNED_IN is a fallback for email-confirmation redirects
+      // where INITIAL_SESSION fires with a null session and SIGNED_IN fires
+      // once the hash token has been asynchronously exchanged.
+      if (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "SIGNED_OUT") {
+        setLoading(false);
+      }
       if (event === "PASSWORD_RECOVERY") setIsRecovery(true);
       if (event === "SIGNED_IN" || event === "SIGNED_OUT") setIsRecovery(false);
     });

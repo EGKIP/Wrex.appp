@@ -22,15 +22,20 @@ function App() {
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const { isPro } = useProStatus(auth.session?.access_token);
 
+  // Track whether this page load was triggered by an email confirmation link.
+  // We DON'T strip the URL hash here — Supabase's async _initialize() reads
+  // window.location.hash to exchange the token. Stripping it before that runs
+  // kills the session establishment entirely.
+  const emailJustConfirmed = useRef(false);
+
   // Handle URL params on load (Supabase auth callbacks + Stripe redirects)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const hash = new URLSearchParams(window.location.hash.replace("#", "?"));
     const type = params.get("type") || hash.get("type");
-    const hasToken = hash.get("access_token");
     const pro = params.get("pro");
 
-    // Stripe checkout result
+    // Stripe checkout result — no hash involved, safe to clean immediately
     if (pro === "success") {
       window.history.replaceState(null, "", window.location.pathname);
       setTimeout(() => toast("You're now a Pro member! 🎉 Enjoy unlimited analyses.", "success"), 400);
@@ -39,37 +44,46 @@ function App() {
       setTimeout(() => toast("Upgrade cancelled — you can upgrade any time.", "info"), 400);
     }
 
-    if (type === "signup" || (hasToken && type !== "recovery")) {
-      // Clean up the URL so the params don't persist on refresh
-      const cleanUrl = window.location.pathname;
-      window.history.replaceState(null, "", cleanUrl);
-      // Wait a tick for auth state to settle, then toast
-      setTimeout(() => {
-        toast("Email confirmed! You're all set 🎉", "success");
-        setAuthModalOpen(false);
-      }, 400);
+    // Email confirmation redirect: note the intent so the prevUser effect can
+    // show the right toast AFTER Supabase actually establishes the session.
+    // ⚠️  Do NOT call replaceState here — it would wipe the #access_token hash
+    //     before Supabase's async init reads it, breaking session establishment.
+    if (type === "signup") {
+      emailJustConfirmed.current = true;
+      // Only strip query params (not the hash) to keep the URL clean
+      if (window.location.search) {
+        window.history.replaceState(null, "", window.location.pathname + window.location.hash);
+      }
     }
 
     // PASSWORD_RECOVERY is handled automatically via useAuth's onAuthStateChange listener.
-    // The isRecovery flag triggers the modal open via a dedicated useEffect above.
-    void (type === "recovery" && hasToken); // suppress unused-var lint
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fire toasts on sign-in / sign-out transitions
+  // Fire toasts on sign-in / sign-out transitions.
+  // This is the single source of truth — it fires ONLY after Supabase has
+  // actually confirmed a session, never from URL params alone.
   const prevUser = useRef<User | null | undefined>(undefined);
   useEffect(() => {
     if (auth.loading) return;
     const prev = prevUser.current;
     const curr = auth.user;
     if (prev === undefined) {
-      // First render — just record the current user, no toast
+      // First render after loading clears — record state, no toast
       prevUser.current = curr;
       return;
     }
     if (!prev && curr) {
-      const name = curr.email?.split("@")[0] ?? "there";
-      toast(`Welcome back, ${name}! 👋`, "success");
+      // User just signed in
+      if (emailJustConfirmed.current) {
+        emailJustConfirmed.current = false;
+        toast("Email confirmed! You're all set 🎉", "success");
+      } else {
+        const name = curr.email?.split("@")[0] ?? "there";
+        toast(`Welcome back, ${name}! 👋`, "success");
+      }
+      // Close the modal whether the sign-in came from the form or an OAuth/email redirect
+      setAuthModalOpen(false);
     } else if (prev && !curr) {
       toast("You've been signed out.", "info");
     }
