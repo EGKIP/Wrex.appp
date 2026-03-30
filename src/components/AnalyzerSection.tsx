@@ -28,6 +28,29 @@ function countWords(text: string) {
   return text.trim() ? text.trim().split(/\s+/).length : 0;
 }
 
+const RUBRIC_TEMPLATES: { label: string; value: string }[] = [
+  {
+    label: "5-Paragraph Essay",
+    value:
+      "1. Clear introductory paragraph with a thesis statement\n2. First body paragraph with supporting evidence\n3. Second body paragraph with supporting evidence\n4. Third body paragraph with supporting evidence\n5. Concluding paragraph that restates the thesis",
+  },
+  {
+    label: "Argumentative Essay",
+    value:
+      "1. Present a clear, debatable claim or thesis\n2. Provide at least two pieces of evidence supporting the argument\n3. Address and refute at least one counterargument\n4. Use credible, cited sources\n5. Conclude with a persuasive summary and call to action",
+  },
+  {
+    label: "Lab Report",
+    value:
+      "1. State the hypothesis clearly in the introduction\n2. Describe the experimental method in sufficient detail to be reproducible\n3. Present results with appropriate data tables or figures\n4. Discuss results in relation to the hypothesis\n5. Conclude with limitations and suggestions for further research",
+  },
+  {
+    label: "Literary Analysis",
+    value:
+      "1. Introduce the literary work and author with relevant context\n2. State a focused analytical thesis\n3. Analyze at least two specific literary devices (e.g., symbolism, tone, imagery)\n4. Support claims with direct textual evidence and quotations\n5. Synthesize the analysis in a concluding paragraph",
+  },
+];
+
 interface AnalyzerSectionProps {
   accessToken?: string | null;
   isPro?: boolean;
@@ -46,6 +69,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const [error, setError] = useState("");
   const [quotaHit, setQuotaHit] = useState<"anon" | "auth" | null>(null);
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
+  const [resetCountdown, setResetCountdown] = useState("");
   const [history, setHistory] = useState<SubmissionRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
@@ -73,6 +97,27 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     }, 900);
     return () => { if (grammarTimer.current) clearTimeout(grammarTimer.current); };
   }, [text]);
+
+  // ── Midnight reset countdown ───────────────────────────────────────────────
+  // Formats the time remaining until the next local midnight as "Xh Ym"
+  useEffect(() => {
+    const quotaBlocked = accessToken && !isPro && quota?.remaining === 0;
+    if (!quotaBlocked) { setResetCountdown(""); return; }
+
+    function calcCountdown() {
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      const diffSec = Math.floor((midnight.getTime() - now.getTime()) / 1000);
+      const h = Math.floor(diffSec / 3600);
+      const m = Math.floor((diffSec % 3600) / 60);
+      return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    }
+
+    setResetCountdown(calcCountdown());
+    const id = setInterval(() => setResetCountdown(calcCountdown()), 60_000);
+    return () => clearInterval(id);
+  }, [accessToken, isPro, quota]);
 
   // ── Pro AI state ───────────────────────────────────────────────────────────
   const proPanelRef = useRef<HTMLDivElement>(null);
@@ -271,7 +316,11 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
 
             {/* Grammar matches list */}
             {grammarMatches.length > 0 && (
-              <div className="mt-3 max-h-[200px] space-y-2 overflow-y-auto rounded-input border border-border-base bg-mist p-3">
+              <div className="mt-3">
+                <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-charcoal/40">
+                  Grammar &amp; spelling
+                </p>
+                <div className="max-h-[200px] space-y-2 overflow-y-auto rounded-input border border-border-base bg-mist p-3">
                 {grammarMatches.slice(0, 12).map((m, i) => (
                   <div key={i} className="flex items-start gap-2.5 text-sm">
                     <span
@@ -299,6 +348,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                   </p>
                 )}
               </div>
+              </div>
             )}
 
             {/* Rubric toggle */}
@@ -323,9 +373,21 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               </button>
               {showRubric && (
                 <div className="mt-3">
-                  <p className="mb-2 text-xs text-charcoal/50">
-                    Paste your marking criteria — one requirement per line.
-                  </p>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs text-charcoal/50">
+                      Paste your marking criteria — one requirement per line.
+                    </p>
+                    <select
+                      value=""
+                      onChange={(e) => { if (e.target.value) setRubric(e.target.value); }}
+                      className="rounded border border-border-base bg-white px-2 py-1 text-xs text-charcoal/70 outline-none transition focus:border-accent focus:ring-[2px] focus:ring-accent/15 cursor-pointer"
+                    >
+                      <option value="">Load template…</option>
+                      {RUBRIC_TEMPLATES.map((t) => (
+                        <option key={t.label} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                  </div>
                   <textarea
                     value={rubric}
                     onChange={(e) => setRubric(e.target.value)}
@@ -384,42 +446,64 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               </p>
             ) : null}
 
-            <div className="mt-6 flex flex-wrap items-center gap-4">
-              <button
-                type="button"
-                onClick={onAnalyze}
-                disabled={loading || text.trim().length < 10}
-                className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-8 py-3.5 text-base font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {loading ? (
-                  <>
-                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                    </svg>
-                    Analyzing…
-                  </>
-                ) : (
-                  "Analyze my text"
-                )}
-              </button>
-
-              {/* Usage counter — logged-in free users only */}
-              {accessToken && !isPro && quota && (
-                <span className={`text-xs font-medium tabular-nums ${
-                  quota.remaining === 0
-                    ? "text-danger"
-                    : quota.remaining === 1
-                      ? "text-warning"
-                      : "text-charcoal/50"
-                }`}>
-                  {quota.used} / {quota.limit} analyses used today
-                  {quota.remaining > 0 && (
-                    <span className="ml-1 text-charcoal/35">· {quota.remaining} left</span>
+            {/* Hard quota block — logged-in free user, 0 remaining */}
+            {accessToken && !isPro && quota?.remaining === 0 ? (
+              <div className="mt-6">
+                <button
+                  type="button"
+                  disabled
+                  className="flex cursor-not-allowed items-center gap-2 rounded-soft bg-charcoal/10 px-8 py-3.5 text-base font-bold text-charcoal/40"
+                >
+                  <svg className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+                  </svg>
+                  Limit reached
+                </button>
+                <p className="mt-2 text-xs text-charcoal/50 tabular-nums">
+                  Resets in <span className="font-semibold text-charcoal/70">{resetCountdown}</span>
+                  {" · "}
+                  <button
+                    type="button"
+                    onClick={handleUpgrade}
+                    disabled={upgrading}
+                    className="font-semibold text-accent underline-offset-2 hover:underline disabled:opacity-50"
+                  >
+                    {upgrading ? "Redirecting…" : "Upgrade for unlimited →"}
+                  </button>
+                </p>
+              </div>
+            ) : (
+              <div className="mt-6 flex flex-wrap items-center gap-4">
+                <button
+                  type="button"
+                  onClick={onAnalyze}
+                  disabled={loading || text.trim().length < 10}
+                  className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-8 py-3.5 text-base font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                      Analyzing…
+                    </>
+                  ) : (
+                    "Analyze my text"
                   )}
-                </span>
-              )}
-            </div>
+                </button>
+
+                {/* Usage counter — logged-in free users only */}
+                {accessToken && !isPro && quota && (
+                  <span className={`text-xs font-medium tabular-nums ${
+                    quota.remaining === 1 ? "text-warning" : "text-charcoal/50"
+                  }`}>
+                    {quota.used} / {quota.limit} analyses used today
+                    <span className="ml-1 text-charcoal/35">· {quota.remaining} left</span>
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <ResultsPanel results={results} loading={loading} isPro={isPro} onRubricRewrite={handleRubricRewriteNudge} />
