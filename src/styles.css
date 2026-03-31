@@ -77,6 +77,16 @@ body {
   animation: pulseOnce 1.5s ease-in-out 1;
 }
 
+/* ── Global focus-visible ring ──────────────────────────────────────────────
+   Every interactive element gets a consistent accent-coloured focus ring
+   when navigated via keyboard. Mouse clicks are unaffected (focus-visible
+   only activates for keyboard / programmatic focus). */
+:where(button, a, input, textarea, select):focus-visible {
+  outline: 3px solid #FBBF24; /* accent */
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
 /* Yellow blob background accent */
 .blob-yellow {
   position: absolute;

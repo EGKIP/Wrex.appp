@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, Wand2 } from "lucide-react";
+import { Sparkles, Wand2, BarChart2, ScanSearch, ClipboardList, PenLine } from "lucide-react";
 import type { AnalyzeResponse, CriterionResult, RubricMatchResult } from "../types";
 import { proHumanize } from "../lib/api";
 
@@ -408,27 +408,76 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
   if (loading) return <SkeletonPanel />;
 
   if (!results) {
+    const features = [
+      {
+        icon: <BarChart2 className="h-5 w-5 text-accent" />,
+        label: "AI-pattern score",
+        desc: "0–100 likelihood based on writing patterns",
+      },
+      {
+        icon: <ScanSearch className="h-5 w-5 text-amber-500" />,
+        label: "Sentence flags",
+        desc: "Highlights sentences that read AI-written",
+      },
+      {
+        icon: <ClipboardList className="h-5 w-5 text-navy" />,
+        label: "Rubric alignment",
+        desc: "Maps your draft against assignment criteria",
+        pro: true,
+      },
+      {
+        icon: <PenLine className="h-5 w-5 text-emerald-600" />,
+        label: "Writing tips",
+        desc: "Concrete suggestions to improve your draft",
+        pro: true,
+      },
+    ];
+
     return (
-      <aside className="rounded-modal border border-dashed border-border-base bg-white p-8 shadow-soft">
-        <div className="flex h-14 w-14 items-center justify-center rounded-input bg-mist">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-charcoal/40">
-            <path d="M9 12h6M9 16h6M9 8h6M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" strokeLinecap="round" />
-          </svg>
+      <aside className="flex flex-col rounded-modal border border-dashed border-border-base bg-white p-6 shadow-soft sm:p-8">
+        {/* Icon + headline */}
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent/10">
+            <ScanSearch className="h-6 w-6 text-accent" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold tracking-tight text-navy">
+              Your analysis will appear here
+            </h3>
+            <p className="mt-1 text-sm text-charcoal/55">
+              Paste your writing on the left, then click <span className="font-semibold text-navy">Analyze my text</span>.
+            </p>
+          </div>
         </div>
-        <h3 className="mt-5 text-xl font-bold tracking-tight text-navy">
-          Paste something to get started
-        </h3>
-        <p className="mt-3 max-w-md text-sm leading-7 text-charcoal/65">
-          Your rubric score, writing tips, and sentence-level feedback will appear here.
-        </p>
-        <ul className="mt-5 space-y-2 text-sm text-charcoal/55">
-          {["Rubric alignment score", "Actionable writing tips", "Sentence-level writing feedback"].map(item => (
-            <li key={item} className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-              {item}
-            </li>
+
+        {/* Divider */}
+        <div className="my-5 border-t border-border-base" />
+
+        {/* Feature preview grid */}
+        <div className="grid grid-cols-2 gap-3">
+          {features.map((f) => (
+            <div
+              key={f.label}
+              className="relative flex flex-col gap-1.5 rounded-soft border border-border-base bg-mist/60 p-3.5"
+            >
+              {f.pro && (
+                <span className="absolute right-2.5 top-2.5 rounded-full bg-accent/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-navy">
+                  Pro
+                </span>
+              )}
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white shadow-sm">
+                {f.icon}
+              </span>
+              <p className="text-xs font-semibold text-navy">{f.label}</p>
+              <p className="text-[11px] leading-relaxed text-charcoal/50">{f.desc}</p>
+            </div>
           ))}
-        </ul>
+        </div>
+
+        {/* Subtle footer */}
+        <p className="mt-5 text-center text-[11px] text-charcoal/35">
+          Free for your first analysis — no account required.
+        </p>
       </aside>
     );
   }

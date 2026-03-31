@@ -54,8 +54,8 @@ export function WorkspaceSidebar({
 
   return (
     <>
-      {/* Icon rail */}
-      <aside className="flex w-14 flex-col items-center gap-2 border-r border-charcoal/8 bg-white pt-4 pb-4">
+      {/* Icon rail — hidden on mobile, shown from sm upwards */}
+      <aside className="hidden sm:flex w-14 flex-col items-center gap-2 border-r border-charcoal/8 bg-white pt-4 pb-4">
         <button
           type="button"
           onClick={onHistoryToggle}
@@ -81,7 +81,7 @@ export function WorkspaceSidebar({
 
       {/* Slide-in history panel */}
       {historyOpen && (
-        <div className="fixed inset-y-0 left-14 z-30 flex w-80 flex-col border-r border-charcoal/10 bg-white shadow-xl" style={{ top: "56px" }}>
+        <div className="fixed inset-y-0 left-14 z-30 hidden sm:flex w-72 lg:w-80 flex-col border-r border-charcoal/10 bg-white shadow-xl" style={{ top: "56px" }}>
           {/* Header */}
           <div className="flex items-center justify-between border-b border-charcoal/10 px-4 py-3">
             <span className="text-sm font-semibold text-navy">
@@ -147,10 +147,10 @@ export function WorkspaceSidebar({
         </div>
       )}
 
-      {/* Overlay backdrop — click to close */}
+      {/* Overlay backdrop — click to close (sm+ only, matches rail visibility) */}
       {historyOpen && (
         <div
-          className="fixed inset-0 z-20 bg-black/10"
+          className="fixed inset-0 z-20 hidden sm:block bg-black/10"
           style={{ top: "56px", left: "56px" }}
           onClick={onHistoryToggle}
           aria-hidden="true"
