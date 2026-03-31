@@ -14,14 +14,43 @@ interface NavbarProps {
   auth: AuthState;
   quota: QuotaInfo | null;
   isPro?: boolean;
+  mode?: "landing" | "workspace";
   onOpenAuth: (tab?: "signin" | "signup") => void;
   onUpgrade?: () => void;
 }
 
-export function Navbar({ auth, quota, isPro = false, onOpenAuth, onUpgrade }: NavbarProps) {
+function getInitials(email: string): string {
+  const local = email.split("@")[0];
+  const parts = local.split(/[._\-+]/);
+  if (parts.length >= 2 && parts[0] && parts[1]) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return local.slice(0, 2).toUpperCase();
+}
+
+function getDisplayName(email: string): string {
+  const local = email.split("@")[0];
+  const name = local.split(/[._\-+]/)[0];
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+function Avatar({ email, isPro }: { email: string; isPro: boolean }) {
+  const initials = getInitials(email);
+  return (
+    <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-navy text-xs font-bold text-white select-none ring-2 ring-white shadow-sm">
+      {initials}
+      {isPro && (
+        <span className="absolute -top-1 -right-1 text-[10px] leading-none" title="Wrex Pro">👑</span>
+      )}
+    </span>
+  );
+}
+
+export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAuth, onUpgrade }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
+  const isWorkspace = mode === "workspace";
 
   useEffect(() => {
     const sections = ["how-it-works", "analyzer", "faq"];
@@ -68,7 +97,8 @@ export function Navbar({ auth, quota, isPro = false, onOpenAuth, onUpgrade }: Na
 
           {/* Desktop nav */}
           <nav className="hidden items-center gap-7 text-sm md:flex">
-            {NAV_LINKS.map(({ label, href }) => (
+            {/* Landing nav links — hidden in workspace mode */}
+            {!isWorkspace && NAV_LINKS.map(({ label, href }) => (
               <a
                 key={href}
                 href={href}
@@ -83,7 +113,7 @@ export function Navbar({ auth, quota, isPro = false, onOpenAuth, onUpgrade }: Na
             ))}
             {auth.user ? (
               <>
-                {quota && (
+                {quota && !isPro && (
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                       quota.remaining === 0
@@ -93,17 +123,25 @@ export function Navbar({ auth, quota, isPro = false, onOpenAuth, onUpgrade }: Na
                         : "bg-emerald-100 text-emerald-700"
                     }`}
                   >
-                    {quota.remaining}/{quota.limit} analyses left
+                    {quota.remaining}/{quota.limit} left
+                  </span>
+                )}
+                {isPro && (
+                  <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-semibold text-navy">
+                    Pro ✨
                   </span>
                 )}
                 <button
                   onClick={() => setProfileOpen(true)}
-                  className="flex items-center gap-1.5 text-sm text-charcoal/70 max-w-[160px] truncate rounded-lg px-2 py-1 hover:bg-slate-100 transition-colors"
+                  className="flex items-center gap-2 rounded-lg px-2 py-1 transition-colors hover:bg-slate-100"
+                  title={auth.user.email}
                 >
-                  {isPro && (
-                    <span title="Wrex Pro" className="text-accent text-base leading-none">👑</span>
+                  <Avatar email={auth.user.email!} isPro={isPro} />
+                  {isWorkspace && (
+                    <span className="max-w-[120px] truncate text-sm font-medium text-charcoal/80">
+                      {getDisplayName(auth.user.email!)}
+                    </span>
                   )}
-                  {auth.user.email}
                 </button>
               </>
             ) : (
@@ -147,7 +185,7 @@ export function Navbar({ auth, quota, isPro = false, onOpenAuth, onUpgrade }: Na
         {menuOpen && (
           <div className="mt-2 rounded-card border border-border-base bg-white/95 px-6 pb-6 pt-4 shadow-glass backdrop-blur-sm md:hidden">
             <nav className="flex flex-col gap-4 text-sm">
-              {NAV_LINKS.map(({ label, href }) => (
+              {!isWorkspace && NAV_LINKS.map(({ label, href }) => (
                 <a
                   key={href}
                   href={href}
@@ -161,13 +199,19 @@ export function Navbar({ auth, quota, isPro = false, onOpenAuth, onUpgrade }: Na
                 <>
                   <button
                     onClick={() => { setProfileOpen(true); setMenuOpen(false); }}
-                    className="flex items-center gap-1.5 text-sm text-charcoal/60 truncate rounded-lg px-2 py-1 hover:bg-slate-100 transition-colors text-left"
+                    className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-100 transition-colors text-left"
                   >
-                    {isPro && <span title="Wrex Pro" className="text-accent">👑</span>}
-                    {auth.user.email}
+                    <Avatar email={auth.user.email!} isPro={isPro} />
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-sm font-medium text-charcoal/80">{getDisplayName(auth.user.email!)}</span>
+                      <span className="text-xs text-charcoal/40 truncate max-w-[180px]">{auth.user.email}</span>
+                    </div>
                   </button>
-                  {quota && (
+                  {quota && !isPro && (
                     <span className="text-xs text-charcoal/40">{quota.remaining}/{quota.limit} analyses left today</span>
+                  )}
+                  {isPro && (
+                    <span className="text-xs font-semibold text-accent">Pro member ✨</span>
                   )}
                 </>
               ) : (

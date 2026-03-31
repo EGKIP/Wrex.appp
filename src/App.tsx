@@ -117,21 +117,48 @@ function App() {
     }
   }
 
+  const isWorkspace = !auth.loading && !!auth.user;
+
   return (
-    <div className="min-h-screen bg-white text-charcoal">
-      <Navbar auth={auth} quota={quota} isPro={isPro} onOpenAuth={openAuth} onUpgrade={handleUpgrade} />
-      <main>
-        <Hero onTryFree={() => openAuth("signup")} />
-        <HowItWorks />
-        <AnalyzerSection
-          accessToken={auth.session?.access_token ?? null}
-          isPro={isPro}
-          onQuotaUpdate={setQuota}
-          onAuthRequired={() => openAuth("signup")}
-        />
-        <FaqSection />
-      </main>
-      <Footer />
+    <div className={`${isWorkspace ? "flex h-screen flex-col overflow-hidden" : "min-h-screen"} bg-white text-charcoal`}>
+      <Navbar
+        auth={auth}
+        quota={quota}
+        isPro={isPro}
+        mode={isWorkspace ? "workspace" : "landing"}
+        onOpenAuth={openAuth}
+        onUpgrade={handleUpgrade}
+      />
+
+      {isWorkspace ? (
+        /* ── Authenticated workspace ──────────────────────────────────────────── */
+        <main className="flex flex-1 flex-col overflow-hidden">
+          <AnalyzerSection
+            accessToken={auth.session?.access_token ?? null}
+            isPro={isPro}
+            onQuotaUpdate={setQuota}
+            onAuthRequired={() => openAuth("signup")}
+            workspace
+          />
+        </main>
+      ) : (
+        /* ── Marketing landing page ───────────────────────────────────────────── */
+        <>
+          <main>
+            <Hero onTryFree={() => openAuth("signup")} />
+            <HowItWorks />
+            <AnalyzerSection
+              accessToken={auth.session?.access_token ?? null}
+              isPro={isPro}
+              onQuotaUpdate={setQuota}
+              onAuthRequired={() => openAuth("signup")}
+            />
+            <FaqSection />
+          </main>
+          <Footer />
+        </>
+      )}
+
       <AuthModal
         open={authModalOpen}
         onClose={handleAuthModalClose}
