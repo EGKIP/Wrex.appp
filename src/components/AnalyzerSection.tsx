@@ -90,6 +90,16 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const [showRubricNudge, setShowRubricNudge] = useState(false);
 
   const wordCount = countWords(text);
+  const readingTime = wordCount > 0 ? Math.max(1, Math.round(wordCount / 200)) : 0;
+
+  // ── Textarea auto-grow ─────────────────────────────────────────────────────
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [text]);
 
   // ── Grammar check state ────────────────────────────────────────────────────
   const [grammarMatches, setGrammarMatches] = useState<GrammarMatch[]>([]);
@@ -170,6 +180,30 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   function dismissNudge() {
     setShowRubricNudge(false);
     sessionStorage.setItem("wrex_rubric_nudge_seen", "1");
+  }
+
+  // ── Cmd+Enter / Ctrl+Enter shortcut ───────────────────────────────────────
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        onAnalyzeRef.current();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // ── Replace a single sentence in the editor ───────────────────────────────
+  function handleReplaceSentence(original: string, replacement: string) {
+    setText((prev) => {
+      // Replace only the first occurrence so we don't clobber duplicate sentences
+      const idx = prev.indexOf(original);
+      if (idx === -1) return prev;
+      return prev.slice(0, idx) + replacement + prev.slice(idx + original.length);
+    });
+    setResults(null);
+    toast("Sentence replaced — re-analyze to see your new score ✓", "success");
   }
 
   // ── Pro AI state ───────────────────────────────────────────────────────────
@@ -388,13 +422,19 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
             </div>
 
             <textarea
+              ref={textareaRef}
               value={text}
               onChange={(event) => { hasUserEdited.current = true; setText(event.target.value); }}
               placeholder="Paste your text here to analyze..."
-              className={`mt-3 w-full rounded-input border border-border-base bg-white px-4 py-3 text-base leading-7 text-charcoal placeholder:text-charcoal/30 outline-none transition focus:border-accent focus:ring-[3px] focus:ring-accent/15 resize-none ${workspace ? "min-h-[420px]" : "min-h-[300px]"}`}
+              className={`mt-3 w-full rounded-input border border-border-base bg-white px-4 py-3 text-base leading-7 text-charcoal placeholder:text-charcoal/30 outline-none transition focus:border-accent focus:ring-[3px] focus:ring-accent/15 resize-none overflow-hidden ${workspace ? "min-h-[420px]" : "min-h-[300px]"}`}
             />
             <div className="mt-2 flex items-center justify-between text-xs text-charcoal/40">
-              <span>{wordCount} words</span>
+              <span>
+                {wordCount > 0
+                  ? <>{wordCount} words{readingTime > 0 ? <> · ~{readingTime} min read</> : null}</>
+                  : "0 words"
+                }
+              </span>
               {loading && hasUserEdited.current && <span className="animate-pulse text-accent">Scoring…</span>}
               {!loading && grammarLoading && <span className="animate-pulse">Checking grammar…</span>}
               {!grammarLoading && grammarMatches.length > 0 && (
@@ -591,42 +631,50 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                 </p>
               </div>
             ) : (
-              <div className="mt-6 flex flex-wrap items-center gap-4">
-                <button
-                  type="button"
-                  onClick={onAnalyze}
-                  disabled={loading || text.trim().length < 10}
-                  className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-8 py-3.5 text-base font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {loading ? (
-                    <>
-                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                      </svg>
-                      Analyzing…
-                    </>
-                  ) : (
-                    "Analyze my text"
-                  )}
-                </button>
+              <div className="mt-6 space-y-2">
+                <div className="flex flex-wrap items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={onAnalyze}
+                    disabled={loading || text.trim().length < 10}
+                    className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-8 py-3.5 text-base font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {loading ? (
+                      <>
+                        <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                        </svg>
+                        Analyzing…
+                      </>
+                    ) : (
+                      "Analyze my text"
+                    )}
+                  </button>
 
-                {/* Usage counter — logged-in free users only */}
-                {accessToken && !isPro && quota && (
-                  <span className={`text-xs font-medium tabular-nums ${
-                    quota.remaining === 1 ? "text-warning" : "text-charcoal/50"
-                  }`}>
-                    {quota.used} / {quota.limit} analyses used today
-                    <span className="ml-1 text-charcoal/35">· {quota.remaining} left</span>
-                  </span>
-                )}
+                  {/* Usage counter — logged-in free users only */}
+                  {accessToken && !isPro && quota && (
+                    <span className={`text-xs font-medium tabular-nums ${
+                      quota.remaining === 1 ? "text-warning" : "text-charcoal/50"
+                    }`}>
+                      {quota.used} / {quota.limit} analyses used today
+                      <span className="ml-1 text-charcoal/35">· {quota.remaining} left</span>
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-charcoal/35 select-none">
+                  <kbd className="rounded border border-border-base bg-mist px-1 py-0.5 font-mono text-[10px] text-charcoal/50">⌘</kbd>
+                  {" + "}
+                  <kbd className="rounded border border-border-base bg-mist px-1 py-0.5 font-mono text-[10px] text-charcoal/50">↵</kbd>
+                  {" to analyze"}
+                </p>
               </div>
             )}
           </div>
 
           {/* Right column */}
           <div>
-            <ResultsPanel results={results} loading={loading} isPro={isPro} onRubricRewrite={handleRubricRewriteNudge} onUpgrade={handleUpgrade} text={text} accessToken={accessToken} />
+            <ResultsPanel results={results} loading={loading} isPro={isPro} onRubricRewrite={handleRubricRewriteNudge} onUpgrade={handleUpgrade} text={text} accessToken={accessToken} onReplaceSentence={handleReplaceSentence} />
           </div>
         </div>{/* end grid */}
 

@@ -11,6 +11,8 @@ type ResultsPanelProps = {
   onUpgrade?: () => void;
   text?: string;
   accessToken?: string | null;
+  /** Called when the user clicks "Replace in editor" inside a Pro rewrite card */
+  onReplaceSentence?: (original: string, replacement: string) => void;
 };
 
 // ── Sentence splitter (mirrors backend preprocessor.py logic) ─────────────────
@@ -62,12 +64,14 @@ function SentenceHighlighter({
   isPro,
   accessToken,
   onUpgrade,
+  onReplaceSentence,
 }: {
   text: string;
   flagged: FlaggedMap;
   isPro?: boolean;
   accessToken?: string | null;
   onUpgrade?: () => void;
+  onReplaceSentence?: (original: string, replacement: string) => void;
 }) {
   const sentences = splitSentences(text);
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
@@ -137,18 +141,39 @@ function SentenceHighlighter({
 
           return (
             <span key={i} className="inline">
+              {/* Reason chip — always visible on flagged sentences */}
+              {flag.reason && !isActive && (
+                <span
+                  className="mr-1 inline-flex items-center rounded-full border border-amber-300/60 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 align-middle leading-none select-none"
+                  title={flag.reason}
+                >
+                  {flag.reason.length > 38 ? flag.reason.slice(0, 35) + "…" : flag.reason}
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => handleSentenceClick(sentence, i)}
                 title={isPro ? "Click to rewrite this sentence" : "Upgrade to Pro to rewrite"}
-                className={`rounded px-0.5 text-left transition-colors hover:bg-amber-100 cursor-pointer ${isActive ? "bg-amber-100" : ""}`}
-                style={{ background: isActive ? "rgba(245,158,11,0.15)" : "rgba(245,158,11,0.08)", borderBottom: "2px solid #f59e0b" }}
+                className={`rounded px-0.5 text-left cursor-pointer transition-all duration-150 ${isActive ? "ring-2 ring-amber-400/50" : "hover:brightness-95"}`}
+                style={{
+                  background: isActive ? "rgba(245,158,11,0.18)" : "rgba(245,158,11,0.08)",
+                  borderBottom: "2px solid #f59e0b",
+                  textDecoration: isActive ? "line-through" : "none",
+                  textDecorationColor: "#f59e0b",
+                }}
               >
                 {sentence}
               </button>
               {" "}
               {isActive && (
                 <span className="block mt-2 mb-3">
+                  {/* Active reason chip */}
+                  {flag.reason && (
+                    <span className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-amber-300/70 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                      {flag.reason}
+                    </span>
+                  )}
                   {!isPro ? (
                     /* Free user nudge */
                     <span className="flex items-start gap-3 rounded-input border border-accent/30 bg-accent/5 px-4 py-3">
@@ -189,13 +214,28 @@ function SentenceHighlighter({
                       {rewrite.summary && (
                         <span className="block mt-2 text-xs text-charcoal/50 italic">{rewrite.summary}</span>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(rewrite.rewritten)}
-                        className="mt-3 rounded-soft border border-emerald-300 bg-white px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
-                      >
-                        {copied ? "Copied!" : "Copy rewrite"}
-                      </button>
+                      <span className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(rewrite.rewritten)}
+                          className="rounded-soft border border-emerald-300 bg-white px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                        >
+                          {copied ? "Copied!" : "Copy rewrite"}
+                        </button>
+                        {onReplaceSentence && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onReplaceSentence(sentence, rewrite.rewritten);
+                              setActiveIdx(null);
+                              setRewrite(null);
+                            }}
+                            className="rounded-soft border border-emerald-400 bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                          >
+                            Replace in editor ↑
+                          </button>
+                        )}
+                      </span>
                     </span>
                   ) : null}
                 </span>
@@ -364,7 +404,7 @@ function SkeletonPanel() {
   );
 }
 
-export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, onUpgrade, text, accessToken }: ResultsPanelProps) {
+export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, onUpgrade, text, accessToken, onReplaceSentence }: ResultsPanelProps) {
   if (loading) return <SkeletonPanel />;
 
   if (!results) {
@@ -439,7 +479,7 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
         const flaggedMap: FlaggedMap = new Map(
           results.flagged_sentences.map((s) => [s.index, { score: s.score, reason: s.reason }])
         );
-        return <SentenceHighlighter text={text} flagged={flaggedMap} isPro={isPro} accessToken={accessToken} onUpgrade={onUpgrade} />;
+        return <SentenceHighlighter text={text} flagged={flaggedMap} isPro={isPro} accessToken={accessToken} onUpgrade={onUpgrade} onReplaceSentence={onReplaceSentence} />;
       })()}
 
       {/* Sentences to strengthen — detail view */}
