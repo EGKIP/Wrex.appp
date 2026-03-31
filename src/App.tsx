@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnalyzerSection } from "./components/AnalyzerSection";
 import { AuthModal } from "./components/AuthModal";
 import { FaqSection } from "./components/FaqSection";
@@ -6,12 +6,14 @@ import { Footer } from "./components/Footer";
 import { Hero } from "./components/Hero";
 import { HowItWorks } from "./components/HowItWorks";
 import { Navbar } from "./components/Navbar";
+import { ProfileModal } from "./components/ProfileModal";
 import { Toaster } from "./components/Toaster";
+import { WorkspaceSidebar } from "./components/WorkspaceSidebar";
 import { useToast } from "./context/toast";
 import { useAuth } from "./hooks/useAuth";
 import { useProStatus } from "./hooks/useProStatus";
-import { createCheckoutSession } from "./lib/api";
-import type { QuotaInfo } from "./types";
+import { createCheckoutSession, getHistory } from "./lib/api";
+import type { QuotaInfo, SubmissionRecord } from "./types";
 import type { User } from "@supabase/supabase-js";
 
 function App() {
@@ -21,6 +23,12 @@ function App() {
   const [authModalTab, setAuthModalTab] = useState<"signin" | "signup">("signin");
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const { isPro } = useProStatus(auth.session?.access_token);
+
+  // Workspace sidebar state
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [history, setHistory] = useState<SubmissionRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Track whether this page load was triggered by an email confirmation link.
   // We DON'T strip the URL hash here — Supabase's async _initialize() reads
@@ -117,7 +125,34 @@ function App() {
     }
   }
 
+  // ── Workspace history management ─────────────────────────────────────────────
+  const fetchHistory = useCallback(async () => {
+    const token = auth.session?.access_token;
+    if (!token) return;
+    setHistoryLoading(true);
+    try {
+      const data = await getHistory(token);
+      setHistory(data.submissions);
+    } catch {
+      // non-critical
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [auth.session?.access_token]);
+
+  // Load history when user authenticates (workspace mode only)
+  useEffect(() => {
+    if (auth.user && auth.session?.access_token) {
+      void fetchHistory();
+    } else {
+      setHistory([]);
+    }
+  }, [auth.user, auth.session?.access_token, fetchHistory]);
+
   const isWorkspace = !auth.loading && !!auth.user;
+
+  // Workspace: load history item into the editor
+  const [workspaceLoadText, setWorkspaceLoadText] = useState<{ text: string; rubric: string | null } | null>(null);
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-charcoal">
@@ -132,14 +167,31 @@ function App() {
 
       {isWorkspace ? (
         /* ── Authenticated workspace ──────────────────────────────────────────── */
-        <main className="flex-1">
-          <AnalyzerSection
-            accessToken={auth.session?.access_token ?? null}
-            isPro={isPro}
-            onQuotaUpdate={setQuota}
-            onAuthRequired={() => openAuth("signup")}
-            workspace
+        <main className="flex flex-1">
+          <WorkspaceSidebar
+            historyOpen={historyOpen}
+            onHistoryToggle={() => setHistoryOpen((v) => !v)}
+            onSettingsOpen={() => setProfileOpen(true)}
+            submissions={history}
+            historyLoading={historyLoading}
+            accessToken={auth.session?.access_token ?? ""}
+            onSelectHistory={(text, rubric) => setWorkspaceLoadText({ text, rubric })}
+            onRefreshHistory={fetchHistory}
           />
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <AnalyzerSection
+              accessToken={auth.session?.access_token ?? null}
+              isPro={isPro}
+              onQuotaUpdate={setQuota}
+              onAuthRequired={() => openAuth("signup")}
+              workspace
+              externalHistory={history}
+              externalHistoryLoading={historyLoading}
+              onAnalyzed={fetchHistory}
+              loadRequest={workspaceLoadText}
+              onLoadRequestConsumed={() => setWorkspaceLoadText(null)}
+            />
+          </div>
         </main>
       ) : (
         /* ── Marketing landing page ───────────────────────────────────────────── */
@@ -166,6 +218,16 @@ function App() {
         defaultTab={authModalTab}
         isRecovery={auth.isRecovery}
       />
+
+      <ProfileModal
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        auth={auth}
+        isPro={isPro}
+        quota={quota}
+        onUpgrade={handleUpgrade}
+      />
+
       <Toaster />
     </div>
   );

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Crown, Sparkles, Users, FileText } from "lucide-react";
 import {
   ApiError,
   analyzeText,
@@ -58,9 +59,17 @@ interface AnalyzerSectionProps {
   onAuthRequired?: () => void;
   /** When true, fills the viewport (workspace mode — no landing page padding/heading) */
   workspace?: boolean;
+  /** External history — when provided, AnalyzerSection skips its own fetch (workspace mode) */
+  externalHistory?: SubmissionRecord[];
+  externalHistoryLoading?: boolean;
+  /** Called after a successful analysis so the parent can refresh history */
+  onAnalyzed?: () => void;
+  /** When set, loads this text+rubric into the editor (from sidebar history click) */
+  loadRequest?: { text: string; rubric: string | null } | null;
+  onLoadRequestConsumed?: () => void;
 }
 
-export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onAuthRequired, workspace = false }: AnalyzerSectionProps) {
+export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onAuthRequired, workspace = false, externalHistory, externalHistoryLoading, onAnalyzed, loadRequest, onLoadRequestConsumed }: AnalyzerSectionProps) {
   const { toast } = useToast();
   const [text, setText] = useState(() => workspace ? "" : SAMPLE_TEXT);
   const [rubric, setRubric] = useState("");
@@ -72,8 +81,12 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const [quotaHit, setQuotaHit] = useState<"anon" | "auth" | null>(null);
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const [resetCountdown, setResetCountdown] = useState("");
-  const [history, setHistory] = useState<SubmissionRecord[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  // In workspace mode, history is managed by the parent (App.tsx) and passed in as props.
+  // In landing page mode, we manage it locally.
+  const [internalHistory, setInternalHistory] = useState<SubmissionRecord[]>([]);
+  const [internalHistoryLoading, setInternalHistoryLoading] = useState(false);
+  const history = workspace && externalHistory !== undefined ? externalHistory : internalHistory;
+  const historyLoading = workspace && externalHistoryLoading !== undefined ? externalHistoryLoading : internalHistoryLoading;
   const [showRubricNudge, setShowRubricNudge] = useState(false);
 
   const wordCount = countWords(text);
@@ -90,6 +103,19 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const isAutoAnalyze = useRef(false);       // suppress toast/history for silent runs
   // Keep a fresh ref to onAnalyze so the debounce always calls the latest closure
   const onAnalyzeRef = useRef<() => Promise<void>>(async () => {});
+
+  // Load history item into editor when parent sends a loadRequest
+  useEffect(() => {
+    if (!loadRequest) return;
+    setText(loadRequest.text);
+    if (loadRequest.rubric) {
+      setRubric(loadRequest.rubric);
+      setShowRubric(true);
+    }
+    setResults(null);
+    onLoadRequestConsumed?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadRequest]);
 
   // Debounce: run grammar check 900ms after the user stops typing (min 50 chars)
   useEffect(() => {
@@ -208,23 +234,26 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
 
   async function fetchHistory() {
     if (!accessToken) return;
-    setHistoryLoading(true);
+    // In workspace mode, delegate to parent
+    if (workspace && onAnalyzed) { onAnalyzed(); return; }
+    setInternalHistoryLoading(true);
     try {
       const data = await getHistory(accessToken);
-      setHistory(data.submissions);
+      setInternalHistory(data.submissions);
     } catch {
       // non-critical — just skip
     } finally {
-      setHistoryLoading(false);
+      setInternalHistoryLoading(false);
     }
   }
 
-  // Load history when the user logs in (accessToken changes)
+  // Load history when the user logs in (accessToken changes) — only for landing page mode
   useEffect(() => {
+    if (workspace) return; // parent handles this in workspace mode
     if (accessToken) {
       void fetchHistory();
     } else {
-      setHistory([]);
+      setInternalHistory([]);
       setQuota(null);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -274,7 +303,11 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
       // Toast + history refresh on successful save (suppress for silent auto-analyze)
       if (accessToken && !isAutoAnalyze.current) {
         toast("Analysis saved to your history ✓", "success");
-        void fetchHistory();
+        if (workspace && onAnalyzed) {
+          onAnalyzed(); // parent refreshes history in workspace mode
+        } else {
+          void fetchHistory();
+        }
       }
 
       // If anon and limit reached, nudge them to sign up next time
@@ -441,7 +474,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                     role="tooltip"
                     className="absolute bottom-full left-0 z-20 mb-2 flex w-max max-w-[240px] items-start gap-2 rounded-soft bg-navy px-3 py-2.5 text-xs text-white shadow-lg"
                   >
-                    <span className="shrink-0 text-base leading-none">✨</span>
+                    <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
                     <span>Add your rubric here — Wrex will check every criterion and rewrite your essay to hit them all.</span>
                     <button
                       type="button"
@@ -606,7 +639,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               onClick={() => setProCollapsed((v) => !v)}
             >
               <div className="flex items-center gap-2">
-                <span className="text-lg">👑</span>
+                <Crown className="h-4 w-4 text-accent" />
                 <h3 className="font-heading text-base font-semibold text-navy">Pro writing tools</h3>
               </div>
               <div className="flex items-center gap-3">
@@ -618,9 +651,9 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                   >
                     {(["improve", "humanize", "rubric-rewrite"] as const).map((tab) => {
                       const labels: Record<string, { short: string; full: string }> = {
-                        improve: { short: "✨", full: "Improve" },
-                        humanize: { short: "🤝", full: "Humanize" },
-                        "rubric-rewrite": { short: "📝", full: "Rewrite" },
+                        improve: { short: "✦", full: "Improve" },
+                        humanize: { short: "~", full: "Humanize" },
+                        "rubric-rewrite": { short: "✎", full: "Rewrite" },
                       };
                       return (
                         <button
@@ -664,7 +697,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                   disabled={upgrading}
                   className="btn-shine mt-4 inline-flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-6 py-2.5 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-50"
                 >
-                  {upgrading ? "Redirecting…" : "👑 Upgrade to Pro — $9/month"}
+                  {upgrading ? "Redirecting…" : <span className="flex items-center gap-2"><Crown className="h-3.5 w-3.5" />Upgrade to Pro — $9/month</span>}
                 </button>
               </div>
             ) : (
@@ -684,7 +717,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                       >
                         {proLoading ? (
                           <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Analyzing…</>
-                        ) : "✨ Get improvement suggestions"}
+                        ) : <span className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5" />Get improvement suggestions</span>}
                       </button>
                     )}
                     {improveResult && (
@@ -730,7 +763,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                       >
                         {proLoading ? (
                           <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Rewriting…</>
-                        ) : "✨ Humanize my text"}
+                        ) : <span className="flex items-center gap-2"><Users className="h-3.5 w-3.5" />Humanize my text</span>}
                       </button>
                     )}
                     {humanizeResult && (
@@ -800,7 +833,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                           >
                             {proLoading ? (
                               <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Rewriting…</>
-                            ) : "✨ Rewrite to rubric"}
+                            ) : <span className="flex items-center gap-2"><FileText className="h-3.5 w-3.5" />Rewrite to rubric</span>}
                           </button>
                         )}
                         {rubricRewriteResult && (
@@ -858,8 +891,8 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
           </div>
         )}
 
-        {/* History panel */}
-        {accessToken && (
+        {/* History panel — only on landing page; workspace shows it in the sidebar */}
+        {!workspace && accessToken && (
           <HistoryPanel
             submissions={history}
             accessToken={accessToken}
