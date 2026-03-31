@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import type { AuthState } from "../hooks/useAuth";
 import type { QuotaInfo } from "../types";
 
@@ -58,7 +59,7 @@ export function ProfileModal({ open, onClose, auth, isPro, quota, onUpgrade }: P
                   : "bg-slate-100 text-slate-500"
               }`}
             >
-              {isPro ? "✨ Pro" : "Free plan"}
+              {isPro ? <><Sparkles className="h-3 w-3" /> Pro</> : "Free plan"}
             </span>
           </div>
           <button
@@ -101,7 +102,7 @@ export function ProfileModal({ open, onClose, auth, isPro, quota, onUpgrade }: P
               onClick={handleUpgrade}
               className="w-full rounded-xl bg-gradient-to-br from-accent to-accent-dark py-2.5 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.98]"
             >
-              Upgrade to Pro — $9/mo ✨
+              <span className="flex items-center justify-center gap-2"><Sparkles className="h-3.5 w-3.5" />Upgrade to Pro — $9/mo</span>
             </button>
           </div>
         )}
@@ -109,7 +110,7 @@ export function ProfileModal({ open, onClose, auth, isPro, quota, onUpgrade }: P
         {/* Pro badge */}
         {isPro && (
           <div className="border-b border-slate-100 px-6 py-4">
-            <p className="text-sm text-emerald-700 font-medium">✨ You have unlimited analyses + all Pro features.</p>
+            <p className="flex items-center gap-2 text-sm text-emerald-700 font-medium"><Sparkles className="h-3.5 w-3.5 flex-shrink-0" />You have unlimited analyses + all Pro features.</p>
           </div>
         )}
 
