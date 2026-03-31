@@ -22,7 +22,12 @@ class Settings(BaseSettings):
 
     # ── CORS ───────────────────────────────────────────────────────────────────
     allowed_origins: list[str] = Field(
-        default_factory=lambda: ["http://127.0.0.1:5173", "http://localhost:5173"]
+        default_factory=lambda: [
+            "http://127.0.0.1:5173",
+            "http://localhost:5173",
+            "https://wrex.app",
+            "https://www.wrex.app",
+        ]
     )
 
     # ── Analysis limits ────────────────────────────────────────────────────────
