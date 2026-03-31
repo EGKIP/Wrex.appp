@@ -18,6 +18,8 @@ interface NavbarProps {
   mode?: "landing" | "workspace";
   onOpenAuth: (tab?: "signin" | "signup") => void;
   onUpgrade?: () => void;
+  /** Called whenever the navbar hides or shows in workspace mode */
+  onNavHidden?: (hidden: boolean) => void;
 }
 
 function getInitials(email: string): string {
@@ -51,11 +53,58 @@ function Avatar({ email, isPro }: { email: string; isPro: boolean }) {
   );
 }
 
-export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAuth, onUpgrade }: NavbarProps) {
+export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAuth, onUpgrade, onNavHidden }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [navHidden, setNavHidden] = useState(false);
   const isWorkspace = mode === "workspace";
+
+  // Auto-hide in workspace mode — hides after 2.5s idle, reveals when cursor
+  // approaches the top ~80 px of the viewport.
+  useEffect(() => {
+    if (!isWorkspace) {
+      setNavHidden(false);
+      onNavHidden?.(false);
+      return;
+    }
+
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const reveal = () => {
+      if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+      // Always call both — React will bail out of re-render if state already false
+      setNavHidden(false);
+      onNavHidden?.(false);
+    };
+
+    const startHideTimer = () => {
+      if (hideTimer) return;
+      hideTimer = setTimeout(() => {
+        hideTimer = null;
+        setNavHidden(true);
+        onNavHidden?.(true);
+      }, 2500);
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (e.clientY < 80) {
+        reveal();
+      } else {
+        startHideTimer();
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    // Start the initial hide timer on mount
+    startHideTimer();
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      if (hideTimer) clearTimeout(hideTimer);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isWorkspace]);
 
   useEffect(() => {
     const sections = ["how-it-works", "analyzer", "faq"];
@@ -79,7 +128,14 @@ export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAut
 
   return (
     <>
-    <header className="sticky top-0 z-20 px-4 pt-3 pb-1.5 lg:px-6">
+    <header
+      className={[
+        "z-20 px-4 pt-3 pb-1.5 lg:px-6 transition-transform duration-300 ease-in-out",
+        isWorkspace
+          ? `fixed top-0 left-0 right-0 w-full ${navHidden ? "-translate-y-full" : "translate-y-0"}`
+          : "sticky top-0",
+      ].join(" ")}
+    >
       {/* Quota progress bar — thin strip above the pill, only for logged-in free users */}
       {quotaPct !== null && (
         <div className="absolute inset-x-0 top-0 h-[3px] overflow-hidden">

@@ -154,6 +154,11 @@ function App() {
   // Workspace: load history item into the editor
   const [workspaceLoadText, setWorkspaceLoadText] = useState<{ text: string; rubric: string | null } | null>(null);
 
+  // Auto-hide navbar: track visibility so the workspace main can reclaim the space
+  const [navbarHidden, setNavbarHidden] = useState(false);
+  // Navbar height = pt-3(12) + pb-1.5(6) + glass-nav py-3(24) + brand h-11(44) = 86px
+  const NAV_HEIGHT = 86;
+
   return (
     <div className="flex min-h-screen flex-col bg-white text-charcoal">
       <Navbar
@@ -163,11 +168,18 @@ function App() {
         mode={isWorkspace ? "workspace" : "landing"}
         onOpenAuth={openAuth}
         onUpgrade={handleUpgrade}
+        onNavHidden={setNavbarHidden}
       />
 
       {isWorkspace ? (
         /* ── Authenticated workspace ──────────────────────────────────────────── */
-        <main className="flex flex-1">
+        <main
+          className="flex flex-1"
+          style={{
+            paddingTop: navbarHidden ? 0 : NAV_HEIGHT,
+            transition: "padding-top 300ms ease-in-out",
+          }}
+        >
           <WorkspaceSidebar
             historyOpen={historyOpen}
             onHistoryToggle={() => setHistoryOpen((v) => !v)}
