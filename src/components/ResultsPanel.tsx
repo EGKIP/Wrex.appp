@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Sparkles, Wand2 } from "lucide-react";
 import type { AnalyzeResponse, CriterionResult, RubricMatchResult } from "../types";
 import { proHumanize } from "../lib/api";
 
@@ -151,7 +152,7 @@ function SentenceHighlighter({
                   {!isPro ? (
                     /* Free user nudge */
                     <span className="flex items-start gap-3 rounded-input border border-accent/30 bg-accent/5 px-4 py-3">
-                      <span className="text-base">✨</span>
+                      <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-accent" />
                       <span className="flex-1">
                         <span className="block text-xs font-semibold text-navy">Pro feature</span>
                         <span className="block text-xs text-charcoal/65 mt-0.5">Click to rewrite this sentence with AI — available on Wrex Pro.</span>
@@ -181,7 +182,7 @@ function SentenceHighlighter({
                     /* Rewrite result */
                     <span className="block rounded-input border border-emerald-200 bg-emerald-50 px-4 py-3">
                       <span className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-emerald-700">✦ Suggested rewrite</span>
+                        <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700"><Wand2 className="h-3 w-3" />Suggested rewrite</span>
                         <button type="button" onClick={() => { setActiveIdx(null); setRewrite(null); }} className="text-charcoal/30 hover:text-charcoal/60 text-base leading-none">×</button>
                       </span>
                       <span className="block text-sm leading-7 text-charcoal">{rewrite.rewritten}</span>
@@ -314,7 +315,7 @@ function RubricPanel({ rubric, onRubricRewrite }: { rubric: RubricMatchResult; o
             onClick={onRubricRewrite}
             className="ml-auto rounded-soft bg-navy px-3 py-1 text-[11px] font-bold text-white transition hover:bg-navy/80"
           >
-            ✨ Rewrite to fix missing
+            <Sparkles className="inline h-3 w-3 mr-1 -mt-0.5" />Rewrite to fix missing
           </button>
         )}
       </div>

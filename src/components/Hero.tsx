@@ -1,8 +1,10 @@
+import { BarChart2, Highlighter, ClipboardList, Lightbulb } from "lucide-react";
+
 const FEATURES = [
-  { icon: "📊", label: "AI-pattern score", desc: "0–100 likelihood score based on writing patterns" },
-  { icon: "🔍", label: "Sentence flags", desc: "Highlights specific sentences that look AI-written" },
-  { icon: "📋", label: "Rubric alignment", desc: "Maps your draft against assignment criteria" },
-  { icon: "💡", label: "Writing tips", desc: "Concrete suggestions to improve your draft" },
+  { Icon: BarChart2, label: "AI-pattern score", desc: "0–100 likelihood score based on writing patterns" },
+  { Icon: Highlighter, label: "Sentence flags", desc: "Highlights specific sentences that look AI-written" },
+  { Icon: ClipboardList, label: "Rubric alignment", desc: "Maps your draft against assignment criteria" },
+  { Icon: Lightbulb, label: "Writing tips", desc: "Concrete suggestions to improve your draft" },
 ];
 
 interface HeroProps {
@@ -61,16 +63,16 @@ export function Hero({ onTryFree }: HeroProps) {
           </div>
 
           {/* Right — what you get card */}
-          <div className="hidden lg:block">
+          <div>
             <div className="animate-float">
               <div className="rounded-modal bg-white p-6 shadow-float">
                 <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/45">
                   What you get
                 </p>
                 <div className="mt-4 space-y-3">
-                  {FEATURES.map(({ icon, label, desc }) => (
+                  {FEATURES.map(({ Icon, label, desc }) => (
                     <div key={label} className="flex items-start gap-3 rounded-input bg-mist px-4 py-3">
-                      <span className="text-lg leading-none">{icon}</span>
+                      <Icon className="mt-0.5 h-4 w-4 flex-shrink-0 text-accent" />
                       <div>
                         <p className="text-sm font-semibold text-navy">{label}</p>
                         <p className="mt-0.5 text-xs leading-5 text-charcoal/60">{desc}</p>

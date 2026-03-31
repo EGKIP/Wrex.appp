@@ -1,17 +1,23 @@
+import { ClipboardList, ScanSearch, PenLine, Wand2 } from "lucide-react";
+
 const features = [
   {
+    Icon: ClipboardList,
     title: "Rubric alignment",
     desc: "Paste your assignment brief. Wrex maps every criterion to your draft and flags the gaps.",
   },
   {
+    Icon: ScanSearch,
     title: "Gap detection",
     desc: "See exactly which rubric points are missing, weak, or well-covered — at a glance.",
   },
   {
+    Icon: PenLine,
     title: "Paragraph rewrites",
     desc: "Get targeted rewrites for sections that don't meet the rubric, not generic suggestions.",
   },
   {
+    Icon: Wand2,
     title: "Humanizing support",
     desc: "Strengthen natural phrasing in sentences flagged as likely AI-generated.",
   },
@@ -52,13 +58,14 @@ export function ProPreview() {
         </div>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map((feature) => (
+          {features.map(({ Icon, title, desc }) => (
             <div
-              key={feature.title}
+              key={title}
               className="rounded-soft border border-navy/10 bg-white p-5"
             >
-              <p className="text-sm font-semibold text-navy">{feature.title}</p>
-              <p className="mt-2 text-sm leading-6 text-charcoal/65">{feature.desc}</p>
+              <Icon className="h-5 w-5 text-accent mb-3" />
+              <p className="text-sm font-semibold text-navy">{title}</p>
+              <p className="mt-2 text-sm leading-6 text-charcoal/65">{desc}</p>
             </div>
           ))}
         </div>

@@ -553,7 +553,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                       Redirecting…
                     </>
                   ) : (
-                    <>👑 Upgrade to Pro — $9/month</>
+                    <><Crown className="inline h-3.5 w-3.5 mr-1.5 -mt-0.5" />Upgrade to Pro — $9/month</>
                   )}
                 </button>
               </div>

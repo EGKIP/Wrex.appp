@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Sparkles } from "lucide-react";
 import type { AuthState } from "../hooks/useAuth";
 import type { QuotaInfo } from "../types";
 import { Brand } from "./Brand";
@@ -40,7 +41,11 @@ function Avatar({ email, isPro }: { email: string; isPro: boolean }) {
     <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-navy text-xs font-bold text-white select-none ring-2 ring-white shadow-sm">
       {initials}
       {isPro && (
-        <span className="absolute -top-1 -right-1 text-[10px] leading-none" title="Wrex Pro">👑</span>
+        <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent shadow-sm" title="Wrex Pro">
+          <svg viewBox="0 0 14 10" fill="none" className="h-2.5 w-2.5" aria-hidden="true">
+            <path d="M1 9 L3.5 3 L7 7 L10.5 1 L13 9 Z" fill="#1e2a3a" strokeLinejoin="round"/>
+          </svg>
+        </span>
       )}
     </span>
   );
@@ -127,8 +132,8 @@ export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAut
                   </span>
                 )}
                 {isPro && (
-                  <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-semibold text-navy">
-                    Pro ✨
+                  <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-semibold text-navy">
+                    <Sparkles className="h-3 w-3" />Pro
                   </span>
                 )}
                 <button
@@ -211,7 +216,7 @@ export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAut
                     <span className="text-xs text-charcoal/40">{quota.remaining}/{quota.limit} analyses left today</span>
                   )}
                   {isPro && (
-                    <span className="text-xs font-semibold text-accent">Pro member ✨</span>
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent"><Sparkles className="h-3 w-3" />Pro member</span>
                   )}
                 </>
               ) : (
