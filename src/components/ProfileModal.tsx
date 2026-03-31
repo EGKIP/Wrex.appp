@@ -14,7 +14,14 @@ export function ProfileModal({ open, onClose, auth, isPro, quota, onUpgrade }: P
   if (!open || !auth.user) return null;
 
   const email = auth.user.email ?? "";
-  const initials = email.slice(0, 2).toUpperCase();
+  const local = email.split("@")[0];
+  const parts = local.split(/[._\-+]/);
+  const initials = (parts.length >= 2 && parts[0] && parts[1])
+    ? (parts[0][0] + parts[1][0]).toUpperCase()
+    : local.slice(0, 2).toUpperCase();
+  const displayName = parts[0]
+    ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
+    : local;
   const used = quota?.used ?? 0;
   const limit = quota?.limit ?? 3;
   const remaining = quota?.remaining ?? limit;
@@ -42,7 +49,8 @@ export function ProfileModal({ open, onClose, auth, isPro, quota, onUpgrade }: P
             {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold text-charcoal">{email}</p>
+            <p className="font-semibold text-charcoal">{displayName}</p>
+            <p className="truncate text-xs text-slate-400">{email}</p>
             <span
               className={`mt-0.5 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                 isPro

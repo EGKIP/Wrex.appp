@@ -62,7 +62,7 @@ interface AnalyzerSectionProps {
 
 export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onAuthRequired, workspace = false }: AnalyzerSectionProps) {
   const { toast } = useToast();
-  const [text, setText] = useState(SAMPLE_TEXT);
+  const [text, setText] = useState(() => workspace ? "" : SAMPLE_TEXT);
   const [rubric, setRubric] = useState("");
   const [showRubric, setShowRubric] = useState(false);
   const [results, setResults] = useState<AnalyzeResponse | null>(null);
@@ -323,11 +323,11 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
       id="analyzer"
       className={
         workspace
-          ? "flex flex-1 flex-col overflow-hidden bg-mist px-4 py-4 lg:px-6 lg:py-5"
+          ? "bg-mist px-4 py-6 lg:px-6 lg:py-8"
           : "bg-mist px-6 py-16 lg:px-10 lg:py-20"
       }
     >
-      <div className={workspace ? "flex flex-1 flex-col overflow-hidden mx-auto w-full max-w-7xl" : "mx-auto max-w-7xl"}>
+      <div className="mx-auto w-full max-w-7xl">
         {!workspace && (
           <div className="mx-auto mb-10 max-w-xl text-center">
             <h2 className="text-[1.75rem] font-bold tracking-tight text-navy lg:text-[2.25rem]">
@@ -339,9 +339,9 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
           </div>
         )}
 
-        <div className={`grid gap-8 lg:grid-cols-[1.05fr_0.95fr] ${workspace ? "flex-1 overflow-hidden lg:grid lg:overflow-hidden" : ""}`}>
+        <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
           {/* Input card */}
-          <div className={`rounded-modal border border-border-base bg-white shadow-soft ${workspace ? "flex flex-col overflow-hidden p-4 sm:p-5" : "p-6 sm:p-8"}`}>
+          <div className={`rounded-modal border border-border-base bg-white shadow-soft ${workspace ? "p-4 sm:p-5" : "p-6 sm:p-8"}`}>
             {/* Draft input */}
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-navy">Your writing</p>
@@ -358,7 +358,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               value={text}
               onChange={(event) => { hasUserEdited.current = true; setText(event.target.value); }}
               placeholder="Paste your text here to analyze..."
-              className={`mt-3 w-full rounded-input border border-border-base bg-white px-4 py-3 text-base leading-7 text-charcoal placeholder:text-charcoal/30 outline-none transition focus:border-accent focus:ring-[3px] focus:ring-accent/15 resize-none ${workspace ? "flex-1" : "min-h-[300px]"}`}
+              className={`mt-3 w-full rounded-input border border-border-base bg-white px-4 py-3 text-base leading-7 text-charcoal placeholder:text-charcoal/30 outline-none transition focus:border-accent focus:ring-[3px] focus:ring-accent/15 resize-none ${workspace ? "min-h-[420px]" : "min-h-[300px]"}`}
             />
             <div className="mt-2 flex items-center justify-between text-xs text-charcoal/40">
               <span>{wordCount} words</span>
@@ -591,14 +591,14 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
             )}
           </div>
 
-          {/* Right column — scrollable in workspace mode */}
-          <div className={workspace ? "overflow-y-auto min-h-0" : undefined}>
+          {/* Right column */}
+          <div>
             <ResultsPanel results={results} loading={loading} isPro={isPro} onRubricRewrite={handleRubricRewriteNudge} onUpgrade={handleUpgrade} text={text} accessToken={accessToken} />
           </div>
         </div>{/* end grid */}
 
-        {/* Pro AI panel — landing mode only (below grid) */}
-        {!workspace && results && (
+        {/* Pro AI panel */}
+        {results && (
           <div ref={proPanelRef} className="mt-8 rounded-modal border border-border-base bg-white p-6 shadow-soft sm:p-8">
             {/* Header row — tappable on mobile to collapse/expand */}
             <div
@@ -858,8 +858,8 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
           </div>
         )}
 
-        {/* History panel — landing mode only */}
-        {!workspace && accessToken && (
+        {/* History panel */}
+        {accessToken && (
           <HistoryPanel
             submissions={history}
             accessToken={accessToken}

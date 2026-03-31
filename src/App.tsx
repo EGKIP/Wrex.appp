@@ -120,7 +120,7 @@ function App() {
   const isWorkspace = !auth.loading && !!auth.user;
 
   return (
-    <div className={`${isWorkspace ? "flex h-screen flex-col overflow-hidden" : "min-h-screen"} bg-white text-charcoal`}>
+    <div className="flex min-h-screen flex-col bg-white text-charcoal">
       <Navbar
         auth={auth}
         quota={quota}
@@ -132,7 +132,7 @@ function App() {
 
       {isWorkspace ? (
         /* ── Authenticated workspace ──────────────────────────────────────────── */
-        <main className="flex flex-1 flex-col overflow-hidden">
+        <main className="flex-1">
           <AnalyzerSection
             accessToken={auth.session?.access_token ?? null}
             isPro={isPro}
