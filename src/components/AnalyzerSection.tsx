@@ -623,45 +623,75 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
 
 
 
+            {/* ── Quota wall: anonymous hit limit ─────────────────────────── */}
             {quotaHit === "anon" && (
-              <div className="mt-4 rounded-input border border-accent/40 bg-accent/10 px-4 py-3 text-sm">
-                <p className="font-semibold text-navy">You've used your free analysis for today.</p>
-                <p className="mt-1 text-charcoal/70">
-                  Create a free account to get 3 analyses per day.
-                </p>
-                <button
-                  type="button"
-                  onClick={onAuthRequired}
-                  className="mt-3 rounded-soft bg-navy px-4 py-2 text-xs font-bold text-white transition hover:bg-navy/80"
-                >
-                  Sign up free →
-                </button>
+              <div className="mt-4 overflow-hidden rounded-modal border border-accent/30 bg-gradient-to-br from-accent/8 to-accent/4 shadow-soft">
+                <div className="flex items-start gap-3 px-4 py-4">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/20">
+                    <Crown className="h-4 w-4 text-accent-dark" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-navy">Free analysis used for today</p>
+                    <p className="mt-0.5 text-xs text-charcoal/65">
+                      Create a free account to unlock <strong>3 analyses/day</strong> — no credit card needed.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={onAuthRequired}
+                        className="btn-shine inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-4 py-2 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97]"
+                      >
+                        <Sparkles className="h-3 w-3" />Sign up free
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleUpgrade}
+                        disabled={upgrading}
+                        className="inline-flex items-center gap-1.5 rounded-soft border border-accent/40 bg-white px-4 py-2 text-xs font-semibold text-navy transition hover:border-accent hover:shadow-soft disabled:opacity-50"
+                      >
+                        <Crown className="h-3 w-3 text-accent-dark" />{upgrading ? "Redirecting…" : "Go Pro — $9/mo"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {/* Pro benefits strip */}
+                <div className="flex items-center gap-4 border-t border-accent/15 bg-white/50 px-4 py-2.5 text-[11px] text-charcoal/55">
+                  {["3 → ∞ analyses", "5× word limit", "Tone templates", "AI rewrites"].map((b) => (
+                    <span key={b} className="flex items-center gap-1"><span className="text-accent font-bold">✓</span>{b}</span>
+                  ))}
+                </div>
               </div>
             )}
+
+            {/* ── Quota wall: logged-in free user hit daily limit ──────────── */}
             {quotaHit === "auth" && !isPro && (
-              <div className="mt-4 rounded-input border border-accent/40 bg-accent/10 px-4 py-3 text-sm">
-                <p className="font-semibold text-navy">You've used all 3 analyses for today.</p>
-                <p className="mt-1 text-charcoal/70">
-                  Upgrade to <strong>Wrex Pro</strong> for unlimited analyses, priority processing, and more.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleUpgrade}
-                  disabled={upgrading}
-                  className="btn-shine mt-3 flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {upgrading ? (
-                    <>
-                      <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                      </svg>
-                      Redirecting…
-                    </>
-                  ) : (
-                    <><Crown className="inline h-3.5 w-3.5 mr-1.5 -mt-0.5" />Upgrade to Pro — $9/month</>
-                  )}
-                </button>
+              <div className="mt-4 overflow-hidden rounded-modal border border-accent/30 bg-gradient-to-br from-accent/8 to-accent/4 shadow-soft">
+                <div className="flex items-start gap-3 px-4 py-4">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/20">
+                    <Crown className="h-4 w-4 text-accent-dark" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-navy">Daily limit reached (3 / 3)</p>
+                    <p className="mt-0.5 text-xs text-charcoal/65">
+                      Upgrade to Pro for <strong>unlimited analyses</strong>, 5× word limit, and tone rewrites.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleUpgrade}
+                      disabled={upgrading}
+                      className="btn-shine mt-3 inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {upgrading ? (
+                        <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Redirecting…</>
+                      ) : <><Crown className="h-3.5 w-3.5" />Upgrade to Pro — $9/month</>}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 border-t border-accent/15 bg-white/50 px-4 py-2.5 text-[11px] text-charcoal/55">
+                  {["Unlimited analyses", "1,250 words", "5 tone templates", "GPT-4o rewrites"].map((b) => (
+                    <span key={b} className="flex items-center gap-1"><span className="text-accent font-bold">✓</span>{b}</span>
+                  ))}
+                </div>
               </div>
             )}
             {error ? (
@@ -670,63 +700,72 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               </p>
             ) : null}
 
-            {/* Word limit upgrade wall — shown when text exceeds free/pro limit */}
+            {/* ── Word limit wall ─────────────────────────────────────────── */}
             {wordLimitExceeded && !isPro && (
-              <div className="mt-4 flex items-start gap-3 rounded-input border border-amber-300 bg-amber-50 px-4 py-3">
-                <Crown className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-navy">
-                    Free limit: {FREE_LIMIT} words
-                  </p>
-                  <p className="mt-0.5 text-xs text-charcoal/65">
-                    Your text is {wordCount - FREE_LIMIT} words over the free limit.
-                    Upgrade to Pro for up to {PRO_LIMIT.toLocaleString()} words per analysis.
-                  </p>
+              <div className="mt-4 overflow-hidden rounded-modal border border-amber-300 bg-amber-50 shadow-soft">
+                <div className="flex items-start gap-3 px-4 py-3.5">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-200">
+                    <Crown className="h-3.5 w-3.5 text-amber-700" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-navy">
+                      {wordCount - FREE_LIMIT} words over the free limit
+                    </p>
+                    <p className="mt-0.5 text-xs text-charcoal/65">
+                      Pro gives you <strong>{PRO_LIMIT.toLocaleString()} words</strong> — that's 5× more space to write.
+                    </p>
+                    <div className="mt-2.5 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={handleUpgrade}
+                        disabled={upgrading}
+                        className="btn-shine inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-4 py-1.5 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] disabled:opacity-50"
+                      >
+                        <Crown className="h-3 w-3" />{upgrading ? "Redirecting…" : "Upgrade — $9/mo"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setText(text.trim().split(/\s+/).slice(0, FREE_LIMIT).join(" "))}
+                        className="inline-flex items-center rounded-soft border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-charcoal/60 transition hover:text-charcoal"
+                      >
+                        Trim to {FREE_LIMIT} words
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Hard quota block — 0 analyses left ──────────────────────── */}
+            {accessToken && !isPro && quota?.remaining === 0 ? (
+              <div className="mt-6 overflow-hidden rounded-modal border border-accent/30 bg-gradient-to-br from-accent/8 to-accent/4 px-4 py-4 shadow-soft">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-navy">0 analyses left today</p>
+                    <p className="mt-0.5 text-xs text-charcoal/55 tabular-nums">
+                      Resets in <span className="font-semibold text-charcoal/75">{resetCountdown}</span>
+                    </p>
+                  </div>
                   <button
                     type="button"
                     onClick={handleUpgrade}
                     disabled={upgrading}
-                    className="btn-shine mt-2 inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-4 py-1.5 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] disabled:opacity-50"
+                    className="btn-shine shrink-0 inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-4 py-2 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] disabled:opacity-50"
                   >
-                    {upgrading ? "Redirecting…" : <><Crown className="h-3 w-3" />Upgrade to Pro — $9/mo</>}
+                    <Crown className="h-3.5 w-3.5" />{upgrading ? "Redirecting…" : "Go Pro"}
                   </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setText(text.trim().split(/\s+/).slice(0, FREE_LIMIT).join(" "))}
-                  className="shrink-0 rounded-soft border border-amber-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-charcoal/60 transition hover:text-charcoal"
-                  title="Trim to free limit"
-                >
-                  Trim to {FREE_LIMIT}
-                </button>
-              </div>
-            )}
-
-            {/* Hard quota block — logged-in free user, 0 remaining */}
-            {accessToken && !isPro && quota?.remaining === 0 ? (
-              <div className="mt-6">
+                {/* Disabled analyze button below */}
                 <button
                   type="button"
                   disabled
-                  className="flex cursor-not-allowed items-center gap-2 rounded-soft bg-charcoal/10 px-8 py-3.5 text-base font-bold text-charcoal/40"
+                  className="mt-3 flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-soft bg-charcoal/10 py-3 text-sm font-bold text-charcoal/35"
                 >
                   <svg className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
                   </svg>
-                  Limit reached
+                  Analyze locked — limit reached
                 </button>
-                <p className="mt-2 text-xs text-charcoal/50 tabular-nums">
-                  Resets in <span className="font-semibold text-charcoal/70">{resetCountdown}</span>
-                  {" · "}
-                  <button
-                    type="button"
-                    onClick={handleUpgrade}
-                    disabled={upgrading}
-                    className="font-semibold text-accent underline-offset-2 hover:underline disabled:opacity-50"
-                  >
-                    {upgrading ? "Redirecting…" : "Upgrade for unlimited →"}
-                  </button>
-                </p>
               </div>
             ) : (
               <div className="mt-6 space-y-2">
@@ -831,21 +870,39 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
 
             {/* Collapsible body — hidden on mobile when collapsed */}
             {!proCollapsed && (!isPro ? (
-              /* Locked state for free users */
-              <div className="mt-5 rounded-input border border-dashed border-accent/40 bg-accent/5 p-5 text-center">
-                <p className="text-sm font-semibold text-navy">Unlock AI-powered rewrites</p>
-                <p className="mt-2 text-sm text-charcoal/65">
-                  Pro members can get sentence-level improvement suggestions and full humanized rewrites
-                  aligned to their rubric — powered by GPT-4o mini.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleUpgrade}
-                  disabled={upgrading}
-                  className="btn-shine mt-4 inline-flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-6 py-2.5 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-50"
-                >
-                  {upgrading ? "Redirecting…" : <span className="flex items-center gap-2"><Crown className="h-3.5 w-3.5" />Upgrade to Pro — $9/month</span>}
-                </button>
+              /* ── Locked state for free users ─────────────────────────────── */
+              <div className="mt-5 overflow-hidden rounded-modal border border-accent/25 bg-gradient-to-br from-accent/6 to-accent/3">
+                {/* Feature preview grid */}
+                <div className="grid grid-cols-2 gap-px bg-accent/15">
+                  {[
+                    { icon: <Sparkles className="h-4 w-4 text-accent-dark" />, label: "Sentence rewrites", sub: "Fix flagged sentences one-by-one" },
+                    { icon: <FileText className="h-4 w-4 text-accent-dark" />, label: "Full humanize", sub: "Natural, Academic, Speech & more" },
+                    { icon: <Crown className="h-4 w-4 text-accent-dark" />, label: "Tone templates", sub: "5 distinct writing voices" },
+                    { icon: <Users className="h-4 w-4 text-accent-dark" />, label: "Rubric alignment", sub: "Rewrite to match your rubric" },
+                  ].map(({ icon, label, sub }) => (
+                    <div key={label} className="flex items-start gap-2.5 bg-white/60 px-3.5 py-3">
+                      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/15">{icon}</div>
+                      <div>
+                        <p className="text-xs font-semibold text-navy">{label}</p>
+                        <p className="text-[11px] text-charcoal/55">{sub}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* CTA footer */}
+                <div className="flex items-center justify-between px-4 py-3.5">
+                  <p className="text-xs text-charcoal/55">
+                    From <span className="font-bold text-navy">$9 / month</span> · cancel anytime
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleUpgrade}
+                    disabled={upgrading}
+                    className="btn-shine inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-50"
+                  >
+                    <Crown className="h-3.5 w-3.5" />{upgrading ? "Redirecting…" : "Upgrade to Pro"}
+                  </button>
+                </div>
               </div>
             ) : (
               /* Pro content */
