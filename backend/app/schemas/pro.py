@@ -27,8 +27,15 @@ class ImproveResponse(BaseModel):
 
 # ── Humanize ──────────────────────────────────────────────────────────────────
 
+TONE_CHOICES = ("natural", "narrative", "speech", "academic", "persuasive")
+
+
 class HumanizeRequest(BaseModel):
     text: str = Field(..., min_length=10)
+    tone: Optional[str] = Field(
+        "natural",
+        description="Rewrite tone. One of: natural, narrative, speech, academic, persuasive.",
+    )
 
 
 class HumanizeResponse(BaseModel):

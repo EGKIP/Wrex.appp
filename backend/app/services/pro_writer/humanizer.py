@@ -37,17 +37,46 @@ def _chat(messages: list[dict]) -> str:
     return data["choices"][0]["message"]["content"]
 
 
-def humanize_text(text: str) -> HumanizeResponse:
-    """Rewrite the text to sound more natural and less AI-generated."""
-    system = (
+_TONE_PROMPTS: dict[str, str] = {
+    "natural": (
         "You are a writing editor who specialises in making AI-generated text sound natural "
-        "and human-written. Preserve the meaning and academic tone but vary sentence structure, "
-        "reduce repetition, and use more conversational transitions. "
-        "Return a JSON object with two keys: "
-        "'rewritten' (the full rewritten text) and "
-        "'changes_summary' (one sentence describing what you changed, e.g. 'Varied sentence length and reduced passive voice in 4 places.'). "
-        "No markdown, just JSON."
-    )
+        "and human-written. Preserve the meaning but vary sentence structure, reduce repetition, "
+        "and use more conversational transitions."
+    ),
+    "narrative": (
+        "You are a writing editor who rewrites text in a rich narrative style — story-driven, "
+        "first-person where appropriate, vivid and engaging. Use scene-setting language, "
+        "anecdotes, and personal voice while preserving all core arguments and facts."
+    ),
+    "speech": (
+        "You are a writing editor who rewrites text as a spoken presentation or speech. "
+        "Use short, punchy sentences. Speak directly to the audience using 'you' and 'we'. "
+        "Add rhetorical questions and natural pauses (em dashes). Keep it energetic and clear."
+    ),
+    "academic": (
+        "You are a writing editor who rewrites text in formal academic style. "
+        "Use hedging language ('it can be argued', 'evidence suggests'), passive voice where appropriate, "
+        "complex noun phrases, and structured paragraph signposting. Avoid contractions entirely."
+    ),
+    "persuasive": (
+        "You are a writing editor who rewrites text in a persuasive, argument-forward style. "
+        "Use strong rhetorical devices: rule of three, anaphora, direct address, and emotional appeal. "
+        "Every paragraph should build toward a clear call to action or conclusion."
+    ),
+}
+
+_JSON_INSTRUCTION = (
+    " Return a JSON object with two keys: "
+    "'rewritten' (the full rewritten text) and "
+    "'changes_summary' (one sentence describing what you changed). "
+    "No markdown, just raw JSON."
+)
+
+
+def humanize_text(text: str, tone: str = "natural") -> HumanizeResponse:
+    """Rewrite the text to sound more natural/human in the requested tone."""
+    tone_key = tone.lower() if tone and tone.lower() in _TONE_PROMPTS else "natural"
+    system = _TONE_PROMPTS[tone_key] + _JSON_INSTRUCTION
     user = f"Original text:\n{text}"
 
     try:
@@ -58,5 +87,5 @@ def humanize_text(text: str) -> HumanizeResponse:
             changes_summary=str(data.get("changes_summary", "")),
         )
     except Exception as exc:
-        logger.error("humanize_error", extra={"error": str(exc)})
+        logger.error("humanize_error", extra={"error": str(exc), "tone": tone_key})
         raise

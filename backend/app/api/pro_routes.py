@@ -224,7 +224,7 @@ def pro_humanize(
     _require_openai()
 
     from app.services.pro_writer.humanizer import humanize_text
-    return humanize_text(payload.text)
+    return humanize_text(payload.text, tone=payload.tone or "natural")
 
 
 @router.post("/rubric-rewrite", response_model=RubricRewriteResponse)

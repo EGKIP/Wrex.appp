@@ -52,6 +52,14 @@ const RUBRIC_TEMPLATES: { label: string; value: string }[] = [
   },
 ];
 
+const TONE_OPTIONS: { value: string; label: string; emoji: string; desc: string }[] = [
+  { value: "natural",    label: "Natural",    emoji: "✦", desc: "Human, varied, natural flow" },
+  { value: "narrative",  label: "Narrative",  emoji: "📖", desc: "Story-driven, first-person" },
+  { value: "speech",     label: "Speech",     emoji: "🎙️", desc: "Conversational and punchy" },
+  { value: "academic",   label: "Academic",   emoji: "🎓", desc: "Formal, structured, hedged" },
+  { value: "persuasive", label: "Persuasive", emoji: "⚡", desc: "Argument-forward, rhetorical" },
+];
+
 interface AnalyzerSectionProps {
   accessToken?: string | null;
   isPro?: boolean;
@@ -214,6 +222,9 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     toast("Sentence replaced — re-analyze to see your new score ✓", "success");
   }
 
+  // ── Tone state (Pro) ───────────────────────────────────────────────────────
+  const [tone, setTone] = useState<string>("natural");
+
   // ── Pro AI state ───────────────────────────────────────────────────────────
   const proPanelRef = useRef<HTMLDivElement>(null);
   const [proTab, setProTab] = useState<"improve" | "humanize" | "rubric-rewrite">("improve");
@@ -248,12 +259,12 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     if (!accessToken) return;
     setProLoading(true); setProError("");
     try {
-      const res = await proHumanize(text, accessToken);
+      const res = await proHumanize(text, accessToken, tone);
       setHumanizeResult(res);
     } catch (e) {
       setProError(e instanceof Error ? e.message : "Something went wrong.");
     } finally { setProLoading(false); }
-  }, [accessToken, text]);
+  }, [accessToken, text, tone]);
 
   const runProRubricRewrite = useCallback(async () => {
     if (!accessToken) return;
@@ -887,9 +898,37 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
 
                 {proTab === "humanize" && (
                   <>
-                    <p className="mb-4 text-sm text-charcoal/65">
-                      Rewrite your text to sound more natural and varied — reducing detectable AI patterns.
+                    <p className="mb-3 text-sm text-charcoal/65">
+                      Rewrite your text in a chosen voice — reducing detectable AI patterns.
                     </p>
+
+                    {/* ── Tone picker ───────────────────────────────────── */}
+                    <div className="mb-4">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-charcoal/45">Tone</p>
+                      <div className="flex flex-wrap gap-2">
+                        {TONE_OPTIONS.map((t) => (
+                          <button
+                            key={t.value}
+                            type="button"
+                            title={t.desc}
+                            onClick={() => { setTone(t.value); setHumanizeResult(null); }}
+                            className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                              tone === t.value
+                                ? "border-accent bg-accent/15 text-navy"
+                                : "border-border-base bg-white text-charcoal/60 hover:border-accent/60 hover:text-navy"
+                            }`}
+                          >
+                            <span>{t.emoji}</span>
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
+                      {/* Tone description */}
+                      <p className="mt-1.5 text-[11px] text-charcoal/40">
+                        {TONE_OPTIONS.find((t) => t.value === tone)?.desc}
+                      </p>
+                    </div>
+
                     {!humanizeResult && (
                       <button
                         type="button"
@@ -899,7 +938,12 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                       >
                         {proLoading ? (
                           <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Rewriting…</>
-                        ) : <span className="flex items-center gap-2"><Users className="h-3.5 w-3.5" />Humanize my text</span>}
+                        ) : (
+                          <span className="flex items-center gap-2">
+                            <Users className="h-3.5 w-3.5" />
+                            Rewrite as {TONE_OPTIONS.find((t) => t.value === tone)?.label}
+                          </span>
+                        )}
                       </button>
                     )}
                     {humanizeResult && (

@@ -140,6 +140,7 @@ export async function proImprove(
 export async function proHumanize(
   text: string,
   accessToken: string,
+  tone: string = "natural",
 ): Promise<HumanizeResponse> {
   const response = await fetch(`${API_BASE_URL}/pro/humanize`, {
     method: "POST",
@@ -147,7 +148,7 @@ export async function proHumanize(
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, tone }),
   });
   return handleResponse<HumanizeResponse>(response);
 }
