@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 const STEPS = [
   {
     num: "01",
@@ -20,10 +22,25 @@ const STEPS = [
 ];
 
 export function HowItWorks() {
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const els = sectionRef.current?.querySelectorAll<HTMLElement>(".scroll-reveal");
+    if (!els?.length) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in-view"); obs.unobserve(e.target); } });
+      },
+      { threshold: 0.12 }
+    );
+    els.forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+
   return (
-    <section id="how-it-works" className="bg-white px-6 py-16 lg:px-10 lg:py-20">
+    <section id="how-it-works" className="bg-white px-6 py-16 lg:px-10 lg:py-20" ref={sectionRef}>
       <div className="mx-auto max-w-7xl">
-        <div className="mb-10 text-center">
+        <div className="mb-10 text-center scroll-reveal">
           <h2 className="text-[1.75rem] font-bold tracking-tight text-navy lg:text-[2.25rem]">
             How it works
           </h2>
@@ -33,10 +50,11 @@ export function HowItWorks() {
         </div>
 
         <div className="grid gap-5 md:grid-cols-3">
-          {STEPS.map(({ num, title, body, accent }) => (
+          {STEPS.map(({ num, title, body, accent }, i) => (
             <div
               key={num}
-              className={`rounded-modal p-7 shadow-soft transition duration-300 hover:shadow-soft-md hover:-translate-y-1 ${
+              data-delay={String(i + 1) as "1" | "2" | "3"}
+              className={`scroll-reveal rounded-modal p-7 shadow-soft transition duration-300 hover:shadow-soft-md hover:-translate-y-1 ${
                 accent
                   ? "bg-gradient-to-br from-accent to-accent-dark"
                   : "border border-border-base bg-white"

@@ -1,4 +1,5 @@
-import { BarChart2, Highlighter, ClipboardList, Lightbulb } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { BarChart2, Highlighter, ClipboardList, Lightbulb, ShieldCheck, EyeOff, GraduationCap } from "lucide-react";
 
 const FEATURES = [
   { Icon: BarChart2, label: "AI-pattern score", desc: "0–100 likelihood score based on writing patterns" },
@@ -11,7 +12,26 @@ interface HeroProps {
   onTryFree?: () => void;
 }
 
+const TRUST = [
+  { Icon: ShieldCheck, label: "Private by default" },
+  { Icon: EyeOff, label: "No school access" },
+  { Icon: GraduationCap, label: "Built for students" },
+];
+
 export function Hero({ onTryFree }: HeroProps) {
+  const rightRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = rightRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { el.classList.add("in-view"); obs.disconnect(); } },
+      { threshold: 0.15 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   return (
     <section className="relative overflow-hidden px-6 pb-20 pt-20 lg:px-10 lg:pb-28 lg:pt-28">
       {/* Background gradient */}
@@ -57,13 +77,22 @@ export function Hero({ onTryFree }: HeroProps) {
                 See how it works →
               </a>
             </div>
-            <p className="mt-5 text-xs text-charcoal/40">
-              No account needed · 3 free analyses/day with sign-up
+            {/* Trust strip */}
+            <div className="mt-6 flex flex-wrap items-center gap-4">
+              {TRUST.map(({ Icon, label }) => (
+                <span key={label} className="flex items-center gap-1.5 text-xs font-medium text-charcoal/55">
+                  <Icon className="h-3.5 w-3.5 text-accent-dark" />
+                  {label}
+                </span>
+              ))}
+            </div>
+            <p className="mt-3 text-xs text-charcoal/35">
+              1 free analysis without sign-up · 3/day with a free account
             </p>
           </div>
 
           {/* Right — what you get card */}
-          <div>
+          <div ref={rightRef} className="scroll-reveal" data-delay="1">
             <div className="animate-float">
               <div className="rounded-modal bg-white p-6 shadow-float">
                 <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/45">

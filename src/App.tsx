@@ -7,6 +7,7 @@ import { Hero } from "./components/Hero";
 import { HowItWorks } from "./components/HowItWorks";
 import { Navbar } from "./components/Navbar";
 import { ProfileModal } from "./components/ProfileModal";
+import { ProPreview } from "./components/ProPreview";
 import { Toaster } from "./components/Toaster";
 import { WorkspaceSidebar } from "./components/WorkspaceSidebar";
 import { useToast } from "./context/toast";
@@ -211,6 +212,7 @@ function App() {
           <main>
             <Hero onTryFree={() => openAuth("signup")} />
             <HowItWorks />
+            <ProPreview onTryFree={() => openAuth("signup")} onUpgrade={handleUpgrade} />
             <AnalyzerSection
               accessToken={auth.session?.access_token ?? null}
               isPro={isPro}
