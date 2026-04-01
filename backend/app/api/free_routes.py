@@ -44,6 +44,14 @@ def _save_submission(user_id: str, payload: AnalyzeRequest, result: AnalyzeRespo
         logger.warning("submission_save_failed", extra={"user_id": user_id, "error": str(exc)})
 
 
+FREE_WORD_LIMIT = 250
+PRO_WORD_LIMIT = 1250
+
+
+def _count_words(text: str) -> int:
+    return len(text.split()) if text.strip() else 0
+
+
 @router.post("/analyze", response_model=AnalyzeResponse)
 def analyze_text(
     request: Request,
@@ -51,6 +59,18 @@ def analyze_text(
     user: Optional[AuthUser] = Depends(get_optional_user),
 ) -> AnalyzeResponse:
     quota_info: QuotaInfo = check_quota(request, user)
+
+    # ── Word limit enforcement ─────────────────────────────────────────────────
+    word_count = _count_words(payload.text)
+    is_pro = getattr(user, "is_pro", False) if user else False
+    limit = PRO_WORD_LIMIT if is_pro else FREE_WORD_LIMIT
+    if word_count > limit:
+        tier = "Pro" if is_pro else "Free"
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"{tier} plan limit is {limit} words. Your text has {word_count} words. "
+                   f"{'Upgrade to Pro for up to 1,250 words.' if not is_pro else ''}",
+        )
 
     try:
         result = analyze_document(payload.text, rubric=payload.rubric)

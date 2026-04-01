@@ -92,6 +92,14 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const wordCount = countWords(text);
   const readingTime = wordCount > 0 ? Math.max(1, Math.round(wordCount / 200)) : 0;
 
+  // ── Word limits ────────────────────────────────────────────────────────────
+  const FREE_LIMIT = 250;
+  const PRO_LIMIT = 1250;
+  const wordLimit = isPro ? PRO_LIMIT : FREE_LIMIT;
+  const wordLimitExceeded = wordCount > wordLimit;
+  // Warning zone: last 20% of the limit
+  const wordLimitWarning = !wordLimitExceeded && wordCount >= wordLimit * 0.8;
+
   // ── Textarea auto-grow ─────────────────────────────────────────────────────
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
@@ -429,11 +437,14 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               className={`mt-3 w-full rounded-input border border-border-base bg-white px-4 py-3 text-base leading-7 text-charcoal placeholder:text-charcoal/30 outline-none transition focus:border-accent focus:ring-[3px] focus:ring-accent/15 resize-none overflow-hidden ${workspace ? "min-h-[420px]" : "min-h-[300px]"}`}
             />
             <div className="mt-2 flex items-center justify-between text-xs text-charcoal/40">
-              <span>
-                {wordCount > 0
-                  ? <>{wordCount} words{readingTime > 0 ? <> · ~{readingTime} min read</> : null}</>
-                  : "0 words"
-                }
+              <span className={
+                wordLimitExceeded ? "font-semibold text-danger" :
+                wordLimitWarning  ? "font-semibold text-warning" :
+                "text-charcoal/40"
+              }>
+                {wordCount} / {wordLimit} words
+                {!wordLimitExceeded && readingTime > 0 && <> · ~{readingTime} min read</>}
+                {wordLimitExceeded && <> — {isPro ? "Pro" : "Free"} limit reached</>}
               </span>
               {loading && hasUserEdited.current && <span className="animate-pulse text-accent">Scoring…</span>}
               {!loading && grammarLoading && <span className="animate-pulse">Checking grammar…</span>}
@@ -604,6 +615,38 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               </p>
             ) : null}
 
+            {/* Word limit upgrade wall — shown when text exceeds free/pro limit */}
+            {wordLimitExceeded && !isPro && (
+              <div className="mt-4 flex items-start gap-3 rounded-input border border-amber-300 bg-amber-50 px-4 py-3">
+                <Crown className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-navy">
+                    Free limit: {FREE_LIMIT} words
+                  </p>
+                  <p className="mt-0.5 text-xs text-charcoal/65">
+                    Your text is {wordCount - FREE_LIMIT} words over the free limit.
+                    Upgrade to Pro for up to {PRO_LIMIT.toLocaleString()} words per analysis.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleUpgrade}
+                    disabled={upgrading}
+                    className="btn-shine mt-2 inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-4 py-1.5 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] disabled:opacity-50"
+                  >
+                    {upgrading ? "Redirecting…" : <><Crown className="h-3 w-3" />Upgrade to Pro — $9/mo</>}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setText(text.trim().split(/\s+/).slice(0, FREE_LIMIT).join(" "))}
+                  className="shrink-0 rounded-soft border border-amber-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-charcoal/60 transition hover:text-charcoal"
+                  title="Trim to free limit"
+                >
+                  Trim to {FREE_LIMIT}
+                </button>
+              </div>
+            )}
+
             {/* Hard quota block — logged-in free user, 0 remaining */}
             {accessToken && !isPro && quota?.remaining === 0 ? (
               <div className="mt-6">
@@ -636,7 +679,8 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                   <button
                     type="button"
                     onClick={onAnalyze}
-                    disabled={loading || text.trim().length < 10}
+                    disabled={loading || text.trim().length < 10 || wordLimitExceeded}
+                    title={wordLimitExceeded ? `${isPro ? "Pro" : "Free"} limit: ${wordLimit} words` : undefined}
                     className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-8 py-3.5 text-base font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {loading ? (
