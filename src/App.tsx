@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnalyzerSection } from "./components/AnalyzerSection";
 import { AuthModal } from "./components/AuthModal";
+import { CheckoutModal } from "./components/CheckoutModal";
 import { FaqSection } from "./components/FaqSection";
 import { Footer } from "./components/Footer";
 import { Hero } from "./components/Hero";
@@ -23,7 +24,8 @@ function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<"signin" | "signup">("signin");
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
-  const { isPro } = useProStatus(auth.session?.access_token);
+  const { isPro, refresh: refreshProStatus } = useProStatus(auth.session?.access_token);
+  const [checkoutClientSecret, setCheckoutClientSecret] = useState<string | null>(null);
 
   // Workspace sidebar state
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -44,10 +46,19 @@ function App() {
     const type = params.get("type") || hash.get("type");
     const pro = params.get("pro");
 
-    // Stripe checkout result — no hash involved, safe to clean immediately
+    // Stripe embedded checkout result — redirected back to our app
+    const checkout = params.get("checkout");
+    if (checkout === "success") {
+      window.history.replaceState(null, "", window.location.pathname);
+      setTimeout(() => {
+        toast("You're now a Pro member! 🎉 Enjoy unlimited analyses.", "success");
+        refreshProStatus();
+      }, 400);
+    }
+    // Legacy hosted checkout params (keep for safety)
     if (pro === "success") {
       window.history.replaceState(null, "", window.location.pathname);
-      setTimeout(() => toast("You're now a Pro member! 🎉 Enjoy unlimited analyses.", "success"), 400);
+      setTimeout(() => { toast("You're now a Pro member! 🎉", "success"); refreshProStatus(); }, 400);
     } else if (pro === "cancel") {
       window.history.replaceState(null, "", window.location.pathname);
       setTimeout(() => toast("Upgrade cancelled — you can upgrade any time.", "info"), 400);
@@ -119,8 +130,8 @@ function App() {
   async function handleUpgrade() {
     if (!auth.session?.access_token) { openAuth("signup"); return; }
     try {
-      const { url } = await createCheckoutSession(auth.session.access_token);
-      window.location.href = url;
+      const { client_secret } = await createCheckoutSession(auth.session.access_token);
+      setCheckoutClientSecret(client_secret);
     } catch {
       toast("Could not start checkout. Please try again.", "error");
     }
@@ -197,6 +208,7 @@ function App() {
               isPro={isPro}
               onQuotaUpdate={setQuota}
               onAuthRequired={() => openAuth("signup")}
+              onUpgrade={handleUpgrade}
               workspace
               externalHistory={history}
               externalHistoryLoading={historyLoading}
@@ -218,6 +230,7 @@ function App() {
               isPro={isPro}
               onQuotaUpdate={setQuota}
               onAuthRequired={() => openAuth("signup")}
+              onUpgrade={handleUpgrade}
             />
             <FaqSection />
           </main>
@@ -241,6 +254,13 @@ function App() {
         quota={quota}
         onUpgrade={handleUpgrade}
       />
+
+      {checkoutClientSecret && (
+        <CheckoutModal
+          clientSecret={checkoutClientSecret}
+          onClose={() => setCheckoutClientSecret(null)}
+        />
+      )}
 
       <Toaster />
     </div>

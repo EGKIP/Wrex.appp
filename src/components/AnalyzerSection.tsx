@@ -4,7 +4,6 @@ import {
   ApiError,
   analyzeText,
   checkGrammar,
-  createCheckoutSession,
   getHistory,
   proHumanize,
   proImprove,
@@ -65,6 +64,8 @@ interface AnalyzerSectionProps {
   isPro?: boolean;
   onQuotaUpdate?: (quota: QuotaInfo) => void;
   onAuthRequired?: () => void;
+  /** Called when the user clicks any "Upgrade" button — parent opens the checkout modal */
+  onUpgrade?: () => void;
   /** When true, fills the viewport (workspace mode — no landing page padding/heading) */
   workspace?: boolean;
   /** External history — when provided, AnalyzerSection skips its own fetch (workspace mode) */
@@ -77,14 +78,13 @@ interface AnalyzerSectionProps {
   onLoadRequestConsumed?: () => void;
 }
 
-export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onAuthRequired, workspace = false, externalHistory, externalHistoryLoading, onAnalyzed, loadRequest, onLoadRequestConsumed }: AnalyzerSectionProps) {
+export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onAuthRequired, onUpgrade, workspace = false, externalHistory, externalHistoryLoading, onAnalyzed, loadRequest, onLoadRequestConsumed }: AnalyzerSectionProps) {
   const { toast } = useToast();
   const [text, setText] = useState(() => workspace ? "" : SAMPLE_TEXT);
   const [rubric, setRubric] = useState("");
   const [showRubric, setShowRubric] = useState(false);
   const [results, setResults] = useState<AnalyzeResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [upgrading, setUpgrading] = useState(false);
   const [error, setError] = useState("");
   const [quotaHit, setQuotaHit] = useState<"anon" | "auth" | null>(null);
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
@@ -392,15 +392,13 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     window.scrollTo({ top: document.getElementById("analyzer")?.offsetTop ?? 0, behavior: "smooth" });
   }
 
-  async function handleUpgrade() {
+  function handleUpgrade() {
     if (!accessToken) { onAuthRequired?.(); return; }
-    setUpgrading(true);
-    try {
-      const { url } = await createCheckoutSession(accessToken);
-      window.location.href = url;
-    } catch {
-      toast("Could not start checkout. Please try again.", "error");
-      setUpgrading(false);
+    if (onUpgrade) {
+      onUpgrade();
+    } else {
+      // Fallback: shouldn't be reached, but just in case
+      toast("Upgrade is not available right now.", "error");
     }
   }
 
@@ -646,10 +644,9 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                       <button
                         type="button"
                         onClick={handleUpgrade}
-                        disabled={upgrading}
-                        className="inline-flex items-center gap-1.5 rounded-soft border border-accent/40 bg-white px-4 py-2 text-xs font-semibold text-navy transition hover:border-accent hover:shadow-soft disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-soft border border-accent/40 bg-white px-4 py-2 text-xs font-semibold text-navy transition hover:border-accent hover:shadow-soft"
                       >
-                        <Crown className="h-3 w-3 text-accent-dark" />{upgrading ? "Redirecting…" : "Go Pro — $9/mo"}
+                        <Crown className="h-3 w-3 text-accent-dark" />Go Pro — $9/mo
                       </button>
                     </div>
                   </div>
@@ -678,12 +675,9 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                     <button
                       type="button"
                       onClick={handleUpgrade}
-                      disabled={upgrading}
-                      className="btn-shine mt-3 inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="btn-shine mt-3 inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97]"
                     >
-                      {upgrading ? (
-                        <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Redirecting…</>
-                      ) : <><Crown className="h-3.5 w-3.5" />Upgrade to Pro — $9/month</>}
+                      <Crown className="h-3.5 w-3.5" />Upgrade to Pro — $9/month
                     </button>
                   </div>
                 </div>
@@ -718,10 +712,9 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                       <button
                         type="button"
                         onClick={handleUpgrade}
-                        disabled={upgrading}
-                        className="btn-shine inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-4 py-1.5 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] disabled:opacity-50"
+                        className="btn-shine inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-4 py-1.5 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02]"
                       >
-                        <Crown className="h-3 w-3" />{upgrading ? "Redirecting…" : "Upgrade — $9/mo"}
+                        <Crown className="h-3 w-3" />Upgrade — $9/mo
                       </button>
                       <button
                         type="button"
@@ -749,10 +742,9 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                   <button
                     type="button"
                     onClick={handleUpgrade}
-                    disabled={upgrading}
-                    className="btn-shine shrink-0 inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-4 py-2 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] disabled:opacity-50"
+                    className="btn-shine shrink-0 inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-4 py-2 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02]"
                   >
-                    <Crown className="h-3.5 w-3.5" />{upgrading ? "Redirecting…" : "Go Pro"}
+                    <Crown className="h-3.5 w-3.5" />Go Pro
                   </button>
                 </div>
                 {/* Disabled analyze button below */}
@@ -897,10 +889,9 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                   <button
                     type="button"
                     onClick={handleUpgrade}
-                    disabled={upgrading}
-                    className="btn-shine inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-50"
+                    className="btn-shine inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2 text-xs font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97]"
                   >
-                    <Crown className="h-3.5 w-3.5" />{upgrading ? "Redirecting…" : "Upgrade to Pro"}
+                    <Crown className="h-3.5 w-3.5" />Upgrade to Pro
                   </button>
                 </div>
               </div>

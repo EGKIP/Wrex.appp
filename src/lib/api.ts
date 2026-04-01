@@ -98,7 +98,7 @@ export async function getProStatus(accessToken: string): Promise<{ is_pro: boole
   return handleResponse<{ is_pro: boolean }>(response);
 }
 
-export async function createCheckoutSession(accessToken: string): Promise<{ url: string }> {
+export async function createCheckoutSession(accessToken: string): Promise<{ client_secret: string }> {
   const response = await fetch(`${API_BASE_URL}/pro/checkout`, {
     method: "POST",
     headers: {
@@ -106,7 +106,7 @@ export async function createCheckoutSession(accessToken: string): Promise<{ url:
       "Content-Type": "application/json",
     },
   });
-  return handleResponse<{ url: string }>(response);
+  return handleResponse<{ client_secret: string }>(response);
 }
 
 export async function checkGrammar(

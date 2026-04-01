@@ -54,7 +54,7 @@ def _supabase():
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
 class CheckoutResponse(BaseModel):
-    url: str
+    client_secret: str
 
 
 class ProStatusResponse(BaseModel):
@@ -98,15 +98,15 @@ def create_checkout_session(
         params={
             "customer": stripe_customer_id,
             "mode": "subscription",
+            "ui_mode": "embedded",
             "line_items": [{"price": settings.stripe_price_id, "quantity": 1}],
-            "success_url": f"{origin}/?pro=success",
-            "cancel_url": f"{origin}/?pro=cancel",
+            "return_url": f"{origin}/?checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
             "metadata": {"supabase_user_id": user.id},
         }
     )
 
     logger.info("checkout_session_created", extra={"user_id": user.id, "session_id": session.id})
-    return CheckoutResponse(url=session.url or "")
+    return CheckoutResponse(client_secret=session.client_secret or "")
 
 
 @router.post("/webhook", status_code=status.HTTP_200_OK)
