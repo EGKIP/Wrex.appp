@@ -1,4 +1,4 @@
-import { History, Settings, X, Trash2 } from "lucide-react";
+import { HelpCircle, History, Home, Settings, X, Trash2 } from "lucide-react";
 import { deleteHistoryItem } from "../lib/api";
 import { useToast } from "../context/toast";
 import type { SubmissionRecord } from "../types";
@@ -7,6 +7,7 @@ interface WorkspaceSidebarProps {
   historyOpen: boolean;
   onHistoryToggle: () => void;
   onSettingsOpen: () => void;
+  onGoHome?: () => void;
   submissions: SubmissionRecord[];
   historyLoading: boolean;
   accessToken: string;
@@ -33,6 +34,7 @@ export function WorkspaceSidebar({
   historyOpen,
   onHistoryToggle,
   onSettingsOpen,
+  onGoHome,
   submissions,
   historyLoading,
   accessToken,
@@ -55,28 +57,54 @@ export function WorkspaceSidebar({
   return (
     <>
       {/* Icon rail — hidden on mobile, shown from sm upwards */}
-      <aside className="hidden sm:flex w-14 flex-col items-center gap-2 border-r border-charcoal/8 bg-white pt-4 pb-4">
-        <button
-          type="button"
-          onClick={onHistoryToggle}
-          title="Past submissions"
-          className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
-            historyOpen
-              ? "bg-navy text-white"
-              : "text-charcoal/50 hover:bg-mist hover:text-navy"
-          }`}
-        >
-          <History className="h-5 w-5" />
-        </button>
+      <aside className="hidden sm:flex w-14 flex-col items-center border-r border-charcoal/8 bg-white pt-3 pb-3">
+        {/* Top group: home + history */}
+        <div className="flex flex-col items-center gap-1">
+          {onGoHome && (
+            <button
+              type="button"
+              onClick={onGoHome}
+              title="Back to home"
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-charcoal/40 transition-colors hover:bg-mist hover:text-navy"
+            >
+              <Home className="h-5 w-5" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onHistoryToggle}
+            title="Past submissions"
+            className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+              historyOpen
+                ? "bg-navy text-white"
+                : "text-charcoal/50 hover:bg-mist hover:text-navy"
+            }`}
+          >
+            <History className="h-5 w-5" />
+          </button>
+        </div>
 
-        <button
-          type="button"
-          onClick={onSettingsOpen}
-          title="Settings"
-          className="flex h-10 w-10 items-center justify-center rounded-xl text-charcoal/50 transition-colors hover:bg-mist hover:text-navy"
-        >
-          <Settings className="h-5 w-5" />
-        </button>
+        {/* Spacer pushes bottom group down */}
+        <div className="flex-1" />
+
+        {/* Bottom group: support + settings */}
+        <div className="flex flex-col items-center gap-1">
+          <a
+            href="mailto:support@wrex.app"
+            title="Support"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-charcoal/40 transition-colors hover:bg-mist hover:text-navy"
+          >
+            <HelpCircle className="h-5 w-5" />
+          </a>
+          <button
+            type="button"
+            onClick={onSettingsOpen}
+            title="Settings & account"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-charcoal/50 transition-colors hover:bg-mist hover:text-navy"
+          >
+            <Settings className="h-5 w-5" />
+          </button>
+        </div>
       </aside>
 
       {/* Slide-in history panel */}

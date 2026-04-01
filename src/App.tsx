@@ -161,15 +161,13 @@ function App() {
     }
   }, [auth.user, auth.session?.access_token, fetchHistory]);
 
-  const isWorkspace = !auth.loading && !!auth.user;
+  const isLoggedIn = !auth.loading && !!auth.user;
+  // viewMode lets logged-in users navigate back to the landing page while staying authenticated
+  const [viewMode, setViewMode] = useState<"workspace" | "landing">("workspace");
+  const isWorkspace = isLoggedIn && viewMode === "workspace";
 
   // Workspace: load history item into the editor
   const [workspaceLoadText, setWorkspaceLoadText] = useState<{ text: string; rubric: string | null } | null>(null);
-
-  // Auto-hide navbar: track visibility so the workspace main can reclaim the space
-  const [navbarHidden, setNavbarHidden] = useState(false);
-  // Navbar height = pt-3(12) + pb-1.5(6) + glass-nav py-3(24) + brand h-11(44) = 86px
-  const NAV_HEIGHT = 86;
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-charcoal">
@@ -180,22 +178,18 @@ function App() {
         mode={isWorkspace ? "workspace" : "landing"}
         onOpenAuth={openAuth}
         onUpgrade={handleUpgrade}
-        onNavHidden={setNavbarHidden}
+        onGoHome={() => setViewMode("landing")}
+        onGoWorkspace={() => setViewMode("workspace")}
       />
 
       {isWorkspace ? (
         /* ── Authenticated workspace ──────────────────────────────────────────── */
-        <main
-          className="flex flex-1"
-          style={{
-            paddingTop: navbarHidden ? 0 : NAV_HEIGHT,
-            transition: "padding-top 300ms ease-in-out",
-          }}
-        >
+        <main className="flex flex-1 overflow-hidden">
           <WorkspaceSidebar
             historyOpen={historyOpen}
             onHistoryToggle={() => setHistoryOpen((v) => !v)}
             onSettingsOpen={() => setProfileOpen(true)}
+            onGoHome={() => setViewMode("landing")}
             submissions={history}
             historyLoading={historyLoading}
             accessToken={auth.session?.access_token ?? ""}
@@ -221,8 +215,21 @@ function App() {
       ) : (
         /* ── Marketing landing page ───────────────────────────────────────────── */
         <>
+          {/* Sticky "back to workspace" banner — only shown when a logged-in user browses the landing page */}
+          {isLoggedIn && (
+            <div className="sticky top-[72px] z-10 flex items-center justify-center gap-3 border-b border-accent/20 bg-accent/8 px-4 py-2 text-sm">
+              <span className="text-charcoal/70">You're viewing the landing page.</span>
+              <button
+                type="button"
+                onClick={() => setViewMode("workspace")}
+                className="inline-flex items-center gap-1.5 rounded-soft bg-navy px-3 py-1 text-xs font-semibold text-white transition hover:bg-navy/80"
+              >
+                ← Back to my workspace
+              </button>
+            </div>
+          )}
           <main>
-            <Hero onTryFree={() => openAuth("signup")} />
+            <Hero onTryFree={isLoggedIn ? () => setViewMode("workspace") : () => openAuth("signup")} />
             <HowItWorks />
             <ProPreview onTryFree={() => openAuth("signup")} onUpgrade={handleUpgrade} />
             <AnalyzerSection

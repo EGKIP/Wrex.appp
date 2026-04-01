@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { HelpCircle, LayoutDashboard, Sparkles } from "lucide-react";
 import type { AuthState } from "../hooks/useAuth";
 import type { QuotaInfo } from "../types";
 import { Brand } from "./Brand";
@@ -19,8 +19,10 @@ interface NavbarProps {
   mode?: "landing" | "workspace";
   onOpenAuth: (tab?: "signin" | "signup") => void;
   onUpgrade?: () => void;
-  /** Called whenever the navbar hides or shows in workspace mode */
-  onNavHidden?: (hidden: boolean) => void;
+  /** Called when the logo is clicked in workspace mode — navigates to landing view */
+  onGoHome?: () => void;
+  /** Called when "Go to workspace" is clicked in landing mode by a logged-in user */
+  onGoWorkspace?: () => void;
 }
 
 function getInitials(email: string): string {
@@ -54,58 +56,11 @@ function Avatar({ email, isPro }: { email: string; isPro: boolean }) {
   );
 }
 
-export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAuth, onUpgrade, onNavHidden }: NavbarProps) {
+export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAuth, onUpgrade, onGoHome, onGoWorkspace }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
-  const [navHidden, setNavHidden] = useState(false);
   const isWorkspace = mode === "workspace";
-
-  // Auto-hide in workspace mode — hides after 2.5s idle, reveals when cursor
-  // approaches the top ~80 px of the viewport.
-  useEffect(() => {
-    if (!isWorkspace) {
-      setNavHidden(false);
-      onNavHidden?.(false);
-      return;
-    }
-
-    let hideTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const reveal = () => {
-      if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
-      // Always call both — React will bail out of re-render if state already false
-      setNavHidden(false);
-      onNavHidden?.(false);
-    };
-
-    const startHideTimer = () => {
-      if (hideTimer) return;
-      hideTimer = setTimeout(() => {
-        hideTimer = null;
-        setNavHidden(true);
-        onNavHidden?.(true);
-      }, 2500);
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (e.clientY < 80) {
-        reveal();
-      } else {
-        startHideTimer();
-      }
-    };
-
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    // Start the initial hide timer on mount
-    startHideTimer();
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      if (hideTimer) clearTimeout(hideTimer);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isWorkspace]);
 
   useEffect(() => {
     const sections = ["how-it-works", "analyzer", "faq"];
@@ -129,14 +84,7 @@ export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAut
 
   return (
     <>
-    <header
-      className={[
-        "z-20 px-4 pt-3 pb-1.5 lg:px-6 transition-transform duration-300 ease-in-out",
-        isWorkspace
-          ? `fixed top-0 left-0 right-0 w-full ${navHidden ? "-translate-y-full" : "translate-y-0"}`
-          : "sticky top-0",
-      ].join(" ")}
-    >
+    <header className="sticky top-0 z-20 px-4 pt-3 pb-1.5 lg:px-6">
       {/* Quota progress bar — thin strip above the pill, only for logged-in free users */}
       {quotaPct !== null && (
         <div className="absolute inset-x-0 top-0 h-[3px] overflow-hidden">
@@ -155,10 +103,10 @@ export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAut
       )}
       <div className="mx-auto max-w-7xl">
         <div className="glass-nav flex items-center justify-between px-5 py-3">
-          <Brand />
+          <Brand onClick={isWorkspace ? onGoHome : undefined} />
 
           {/* Desktop nav */}
-          <nav className="hidden items-center gap-7 text-sm md:flex">
+          <nav className="hidden items-center gap-5 text-sm md:flex">
             {/* Landing nav links — hidden in workspace mode */}
             {!isWorkspace && NAV_LINKS.map(({ label, href }) => (
               <a
@@ -173,6 +121,19 @@ export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAut
                 {label}
               </a>
             ))}
+
+            {/* Workspace-mode: support link */}
+            {isWorkspace && (
+              <a
+                href="mailto:support@wrex.app"
+                title="Get support"
+                className="flex items-center gap-1.5 text-xs font-medium text-charcoal/50 transition hover:text-navy"
+              >
+                <HelpCircle className="h-4 w-4" />
+                <span>Support</span>
+              </a>
+            )}
+
             {auth.user ? (
               <>
                 {quota && !isPro && (
@@ -192,6 +153,17 @@ export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAut
                   <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-semibold text-navy">
                     <Sparkles className="h-3 w-3" />Pro
                   </span>
+                )}
+                {/* Landing mode: "Go to workspace" button for logged-in users */}
+                {!isWorkspace && onGoWorkspace && (
+                  <button
+                    type="button"
+                    onClick={onGoWorkspace}
+                    className="flex items-center gap-1.5 rounded-soft border border-navy/20 px-3 py-1.5 text-xs font-semibold text-navy transition hover:bg-navy hover:text-white"
+                  >
+                    <LayoutDashboard className="h-3.5 w-3.5" />
+                    My workspace
+                  </button>
                 )}
                 <button
                   onClick={() => setProfileOpen(true)}
@@ -274,6 +246,26 @@ export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAut
                   )}
                   {isPro && (
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent"><Sparkles className="h-3 w-3" />Pro member</span>
+                  )}
+                  {/* Landing mode mobile: go to workspace */}
+                  {!isWorkspace && onGoWorkspace && (
+                    <button
+                      type="button"
+                      onClick={() => { onGoWorkspace(); setMenuOpen(false); }}
+                      className="flex items-center gap-2 rounded-soft border border-navy/20 px-3 py-2 text-sm font-semibold text-navy transition hover:bg-navy hover:text-white"
+                    >
+                      <LayoutDashboard className="h-4 w-4" />My workspace
+                    </button>
+                  )}
+                  {/* Workspace mode mobile: support link */}
+                  {isWorkspace && (
+                    <a
+                      href="mailto:support@wrex.app"
+                      className="flex items-center gap-2 text-sm font-medium text-charcoal/60 hover:text-navy"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <HelpCircle className="h-4 w-4" />Support
+                    </a>
                   )}
                 </>
               ) : (
