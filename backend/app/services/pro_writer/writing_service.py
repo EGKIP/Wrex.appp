@@ -18,7 +18,7 @@ _TIMEOUT = 30
 
 
 def _chat(messages: list[dict]) -> str:
-    """Make a single chat-completions request and return the content string."""
+    """Make a single chat-completions request, log token usage, and return the content string."""
     body = json.dumps({
         "model": settings.openai_model,
         "messages": messages,
@@ -36,6 +36,18 @@ def _chat(messages: list[dict]) -> str:
     )
     with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
         data = json.loads(resp.read().decode("utf-8"))
+
+    usage = data.get("usage", {})
+    logger.info(
+        "openai_tokens",
+        extra={
+            "service": "improve",
+            "model": settings.openai_model,
+            "prompt_tokens": usage.get("prompt_tokens", 0),
+            "completion_tokens": usage.get("completion_tokens", 0),
+            "total_tokens": usage.get("total_tokens", 0),
+        },
+    )
     return data["choices"][0]["message"]["content"]
 
 

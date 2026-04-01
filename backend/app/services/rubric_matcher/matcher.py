@@ -4,9 +4,10 @@ Pure-NLP rubric matcher — no external API or model weights needed.
 Algorithm:
 1. Parse the rubric into individual criteria (numbered / bulleted lines).
 2. For each criterion, extract content-bearing terms (strip stop words).
-3. Scan the draft for coverage of those terms.
-4. Classify each criterion as: strong / partial / missing.
-5. Return a structured result with per-criterion scores and an overall score.
+3. Expand each term with its stem and known academic synonyms.
+4. Scan the draft for coverage using stemmed + synonym matching.
+5. Classify each criterion as: strong / partial / missing.
+6. Return a structured result with per-criterion scores and an overall score.
 """
 from __future__ import annotations
 
@@ -20,6 +21,61 @@ STOP_WORDS: frozenset[str] = frozenset(
     our we they he she i my his her its all any each every both more most
     also such no not than then when where who which what how much many""".split()
 )
+
+# ── Lightweight suffix stemmer (no external deps) ────────────────────────────
+# Strips common English suffixes in longest-first order.
+_SUFFIXES = (
+    "ational", "tional", "ization", "isation", "iveness", "fulness",
+    "ousness", "alism", "ation", "ations", "ating", "ness", "ment",
+    "ments", "tion", "tions", "ical", "ance", "ence", "ing", "ize",
+    "ise", "ied", "ier", "ies", "ers", "est", "ed", "er", "ly", "al",
+)
+
+
+def _stem(word: str) -> str:
+    """Strip the longest matching suffix, keeping at least 3 root chars."""
+    for suffix in _SUFFIXES:
+        if word.endswith(suffix) and len(word) - len(suffix) >= 3:
+            return word[: -len(suffix)]
+    return word
+
+
+# ── Academic synonym / concept map ───────────────────────────────────────────
+# Maps a canonical root → set of related stems that count as coverage.
+_SYNONYMS: dict[str, frozenset[str]] = {
+    "analyz": frozenset({"analys", "examin", "assess", "evaluat", "investig", "explor", "review", "studi"}),
+    "argument": frozenset({"claim", "thesis", "assert", "contend", "posit", "propos", "argu"}),
+    "evidence": frozenset({"support", "proof", "data", "research", "finding", "statistic", "sourc", "cit"}),
+    "discuss": frozenset({"explain", "describ", "elabor", "detail", "examin", "explor", "address"}),
+    "compare": frozenset({"contrast", "similar", "differ", "distinc", "parallel", "juxtapos"}),
+    "critic": frozenset({"evaluat", "assess", "judg", "apprais", "review", "critiqu"}),
+    "summar": frozenset({"conclud", "overview", "recap", "synthesiz", "wrap"}),
+    "structur": frozenset({"organiz", "format", "layout", "arrang", "order", "present"}),
+    "introduc": frozenset({"background", "context", "overview", "begin", "open", "preface"}),
+    "conclu": frozenset({"summar", "final", "end", "wrap", "close", "therefor", "thu"}),
+    "develop": frozenset({"elabor", "expand", "explor", "build", "deepen", "extend"}),
+    "support": frozenset({"back", "reinfor", "substantiat", "justify", "corroborat", "uphol"}),
+    "cit": frozenset({"reference", "sourc", "quot", "attribut", "acknowledg", "footnot"}),
+    "clear": frozenset({"concis", "explicit", "specific", "precis", "direct", "unambiguous"}),
+    "effect": frozenset({"impact", "result", "outcom", "consequenc", "influenc"}),
+    "caus": frozenset({"reason", "factor", "contribut", "lead", "result", "trigger"}),
+    "definit": frozenset({"mean", "concept", "term", "notion", "explain", "describ"}),
+    "perspect": frozenset({"viewpoint", "standpoint", "approach", "lens", "angle", "point"}),
+    "reflect": frozenset({"consider", "contempl", "ponder", "think", "examin", "introspect"}),
+}
+
+# Build a reverse lookup: stem → canonical group stem
+_STEM_TO_GROUP: dict[str, str] = {}
+for _canon, _related in _SYNONYMS.items():
+    _STEM_TO_GROUP[_canon] = _canon
+    for _r in _related:
+        _STEM_TO_GROUP.setdefault(_r, _canon)
+
+
+def _concept(word: str) -> str:
+    """Return the canonical concept stem for a word (stem → synonym group root)."""
+    s = _stem(word)
+    return _STEM_TO_GROUP.get(s, s)
 
 
 def _normalise(text: str) -> list[str]:
@@ -76,7 +132,11 @@ def match_rubric(draft: str, rubric: str) -> RubricMatchResult:
             summary="No criteria could be parsed from the rubric. Make sure each requirement is on its own line.",
         )
 
-    draft_tokens = set(_normalise(draft))
+    # Build concept-mapped set for the draft (stem + synonym group)
+    draft_raw_tokens = _normalise(draft)
+    draft_stems = set(_stem(t) for t in draft_raw_tokens)
+    draft_concepts = set(_concept(t) for t in draft_raw_tokens)
+
     results: list[CriterionResult] = []
 
     for criterion in criteria_lines:
@@ -84,12 +144,19 @@ def match_rubric(draft: str, rubric: str) -> RubricMatchResult:
         if not key_terms:
             continue
 
-        matched = [t for t in key_terms if t in draft_tokens]
+        matched: list[str] = []
+        for term in key_terms:
+            term_stem = _stem(term)
+            term_concept = _concept(term)
+            # Match if: exact token, stemmed form, or same synonym concept group
+            if term in draft_raw_tokens or term_stem in draft_stems or term_concept in draft_concepts:
+                matched.append(term)
+
         ratio = len(matched) / len(key_terms)
 
-        if ratio >= 0.6:
+        if ratio >= 0.55:
             coverage = "strong"
-        elif ratio >= 0.25:
+        elif ratio >= 0.2:
             coverage = "partial"
         else:
             coverage = "missing"

@@ -934,13 +934,25 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                             <p className="mt-1 text-sm leading-6 text-charcoal/70">{s.issue}</p>
                             <div className="mt-3 flex items-start justify-between gap-3">
                               <p className="text-xs font-semibold uppercase tracking-wider text-success">Rewrite</p>
-                              <button
-                                type="button"
-                                onClick={() => void navigator.clipboard.writeText(s.rewrite)}
-                                className="shrink-0 rounded bg-white px-2 py-0.5 text-[11px] font-medium text-charcoal/50 shadow-sm transition hover:text-navy hover:shadow"
-                              >
-                                Copy
-                              </button>
+                              <div className="flex shrink-0 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => void navigator.clipboard.writeText(s.rewrite)}
+                                  className="rounded bg-white px-2 py-0.5 text-[11px] font-medium text-charcoal/50 shadow-sm transition hover:text-navy hover:shadow"
+                                >
+                                  Copy
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleReplaceSentence(s.sentence, s.rewrite);
+                                    toast("Sentence replaced in editor ✓", "success");
+                                  }}
+                                  className="rounded bg-navy px-2 py-0.5 text-[11px] font-medium text-white shadow-sm transition hover:bg-navy/80"
+                                >
+                                  Replace ↑
+                                </button>
+                              </div>
                             </div>
                             <p className="mt-1 text-sm leading-6 text-charcoal">{s.rewrite}</p>
                           </div>
