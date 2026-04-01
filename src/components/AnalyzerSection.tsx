@@ -406,7 +406,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
           </div>
         )}
 
-        <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className={`grid gap-6 lg:items-start ${workspace ? "lg:grid-cols-[1.4fr_0.8fr]" : "lg:grid-cols-[1.05fr_0.95fr]"}`}>
           {/* Input card */}
           <div className={`rounded-modal border border-border-base bg-white shadow-soft ${workspace ? "p-4 sm:p-5" : "p-6 sm:p-8"}`}>
             {/* Draft input */}
@@ -672,8 +672,8 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
             )}
           </div>
 
-          {/* Right column */}
-          <div>
+          {/* Right column — sticky in workspace mode */}
+          <div className={workspace ? "sticky top-6" : ""}>
             <ResultsPanel results={results} loading={loading} isPro={isPro} onRubricRewrite={handleRubricRewriteNudge} onUpgrade={handleUpgrade} text={text} accessToken={accessToken} onReplaceSentence={handleReplaceSentence} />
           </div>
         </div>{/* end grid */}

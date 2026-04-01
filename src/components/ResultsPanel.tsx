@@ -277,46 +277,47 @@ function scoreLabel(score: number) {
   return "Writing sounds natural";
 }
 
-/** Conic-gradient circular score ring */
-function ScoreRing({ score }: { score: number }) {
-  const color = scoreColor(score);
-  // Angle in degrees that the ring fills to
-  const deg = Math.round((score / 100) * 360);
-  // Conic goes: score-color from 0 → deg, then gray
-  const conicBg = `conic-gradient(${color} 0deg, ${color} ${deg}deg, #E2E8F0 ${deg}deg, #E2E8F0 360deg)`;
+/** Compact dual-score header: AI Risk + optional Rubric Match side-by-side */
+function DualScoreCard({ results }: { results: AnalyzeResponse }) {
+  const ai = results.score;
+  const rubric = results.rubric_result ?? null;
+  const aiColor = scoreColor(ai);
+  const rubricColor = rubric
+    ? rubric.overall_score >= 70 ? "#10B981" : rubric.overall_score >= 40 ? "#F59E0B" : "#EF4444"
+    : null;
 
   return (
-    <div
-      className="relative flex h-[140px] w-[140px] shrink-0 items-center justify-center rounded-full"
-      style={{ background: conicBg, padding: 8 }}
-    >
-      {/* Inner white circle */}
-      <div className="absolute inset-[8px] rounded-full bg-white" />
-      {/* Score number on top */}
-      <div className="relative z-10 flex flex-col items-center">
-        <span className="font-stat text-[2.6rem] font-bold leading-none" style={{ color }}>
-          {score}
-        </span>
-        <span className="font-stat text-[11px] text-charcoal/45">/ 100</span>
+    <section className={`rounded-modal bg-gradient-to-br p-4 shadow-card ${scoreGradient(ai)}`}>
+      <div className={`grid gap-4 ${rubric ? "grid-cols-2" : "grid-cols-1"}`}>
+        {/* AI Risk */}
+        <div className="text-center">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-charcoal/50">AI Risk</p>
+          <p className="font-stat mt-1 text-[2.4rem] font-bold leading-none" style={{ color: aiColor }}>{ai}</p>
+          <p className="mt-0.5 text-xs text-charcoal/60">{scoreLabel(ai)}</p>
+          <span className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${confidenceTone(results.confidence)}`}>
+            {results.confidence} signal
+          </span>
+        </div>
+        {/* Rubric Match — only when a rubric was analyzed */}
+        {rubric && (
+          <div className="border-l border-black/10 pl-4 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-charcoal/50">Rubric Match</p>
+            <p className="font-stat mt-1 text-[2.4rem] font-bold leading-none" style={{ color: rubricColor! }}>{rubric.overall_score}%</p>
+            <p className="mt-0.5 text-xs text-charcoal/60">
+              {rubric.overall_score >= 70 ? "Strong match" : rubric.overall_score >= 40 ? "Partial match" : "Needs work"}
+            </p>
+            <div className="mt-2 flex justify-center gap-3 text-[10px] font-semibold">
+              <span className="text-success">{rubric.strong_count} covered</span>
+              <span className="text-danger">{rubric.missing_count} missing</span>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
-  );
-}
-
-/** Signal strength bar shown per flagged sentence. */
-function SignalBar({ score }: { score: number }) {
-  const pct = Math.round(score * 100);
-  const barColor = pct >= 75 ? "#EF4444" : pct >= 55 ? "#F59E0B" : "#10B981";
-  return (
-    <div className="mt-2 flex items-center gap-3">
-      <div className="h-2 flex-1 overflow-hidden rounded-full bg-border-base">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${pct}%`, backgroundColor: barColor }}
-        />
-      </div>
-      <span className="shrink-0 text-xs font-medium text-charcoal/70">{pct}%</span>
-    </div>
+      {/* One-line summary */}
+      <p className="mt-3 rounded-input border border-white/50 bg-white/50 px-3 py-2 text-xs leading-5 text-charcoal">
+        {results.summary}
+      </p>
+    </section>
   );
 }
 
@@ -381,25 +382,27 @@ function RubricPanel({ rubric, onRubricRewrite }: { rubric: RubricMatchResult; o
 /** Skeleton card shown while analysis is loading. */
 function SkeletonPanel() {
   return (
-    <aside className="space-y-5">
-      <div className="rounded-modal border border-border-base bg-white p-6 shadow-soft sm:p-8">
-        <div className="flex items-center gap-6">
-          <div className="skeleton h-[140px] w-[140px] rounded-full" />
-          <div className="flex-1 space-y-3">
-            <div className="skeleton h-3 w-24 rounded-full" />
-            <div className="skeleton h-6 w-40 rounded-full" />
-            <div className="skeleton h-3 w-32 rounded-full" />
-          </div>
-        </div>
-        <div className="skeleton mt-6 h-14 rounded-input" />
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="skeleton h-16 rounded-input" />
+    <aside className="space-y-4">
+      {/* Dual score header skeleton */}
+      <div className="rounded-modal p-4 shadow-card bg-mist animate-pulse">
+        <div className="grid grid-cols-2 gap-4">
+          {[0, 1].map((i) => (
+            <div key={i} className="flex flex-col items-center gap-2">
+              <div className="skeleton h-3 w-14 rounded-full" />
+              <div className="skeleton h-10 w-10 rounded-full" />
+              <div className="skeleton h-3 w-16 rounded-full" />
+            </div>
           ))}
         </div>
+        <div className="skeleton mt-4 h-10 rounded-input" />
       </div>
+      {/* Sentence highlights skeleton */}
       <div className="skeleton h-24 rounded-modal" />
-      <div className="skeleton h-48 rounded-modal" />
+      {/* Tips skeleton */}
+      <div className="rounded-modal border border-border-base bg-white p-4 shadow-soft space-y-2">
+        <div className="skeleton h-3 w-24 rounded-full" />
+        {[0, 1, 2].map((i) => <div key={i} className="skeleton h-8 rounded-input" />)}
+      </div>
     </aside>
   );
 }
@@ -482,84 +485,76 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
     );
   }
 
+  // Build flagged-sentence map for the inline highlighter
+  const flaggedMap: FlaggedMap = new Map(
+    results.flagged_sentences.map((s) => [s.index, { score: s.score, reason: s.reason }])
+  );
+
   return (
-    <aside className="space-y-5">
-      {/* Score card — naturalness overview */}
-      <section className={`rounded-modal bg-gradient-to-br p-6 shadow-card sm:p-8 ${scoreGradient(results.score)}`}>
-        <div className="flex flex-wrap items-center gap-6">
-          <ScoreRing score={results.score} />
-          <div className="flex-1">
-            <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/55">
-              Writing naturalness
-            </p>
-            <p className="font-heading mt-1 text-xl font-bold text-navy">
-              {scoreLabel(results.score)}
-            </p>
-            <div className={`mt-3 inline-block rounded-full px-3 py-1 text-xs font-semibold ${confidenceTone(results.confidence)}`}>
-              Signal confidence: {results.confidence}
-            </div>
+    <aside className="space-y-4">
+      {/* ── Dual score header (AI Risk + optional Rubric Match) ── */}
+      <DualScoreCard results={results} />
+
+      {/* ── Sentence-level highlights (the editor-adjacent view) ── */}
+      {text && results.flagged_sentences.length > 0 && (
+        <SentenceHighlighter
+          text={text}
+          flagged={flaggedMap}
+          isPro={isPro}
+          accessToken={accessToken}
+          onUpgrade={onUpgrade}
+          onReplaceSentence={onReplaceSentence}
+        />
+      )}
+
+      {/* ── Compact rubric criteria (when rubric present) ── */}
+      {results.rubric_result && (
+        <section className="rounded-modal border border-border-base bg-white p-4 shadow-soft">
+          <div className="flex items-center justify-between gap-2">
+            <h4 className="text-sm font-semibold text-navy">Rubric criteria</h4>
+            {results.rubric_result.missing_count > 0 && onRubricRewrite && (
+              <button
+                type="button"
+                onClick={onRubricRewrite}
+                className="flex items-center gap-1 rounded-soft bg-navy px-2.5 py-1 text-[11px] font-bold text-white transition hover:bg-navy/80"
+              >
+                <Sparkles className="h-3 w-3" />Fix missing
+              </button>
+            )}
           </div>
-        </div>
-        <p className="mt-5 rounded-input border border-white/60 bg-white/60 px-4 py-3 text-sm leading-7 text-charcoal">
-          {results.summary}
-        </p>
-      </section>
+          <p className="mt-1 text-xs text-charcoal/55">{results.rubric_result.summary}</p>
+          <div className="mt-3 space-y-2">
+            {results.rubric_result.criteria.map((c, i) => (
+              <div key={i} className="flex items-start justify-between gap-2 rounded-input border border-border-base bg-mist px-3 py-2">
+                <p className="text-xs leading-5 text-charcoal">{c.criterion}</p>
+                <CoveragePill coverage={c.coverage} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* Rubric alignment — PRIMARY section */}
-      {results.rubric_result && <RubricPanel rubric={results.rubric_result} onRubricRewrite={onRubricRewrite} />}
-
-      {/* Writing tips — actionable first */}
+      {/* ── Writing tips (compact chip list) ── */}
       {results.basic_tips.length > 0 && (
-        <section className="rounded-modal border border-border-base bg-white p-6 shadow-soft">
-          <h4 className="font-heading text-base font-semibold text-navy">Writing tips</h4>
-          <div className="mt-4 space-y-3">
+        <section className="rounded-modal border border-border-base bg-white p-4 shadow-soft">
+          <h4 className="text-sm font-semibold text-navy">Writing tips</h4>
+          <div className="mt-3 space-y-2">
             {results.basic_tips.map((tip) => (
-              <p key={tip} className="flex gap-3 rounded-input bg-mist px-4 py-3 text-sm leading-6 text-charcoal">
-                <span className="shrink-0 text-accent">✦</span>
-                {tip}
+              <p key={tip} className="flex gap-2 rounded-input bg-mist px-3 py-2 text-xs leading-5 text-charcoal">
+                <span className="shrink-0 text-accent">✦</span>{tip}
               </p>
             ))}
           </div>
         </section>
       )}
 
-      {/* Sentence-level writing analysis — inline highlights */}
-      {text && results.flagged_sentences.length > 0 && (() => {
-        const flaggedMap: FlaggedMap = new Map(
-          results.flagged_sentences.map((s) => [s.index, { score: s.score, reason: s.reason }])
-        );
-        return <SentenceHighlighter text={text} flagged={flaggedMap} isPro={isPro} accessToken={accessToken} onUpgrade={onUpgrade} onReplaceSentence={onReplaceSentence} />;
-      })()}
-
-      {/* Sentences to strengthen — detail view */}
-      {results.flagged_sentences.length > 0 && (
-        <section className="rounded-modal border border-border-base bg-white p-6 shadow-soft">
-          <h4 className="font-heading text-base font-semibold text-navy">Sentences to strengthen</h4>
-          <p className="mt-1 text-xs text-charcoal/50">These sentences have patterns that are worth revising for a more natural voice.</p>
-          <div className="mt-4 space-y-4">
-            {results.flagged_sentences.map((sentence) => (
-              <article
-                key={`${sentence.index}-${sentence.text}`}
-                className="rounded-[0_8px_8px_0] border-l-[3px] border-l-amber-400 bg-amber-50/60 px-4 py-3"
-              >
-                <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">Sentence {sentence.index + 1}</p>
-                <SignalBar score={sentence.score} />
-                <p className="mt-3 text-sm leading-7 text-charcoal">{sentence.text}</p>
-                <p className="mt-1.5 text-xs text-charcoal/55">{sentence.reason}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Writing patterns — secondary, collapsed-feeling */}
+      {/* ── Pattern flags (compact pill row) ── */}
       {results.red_flags.length > 0 && (
-        <section className="rounded-modal border border-border-base bg-white p-6 shadow-soft">
-          <h4 className="font-heading text-base font-semibold text-navy">Writing patterns detected</h4>
-          <p className="mt-1 text-xs text-charcoal/50">These style patterns were found in your text. They're clues, not verdicts.</p>
-          <div className="mt-4 flex flex-wrap gap-2">
+        <section className="rounded-modal border border-border-base bg-white p-4 shadow-soft">
+          <h4 className="text-sm font-semibold text-navy">Patterns detected</h4>
+          <div className="mt-2 flex flex-wrap gap-1.5">
             {results.red_flags.map((flag) => (
-              <span key={flag} className="rounded-full border border-border-base bg-mist px-3 py-1.5 text-xs font-medium text-charcoal/70">
+              <span key={flag} className="rounded-full border border-border-base bg-mist px-2.5 py-1 text-[11px] font-medium text-charcoal/70">
                 {flag}
               </span>
             ))}
@@ -567,16 +562,16 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
         </section>
       )}
 
-      {/* Pro CTA — only shown to free users */}
+      {/* ── Pro CTA — free users only ── */}
       {!isPro && (
-        <section className="rounded-modal border border-accent/20 bg-gradient-to-br from-accent/5 to-accent/10 p-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/45">Wrex Pro</p>
-          <h4 className="font-heading mt-2 text-base font-semibold text-navy">{results.pro_prompt.title}</h4>
-          <p className="mt-2 text-sm leading-6 text-charcoal/65">{results.pro_prompt.message}</p>
+        <section className="rounded-modal border border-accent/20 bg-gradient-to-br from-accent/5 to-accent/10 p-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-charcoal/45">Wrex Pro</p>
+          <h4 className="mt-1 text-sm font-semibold text-navy">{results.pro_prompt.title}</h4>
+          <p className="mt-1.5 text-xs leading-5 text-charcoal/65">{results.pro_prompt.message}</p>
           <button
             type="button"
             onClick={onUpgrade}
-            className="btn-shine mt-4 inline-block rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2.5 text-sm font-bold text-navy transition hover:shadow-glow hover:scale-[1.02]"
+            className="btn-shine mt-3 inline-block rounded-soft bg-gradient-to-br from-accent to-accent-dark px-4 py-2 text-xs font-bold text-navy transition hover:shadow-glow hover:scale-[1.02]"
           >
             {results.pro_prompt.cta_label}
           </button>
