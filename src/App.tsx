@@ -190,7 +190,7 @@ function App() {
 
       {isWorkspace ? (
         /* ── Authenticated workspace ──────────────────────────────────────────── */
-        <main className="flex flex-1 overflow-hidden">
+        <main className="flex flex-1 overflow-hidden animate-fade-in">
           <WorkspaceSidebar
             historyOpen={historyOpen}
             onHistoryToggle={() => setHistoryOpen((v) => !v)}

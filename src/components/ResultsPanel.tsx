@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Sparkles, Wand2, BarChart2, ScanSearch, ClipboardList, PenLine } from "lucide-react";
-import type { AnalyzeResponse, CriterionResult, RubricMatchResult } from "../types";
+import type { AnalyzeResponse, CriterionResult, QuotaInfo, RubricMatchResult } from "../types";
 import { proHumanize } from "../lib/api";
 
 type ResultsPanelProps = {
@@ -13,6 +13,10 @@ type ResultsPanelProps = {
   accessToken?: string | null;
   /** Called when the user clicks "Replace in editor" inside a Pro rewrite card */
   onReplaceSentence?: (original: string, replacement: string) => void;
+  /** Quota returned by the last analysis — used to show anon signup nudge */
+  quota?: QuotaInfo | null;
+  /** Open the auth modal — called from the inline anon nudge */
+  onAuthRequired?: () => void;
 };
 
 // ── Sentence splitter (mirrors backend preprocessor.py logic) ─────────────────
@@ -402,7 +406,7 @@ function SkeletonPanel() {
   );
 }
 
-export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, onUpgrade, text, accessToken, onReplaceSentence }: ResultsPanelProps) {
+export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, onUpgrade, text, accessToken, onReplaceSentence, quota, onAuthRequired }: ResultsPanelProps) {
   if (loading) return <SkeletonPanel />;
 
   if (!results) {
@@ -485,8 +489,35 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
     results.flagged_sentences.map((s) => [s.index, { score: s.score, reason: s.reason }])
   );
 
+  // Show inline signup nudge for anonymous users after their free trial runs out
+  const showAnonNudge = !accessToken && quota && quota.remaining === 0 && !quota.is_authenticated;
+
   return (
     <aside className="space-y-4">
+      {/* ── Anon trial done — inline signup nudge ── */}
+      {showAnonNudge && (
+        <div className="overflow-hidden rounded-modal border border-emerald-300 bg-gradient-to-br from-emerald-50 to-white shadow-soft">
+          <div className="flex items-start gap-3 px-4 py-4">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+              <Sparkles className="h-4 w-4 text-emerald-600" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-navy">Your free analysis is ready ✓</p>
+              <p className="mt-0.5 text-xs text-charcoal/65">
+                Create a free account to unlock <strong>3 analyses per day</strong> — no credit card needed.
+              </p>
+              <button
+                type="button"
+                onClick={onAuthRequired}
+                className="btn-shine mt-3 inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-emerald-500 to-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-button transition hover:opacity-90 hover:scale-[1.02] active:scale-[0.97]"
+              >
+                <Sparkles className="h-3 w-3" />Sign up free — it takes 30 seconds
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Dual score header (AI Risk + optional Rubric Match) ── */}
       <DualScoreCard results={results} />
 

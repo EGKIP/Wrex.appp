@@ -339,10 +339,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
         }
       }
 
-      // If anon and limit reached, nudge them to sign up next time
-      if (response.quota && response.quota.remaining === 0 && !response.quota.is_authenticated) {
-        onAuthRequired?.();
-      }
+      // Anon trial done — inline nudge in ResultsPanel handles sign-up; no modal here
     } catch (requestError) {
       if (requestError instanceof ApiError && requestError.status === 429) {
         setQuotaHit(accessToken ? "auth" : "anon");
@@ -740,7 +737,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
 
           {/* Right column — sticky in workspace mode */}
           <div className={workspace ? "sticky top-6" : ""}>
-            <ResultsPanel results={results} loading={loading} isPro={isPro} onRubricRewrite={handleRubricRewriteNudge} onUpgrade={handleUpgrade} text={text} accessToken={accessToken} onReplaceSentence={handleReplaceSentence} />
+            <ResultsPanel results={results} loading={loading} isPro={isPro} onRubricRewrite={handleRubricRewriteNudge} onUpgrade={handleUpgrade} text={text} accessToken={accessToken} onReplaceSentence={handleReplaceSentence} quota={quota} onAuthRequired={onAuthRequired} />
           </div>
         </div>{/* end grid */}
 
