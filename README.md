@@ -32,7 +32,7 @@ npm run dev       # http://localhost:5173
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 VITE_STRIPE_PUBLISHABLE_KEY=
-VITE_API_URL=http://localhost:8000
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
 **Backend**

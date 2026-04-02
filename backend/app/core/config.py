@@ -55,7 +55,12 @@ class Settings(BaseSettings):
 
     @property
     def stripe_configured(self) -> bool:
-        return bool(self.stripe_secret_key and not self.stripe_secret_key.endswith("REPLACE_ME"))
+        return bool(
+            self.stripe_secret_key
+            and not self.stripe_secret_key.endswith("REPLACE_ME")
+            and self.stripe_price_id
+            and not self.stripe_price_id.endswith("REPLACE_ME")
+        )
 
     # ── OpenAI ──────────────────────────────────────────────────────────────────
     openai_api_key: str = ""

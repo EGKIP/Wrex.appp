@@ -132,8 +132,13 @@ function App() {
     try {
       const { client_secret } = await createCheckoutSession(auth.session.access_token);
       setCheckoutClientSecret(client_secret);
-    } catch {
-      toast("Could not start checkout. Please try again.", "error");
+    } catch (err) {
+      console.error("[Wrex] checkout failed:", err);
+      const msg =
+        err instanceof Error && err.message && err.message !== "Something went wrong."
+          ? err.message
+          : "Could not start checkout. Please try again.";
+      toast(msg, "error");
     }
   }
 

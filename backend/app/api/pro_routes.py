@@ -89,26 +89,33 @@ def create_checkout_session(
         profile.data.get("stripe_customer_id") if profile.data else None
     )
 
-    if not stripe_customer_id:
-        customer = client.customers.create(
-            params={"email": user.email, "metadata": {"supabase_user_id": user.id}}
-        )
-        stripe_customer_id = customer.id
-        sb.table("profiles").update({"stripe_customer_id": stripe_customer_id}).eq(
-            "id", user.id
-        ).execute()
+    try:
+        if not stripe_customer_id:
+            customer = client.customers.create(
+                params={"email": user.email, "metadata": {"supabase_user_id": user.id}}
+            )
+            stripe_customer_id = customer.id
+            sb.table("profiles").update({"stripe_customer_id": stripe_customer_id}).eq(
+                "id", user.id
+            ).execute()
 
-    origin = settings.allowed_origins[0] if settings.allowed_origins else "http://localhost:5173"
-    session = client.checkout.sessions.create(
-        params={
-            "customer": stripe_customer_id,
-            "mode": "subscription",
-            "ui_mode": "embedded",
-            "line_items": [{"price": settings.stripe_price_id, "quantity": 1}],
-            "return_url": f"{origin}/?checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
-            "metadata": {"supabase_user_id": user.id},
-        }
-    )
+        origin = settings.allowed_origins[0] if settings.allowed_origins else "http://localhost:5173"
+        session = client.checkout.sessions.create(
+            params={
+                "customer": stripe_customer_id,
+                "mode": "subscription",
+                "ui_mode": "embedded",
+                "line_items": [{"price": settings.stripe_price_id, "quantity": 1}],
+                "return_url": f"{origin}/?checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
+                "metadata": {"supabase_user_id": user.id},
+            }
+        )
+    except stripe.StripeError as exc:
+        logger.error("stripe_checkout_error", extra={"user_id": user.id, "error": str(exc)})
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Payment provider error: {exc.user_message or str(exc)}",
+        )
 
     logger.info("checkout_session_created", extra={"user_id": user.id, "session_id": session.id})
     return CheckoutResponse(client_secret=session.client_secret or "")
@@ -141,12 +148,19 @@ def create_billing_portal_session(
         )
 
     origin = settings.allowed_origins[0] if settings.allowed_origins else "http://localhost:5173"
-    portal_session = client.billing_portal.sessions.create(
-        params={
-            "customer": stripe_customer_id,
-            "return_url": origin,
-        }
-    )
+    try:
+        portal_session = client.billing_portal.sessions.create(
+            params={
+                "customer": stripe_customer_id,
+                "return_url": origin,
+            }
+        )
+    except stripe.StripeError as exc:
+        logger.error("stripe_portal_error", extra={"user_id": user.id, "error": str(exc)})
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Payment provider error: {exc.user_message or str(exc)}",
+        )
 
     logger.info("billing_portal_session_created", extra={"user_id": user.id})
     return BillingPortalResponse(url=portal_session.url)
