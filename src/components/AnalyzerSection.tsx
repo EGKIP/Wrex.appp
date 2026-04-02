@@ -359,6 +359,8 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
       );
       setResults(response);
       setResultsStale(false);
+      // Expand right panel so results are front-and-centre; editor shrinks to a reference column
+      setSplitRatio(workspace ? 0.32 : 0.36);
       if (response.quota) {
         onQuotaUpdate?.(response.quota);
         setQuota(response.quota);
@@ -483,46 +485,76 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               )}
             </div>
 
-            {/* Grammar matches list */}
+            {/* Grammar & Spelling — Accept / Copy cards */}
             {grammarMatches.length > 0 && (
               <div className="mt-3">
-                <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-charcoal/40">
-                  Grammar &amp; spelling
-                </p>
-                <div className="max-h-[200px] space-y-2 overflow-y-auto rounded-input border border-border-base bg-mist p-3">
-                {grammarMatches.slice(0, 12).map((m, i) => (
-                  <div key={i} className="flex items-start gap-2.5 text-sm">
-                    <span
-                      className="mt-1 h-2 w-2 shrink-0 rounded-full"
-                      style={{ backgroundColor: m.match_type === "error" ? "#EF4444" : "#F59E0B" }}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="leading-snug text-charcoal">{m.message}</p>
-                      {m.replacements.length > 0 && (
-                        <div className="mt-1 flex flex-wrap items-center gap-1">
-                          <span className="text-xs text-charcoal/50">Fix:</span>
-                          {m.replacements.slice(0, 3).map((r, ri) => (
-                            <button
-                              key={ri}
-                              type="button"
-                              onClick={() => applyGrammarFix(m, r)}
-                              className="rounded border border-border-base bg-white px-1.5 py-0.5 font-mono text-[11px] text-navy shadow-sm transition hover:border-accent hover:bg-accent/10 hover:text-navy active:scale-95"
-                              title={`Apply fix: ${r}`}
-                            >
-                              {r}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {grammarMatches.length > 12 && (
-                  <p className="pt-1 text-center text-xs text-charcoal/40">
-                    +{grammarMatches.length - 12} more issues
+                <div className="mb-1.5 flex items-center gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/40">
+                    Grammar &amp; spelling
                   </p>
-                )}
-              </div>
+                  <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                    {grammarMatches.length}
+                  </span>
+                </div>
+                <div className="max-h-[300px] space-y-1.5 overflow-y-auto">
+                  {grammarMatches.slice(0, 15).map((m, i) => {
+                    const errorText = text.slice(m.offset, m.offset + m.length);
+                    const topFix = m.replacements[0] ?? null;
+                    return (
+                      <div
+                        key={i}
+                        className="flex items-center gap-2 rounded-soft border border-border-base bg-white px-3 py-2 shadow-sm"
+                      >
+                        {/* Dot */}
+                        <span
+                          className="h-2 w-2 shrink-0 rounded-full"
+                          style={{ backgroundColor: m.match_type === "error" ? "#EF4444" : "#F59E0B" }}
+                        />
+                        {/* Text */}
+                        <div className="min-w-0 flex-1 text-xs leading-5">
+                          {errorText && topFix ? (
+                            <span>
+                              <span className="font-mono text-danger line-through opacity-70">{errorText}</span>
+                              <span className="mx-1 text-charcoal/35">→</span>
+                              <span className="font-mono font-semibold text-navy">{topFix}</span>
+                              <span className="ml-1.5 text-charcoal/45">· {m.message}</span>
+                            </span>
+                          ) : (
+                            <span className="text-charcoal">{m.message}</span>
+                          )}
+                        </div>
+                        {/* Actions */}
+                        <div className="flex shrink-0 gap-1">
+                          {topFix && (
+                            <button
+                              type="button"
+                              onClick={() => applyGrammarFix(m, topFix)}
+                              className="rounded-soft bg-emerald-500 px-2.5 py-1 text-[11px] font-bold text-white transition hover:bg-emerald-600 active:scale-95"
+                              title="Apply this fix in the editor"
+                            >
+                              ✓ Accept
+                            </button>
+                          )}
+                          {topFix && (
+                            <button
+                              type="button"
+                              onClick={() => navigator.clipboard.writeText(topFix)}
+                              className="rounded-soft border border-border-base bg-mist px-2 py-1 text-[11px] text-charcoal/60 transition hover:bg-white hover:text-charcoal active:scale-95"
+                              title="Copy the suggestion"
+                            >
+                              Copy
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {grammarMatches.length > 15 && (
+                    <p className="pt-1 text-center text-xs text-charcoal/40">
+                      +{grammarMatches.length - 15} more issues
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
