@@ -23,7 +23,7 @@ def _chat(messages: list[dict]) -> str:
         "model": settings.openai_model,
         "messages": messages,
         "temperature": 0.4,
-        "max_tokens": 1000,
+        "max_tokens": 2500,
     }).encode("utf-8")
 
     req = urllib.request.Request(
@@ -54,15 +54,19 @@ def _chat(messages: list[dict]) -> str:
 def get_improve_suggestions(
     text: str, rubric: Optional[str] = None
 ) -> list[ImproveSuggestion]:
-    """Return up to 5 sentence-level improvement suggestions."""
+    """Return up to 8 sentence-level improvement suggestions."""
     rubric_section = f"\n\nRubric:\n{rubric}" if rubric else ""
 
     system = (
         "You are an expert writing coach helping a student improve their essay. "
-        "Identify sentences that are weak, vague, or fail to address the rubric. "
-        "For each, output a JSON object with keys: "
-        "'sentence' (the original), 'issue' (why it's weak), 'rewrite' (improved version). "
-        "Return a JSON array of up to 5 such objects. No markdown, just the JSON array."
+        "Identify sentences that are weak, vague, overly formal, repetitive, or fail to address the rubric. "
+        "For EACH weak sentence you find, output a JSON object with exactly these keys: "
+        "'sentence' (the original sentence verbatim), "
+        "'issue' (a short explanation of why it is weak — 10–20 words), "
+        "'rewrite' (an improved version of the sentence). "
+        "Return a JSON array containing between 5 and 8 such objects. "
+        "Cover a variety of issue types (clarity, evidence, structure, tone, repetition). "
+        "Output ONLY the raw JSON array — no markdown, no code fences, no extra text."
     )
     user = f"Essay:\n{text}{rubric_section}"
 

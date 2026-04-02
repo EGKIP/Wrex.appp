@@ -98,6 +98,18 @@ export async function getProStatus(accessToken: string): Promise<{ is_pro: boole
   return handleResponse<{ is_pro: boolean }>(response);
 }
 
+/** Call after checkout completes — syncs is_pro directly from Stripe in case webhook was delayed. */
+export async function syncSubscription(accessToken: string): Promise<{ is_pro: boolean }> {
+  const response = await fetch(`${API_BASE_URL}/pro/sync-subscription`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+  return handleResponse<{ is_pro: boolean }>(response);
+}
+
 export async function createCheckoutSession(accessToken: string): Promise<{ client_secret: string }> {
   const response = await fetch(`${API_BASE_URL}/pro/checkout`, {
     method: "POST",

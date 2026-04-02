@@ -14,7 +14,7 @@ import { WorkspaceSidebar } from "./components/WorkspaceSidebar";
 import { useToast } from "./context/toast";
 import { useAuth } from "./hooks/useAuth";
 import { useProStatus } from "./hooks/useProStatus";
-import { createCheckoutSession, getHistory } from "./lib/api";
+import { createCheckoutSession, getHistory, syncSubscription } from "./lib/api";
 import type { QuotaInfo, SubmissionRecord } from "./types";
 import type { User } from "@supabase/supabase-js";
 
@@ -50,7 +50,14 @@ function App() {
     const checkout = params.get("checkout");
     if (checkout === "success") {
       window.history.replaceState(null, "", window.location.pathname);
-      setTimeout(() => {
+      // Sync directly from Stripe first (in case webhook is delayed), then refresh UI
+      setTimeout(async () => {
+        try {
+          const token = auth.session?.access_token;
+          if (token) await syncSubscription(token);
+        } catch {
+          // Non-fatal — refreshProStatus below will re-check the DB
+        }
         toast("You're now a Pro member! 🎉 Enjoy unlimited analyses.", "success");
         refreshProStatus();
       }, 400);

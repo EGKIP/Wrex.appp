@@ -24,7 +24,6 @@ from app.schemas.pro import (
     HumanizeResponse,
     ImproveRequest,
     ImproveResponse,
-    ImproveSuggestion,
     RubricRewriteRequest,
     RubricRewriteResponse,
 )
@@ -190,19 +189,47 @@ async def stripe_webhook(
         user_id = session.get("metadata", {}).get("supabase_user_id")
         sub_id = session.get("subscription")
         if user_id:
-            sb.table("profiles").update(
-                {"is_pro": True, "stripe_subscription_id": sub_id}
-            ).eq("id", user_id).execute()
-            logger.info("pro_activated", extra={"user_id": user_id})
+            update_payload: dict = {"is_pro": True}
+            if sub_id:
+                update_payload["stripe_subscription_id"] = sub_id
+            sb.table("profiles").update(update_payload).eq("id", user_id).execute()
+            logger.info("pro_activated", extra={"user_id": user_id, "subscription_id": sub_id})
+
+    elif event_type == "customer.subscription.created":
+        # Fires shortly after checkout — captures the subscription ID reliably.
+        sub = event_obj["data"]["object"]
+        sub_id = sub.get("id")
+        customer_id = sub.get("customer")
+        if sub_id and customer_id:
+            # Look up user by Stripe customer ID and store the subscription ID
+            profile = (
+                sb.table("profiles")
+                .select("id, is_pro")
+                .eq("stripe_customer_id", customer_id)
+                .maybe_single()
+                .execute()
+            )
+            if profile.data:
+                sb.table("profiles").update(
+                    {"stripe_subscription_id": sub_id, "is_pro": True}
+                ).eq("stripe_customer_id", customer_id).execute()
+                logger.info("subscription_id_stored", extra={"subscription_id": sub_id, "customer_id": customer_id})
 
     elif event_type in ("customer.subscription.deleted", "customer.subscription.paused"):
         sub = event_obj["data"]["object"]
         sub_id = sub.get("id")
+        customer_id = sub.get("customer")
         if sub_id:
             sb.table("profiles").update({"is_pro": False}).eq(
                 "stripe_subscription_id", sub_id
             ).execute()
             logger.info("pro_deactivated", extra={"subscription_id": sub_id})
+        elif customer_id:
+            # Fallback: deactivate by customer ID if subscription_id wasn't stored
+            sb.table("profiles").update({"is_pro": False}).eq(
+                "stripe_customer_id", customer_id
+            ).execute()
+            logger.info("pro_deactivated_by_customer", extra={"customer_id": customer_id})
 
     return {"received": True}
 
@@ -225,6 +252,52 @@ def get_pro_status(
     )
     is_pro = bool(profile.data and profile.data.get("is_pro"))
     return ProStatusResponse(is_pro=is_pro)
+
+
+@router.post("/sync-subscription", response_model=ProStatusResponse)
+def sync_subscription(
+    user: AuthUser = Depends(get_required_user),
+) -> ProStatusResponse:
+    """
+    Verify the user's subscription directly with Stripe and sync is_pro.
+    Call this after checkout completes in case the webhook was delayed or missed.
+    """
+    if not settings.stripe_configured or not settings.supabase_configured:
+        return ProStatusResponse(is_pro=False)
+
+    client = _get_stripe_client()
+    sb = _supabase()
+
+    profile = (
+        sb.table("profiles")
+        .select("stripe_customer_id, stripe_subscription_id, is_pro")
+        .eq("id", user.id)
+        .maybe_single()
+        .execute()
+    )
+
+    if not profile.data:
+        return ProStatusResponse(is_pro=False)
+
+    customer_id: str | None = profile.data.get("stripe_customer_id")
+    if not customer_id:
+        return ProStatusResponse(is_pro=False)
+
+    # Check Stripe for any active subscription on this customer
+    try:
+        subs = client.subscriptions.list(params={"customer": customer_id, "status": "active", "limit": 1})
+        if subs.data:
+            sub = subs.data[0]
+            sb.table("profiles").update({
+                "is_pro": True,
+                "stripe_subscription_id": sub.id,
+            }).eq("id", user.id).execute()
+            logger.info("subscription_synced", extra={"user_id": user.id, "subscription_id": sub.id})
+            return ProStatusResponse(is_pro=True)
+    except stripe.StripeError as exc:
+        logger.error("stripe_sync_error", extra={"user_id": user.id, "error": str(exc)})
+
+    return ProStatusResponse(is_pro=bool(profile.data.get("is_pro")))
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
