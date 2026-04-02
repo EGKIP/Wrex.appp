@@ -84,6 +84,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const [rubric, setRubric] = useState("");
   const [showRubric, setShowRubric] = useState(false);
   const [results, setResults] = useState<AnalyzeResponse | null>(null);
+  const [resultsStale, setResultsStale] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [quotaHit, setQuotaHit] = useState<"anon" | "auth" | null>(null);
@@ -96,6 +97,13 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const history = workspace && externalHistory !== undefined ? externalHistory : internalHistory;
   const historyLoading = workspace && externalHistoryLoading !== undefined ? externalHistoryLoading : internalHistoryLoading;
   const [showRubricNudge, setShowRubricNudge] = useState(false);
+
+  // ── Resizable split panel ──────────────────────────────────────────────────
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [splitRatio, setSplitRatio] = useState(workspace ? 0.58 : 0.52);
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartRatio = useRef(0);
 
   const wordCount = countWords(text);
   const readingTime = wordCount > 0 ? Math.max(1, Math.round(wordCount / 200)) : 0;
@@ -205,6 +213,26 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // ── Drag-to-resize split panel ─────────────────────────────────────────────
+  useEffect(() => {
+    function onMove(e: MouseEvent) {
+      if (!isDragging.current || !containerRef.current) return;
+      const w = containerRef.current.offsetWidth;
+      const delta = e.clientX - dragStartX.current;
+      setSplitRatio(Math.min(0.80, Math.max(0.28, dragStartRatio.current + delta / w)));
+    }
+    function onUp() {
+      isDragging.current = false;
+      document.body.style.cursor = "";
+    }
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, []);
+
   // ── Replace a single sentence in the editor ───────────────────────────────
   function handleReplaceSentence(original: string, replacement: string) {
     setText((prev) => {
@@ -213,8 +241,14 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
       if (idx === -1) return prev;
       return prev.slice(0, idx) + replacement + prev.slice(idx + original.length);
     });
-    setResults(null);
+    setResultsStale(true); // keep results visible; stale banner prompts re-analyze
     toast("Sentence replaced — re-analyze to see your new score ✓", "success");
+  }
+
+  // ── Apply a grammar/spelling fix inline ───────────────────────────────────
+  function applyGrammarFix(match: GrammarMatch, replacement: string) {
+    setText((prev) => prev.slice(0, match.offset) + replacement + prev.slice(match.offset + match.length));
+    setGrammarMatches((prev) => prev.filter((m) => m !== match));
   }
 
   // ── Tone state (Pro) ───────────────────────────────────────────────────────
@@ -324,6 +358,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
         accessToken,
       );
       setResults(response);
+      setResultsStale(false);
       if (response.quota) {
         onQuotaUpdate?.(response.quota);
         setQuota(response.quota);
@@ -396,8 +431,13 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
           </div>
         )}
 
-        <div className={`grid gap-6 lg:items-start ${workspace ? "lg:grid-cols-[1.4fr_0.8fr]" : "lg:grid-cols-[1.05fr_0.95fr]"}`}>
-          {/* Input card */}
+        {/* Two-column layout — stacked on mobile, draggable side-by-side on lg+ */}
+        <div ref={containerRef} className="flex flex-col gap-6 lg:flex-row lg:gap-0 lg:items-start">
+          {/* Left column — editor */}
+          <div
+            className="w-full lg:flex-shrink-0"
+            style={{ flexBasis: `${splitRatio * 100}%` }}
+          >
           <div className={`rounded-modal border border-border-base bg-white shadow-soft ${workspace ? "p-4 sm:p-5" : "p-6 sm:p-8"}`}>
             {/* Header row */}
             <div className="flex items-center justify-between">
@@ -456,17 +496,23 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                       className="mt-1 h-2 w-2 shrink-0 rounded-full"
                       style={{ backgroundColor: m.match_type === "error" ? "#EF4444" : "#F59E0B" }}
                     />
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="leading-snug text-charcoal">{m.message}</p>
                       {m.replacements.length > 0 && (
-                        <p className="mt-0.5 text-xs text-charcoal/50">
-                          Suggest:{" "}
+                        <div className="mt-1 flex flex-wrap items-center gap-1">
+                          <span className="text-xs text-charcoal/50">Fix:</span>
                           {m.replacements.slice(0, 3).map((r, ri) => (
-                            <span key={ri} className="mr-1 rounded bg-white px-1 py-0.5 font-mono text-[11px] text-navy shadow-sm">
+                            <button
+                              key={ri}
+                              type="button"
+                              onClick={() => applyGrammarFix(m, r)}
+                              className="rounded border border-border-base bg-white px-1.5 py-0.5 font-mono text-[11px] text-navy shadow-sm transition hover:border-accent hover:bg-accent/10 hover:text-navy active:scale-95"
+                              title={`Apply fix: ${r}`}
+                            >
                               {r}
-                            </span>
+                            </button>
                           ))}
-                        </p>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -734,12 +780,27 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               </div>
             )}
           </div>
+          </div>{/* end left column wrapper */}
+
+          {/* Drag handle — desktop only */}
+          <div
+            className="hidden lg:flex w-5 shrink-0 self-stretch cursor-col-resize items-center justify-center group select-none"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              isDragging.current = true;
+              dragStartX.current = e.clientX;
+              dragStartRatio.current = splitRatio;
+              document.body.style.cursor = "col-resize";
+            }}
+          >
+            <div className="h-16 w-0.5 rounded-full bg-border-base transition-colors group-hover:bg-accent/50" />
+          </div>
 
           {/* Right column — sticky in workspace mode */}
-          <div className={workspace ? "sticky top-6" : ""}>
-            <ResultsPanel results={results} loading={loading} isPro={isPro} onRubricRewrite={handleRubricRewriteNudge} onUpgrade={handleUpgrade} text={text} accessToken={accessToken} onReplaceSentence={handleReplaceSentence} quota={quota} onAuthRequired={onAuthRequired} />
+          <div className={`flex-1 min-w-0 ${workspace ? "sticky top-6" : ""}`}>
+            <ResultsPanel results={results} loading={loading} isPro={isPro} onRubricRewrite={handleRubricRewriteNudge} onUpgrade={handleUpgrade} text={text} accessToken={accessToken} onReplaceSentence={handleReplaceSentence} quota={quota} onAuthRequired={onAuthRequired} resultsStale={resultsStale} />
           </div>
-        </div>{/* end grid */}
+        </div>{/* end flex split */}
 
         {/* Pro AI panel */}
         {results && (
@@ -953,7 +1014,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                               onClick={() => {
                                 setText(humanizeResult.rewritten);
                                 setHumanizeResult(null);
-                                setResults(null);
+                                setResultsStale(true);
                                 window.scrollTo({ top: document.getElementById("analyzer")?.offsetTop ?? 0, behavior: "smooth" });
                                 toast("Text updated — re-analyze to see your new score ✓", "success");
                               }}
@@ -1033,7 +1094,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                                   onClick={() => {
                                     setText(rubricRewriteResult.rewritten);
                                     setRubricRewriteResult(null);
-                                    setResults(null);
+                                    setResultsStale(true);
                                     window.scrollTo({ top: document.getElementById("analyzer")?.offsetTop ?? 0, behavior: "smooth" });
                                     toast("Text updated — re-analyze to see your new score ✓", "success");
                                   }}

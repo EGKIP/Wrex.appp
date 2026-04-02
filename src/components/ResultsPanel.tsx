@@ -17,6 +17,8 @@ type ResultsPanelProps = {
   quota?: QuotaInfo | null;
   /** Open the auth modal — called from the inline anon nudge */
   onAuthRequired?: () => void;
+  /** True when the editor text was changed after last analysis (accepted rewrite etc.) */
+  resultsStale?: boolean;
 };
 
 // ── Sentence splitter (mirrors backend preprocessor.py logic) ─────────────────
@@ -126,7 +128,8 @@ function SentenceHighlighter({
       <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-input border border-border-base bg-mist px-3 py-2">
         <span className="flex items-center gap-1.5 text-xs text-charcoal/60">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />
-          <span className="font-semibold text-amber-700">Flagged</span> — click to get a rewrite
+          <span className="font-semibold text-amber-700">Flagged</span>
+          {isPro ? " — click to rewrite with AI" : " — click to see why"}
         </span>
         <span className="flex items-center gap-1.5 text-xs text-charcoal/60">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400" />
@@ -244,8 +247,8 @@ function SentenceHighlighter({
 
       <p className="mt-4 text-xs text-charcoal/40">
         {isPro
-          ? "Click any amber-highlighted sentence → review the suggestion → hit ✓ Accept to apply."
-          : "Click any amber-highlighted sentence to see rewrite options."}
+          ? "Click any amber-highlighted sentence → review the AI suggestion → hit ✓ Accept to apply."
+          : "Click any flagged sentence to see why it was flagged. Upgrade to Pro for one-click AI rewrites."}
       </p>
     </section>
   );
@@ -406,7 +409,7 @@ function SkeletonPanel() {
   );
 }
 
-export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, onUpgrade, text, accessToken, onReplaceSentence, quota, onAuthRequired }: ResultsPanelProps) {
+export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, onUpgrade, text, accessToken, onReplaceSentence, quota, onAuthRequired, resultsStale = false }: ResultsPanelProps) {
   if (loading) return <SkeletonPanel />;
 
   if (!results) {
@@ -515,6 +518,14 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Stale results banner — shown after text was updated via a rewrite ── */}
+      {resultsStale && (
+        <div className="flex items-center gap-2.5 rounded-input border border-amber-300/60 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-800">
+          <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-400" />
+          <span className="flex-1">Text updated — hit <strong>Analyze</strong> again to see your new score.</span>
         </div>
       )}
 
