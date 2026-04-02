@@ -29,7 +29,7 @@ export function Footer() {
             <div>
               <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-charcoal/40">Support</p>
               <div className="flex flex-col gap-2.5 text-charcoal/65">
-                <a href="mailto:hello@wrex.app" className="transition hover:text-navy">Contact us</a>
+                <a href="mailto:support@wrex.app" className="transition hover:text-navy">Contact us</a>
               </div>
             </div>
           </div>

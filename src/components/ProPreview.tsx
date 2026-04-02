@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Check, X } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 
 interface ProPreviewProps {
   onTryFree?: () => void;
@@ -8,28 +8,19 @@ interface ProPreviewProps {
 
 const FREE_FEATURES = [
   "AI-pattern score (0–100)",
-  "Sentence-level flags with reasons",
-  "Rubric alignment",
-  "Writing tips",
-  "250 words per analysis",
-  "3 analyses / day (free account)",
-  "1 analysis without an account",
+  "Sentence-level flags & reasons",
+  "Rubric alignment check",
+  "Writing improvement tips",
+  "250 words · 3 analyses/day",
 ];
 
-const PRO_ONLY = [
+const PRO_EXTRAS = [
   "Sentence-level rewrites (inline)",
-  "Full humanize — 5 tone templates",
+  "Humanize — 5 tone templates",
   "Deep rubric gap detection",
-  "1,250 words per analysis",
-  "Unlimited analyses every day",
+  "Up to 1,250 words per analysis",
+  "Unlimited daily analyses",
 ];
-
-function Tick() {
-  return <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />;
-}
-function Cross() {
-  return <X className="mt-0.5 h-4 w-4 shrink-0 text-charcoal/25" />;
-}
 
 export function ProPreview({ onTryFree, onUpgrade }: ProPreviewProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -39,7 +30,9 @@ export function ProPreview({ onTryFree, onUpgrade }: ProPreviewProps) {
     if (!els?.length) return;
     const obs = new IntersectionObserver(
       (entries) => {
-        entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in-view"); obs.unobserve(e.target); } });
+        entries.forEach((e) => {
+          if (e.isIntersecting) { e.target.classList.add("in-view"); obs.unobserve(e.target); }
+        });
       },
       { threshold: 0.1 }
     );
@@ -48,79 +41,79 @@ export function ProPreview({ onTryFree, onUpgrade }: ProPreviewProps) {
   }, []);
 
   return (
-    <section id="pricing" className="bg-mist px-6 py-16 lg:px-10 lg:py-24" ref={sectionRef}>
-      <div className="mx-auto max-w-5xl">
+    <section id="pricing" className="bg-mist px-6 py-16 lg:px-10 lg:py-20" ref={sectionRef}>
+      <div className="mx-auto max-w-4xl">
         {/* Header */}
-        <div className="mb-12 text-center scroll-reveal">
+        <div className="mb-10 text-center scroll-reveal">
           <h2 className="text-[1.75rem] font-bold tracking-tight text-navy lg:text-[2.25rem]">
-            Simple, honest pricing
+            Simple pricing
           </h2>
-          <p className="mt-3 text-base text-charcoal/65">
-            Start free — no credit card, no account needed. Upgrade when you're ready.
+          <p className="mt-2 text-base text-charcoal/60">
+            Start free — no card needed. Upgrade when you're ready.
           </p>
         </div>
 
-        {/* Pricing cards */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Free tier */}
-          <div className="scroll-reveal rounded-modal border border-border-base bg-white p-8 shadow-soft" data-delay="1">
-            <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/45">Free</p>
-            <p className="mt-3 text-4xl font-extrabold text-navy">$0</p>
-            <p className="mt-1 text-sm text-charcoal/55">Forever free</p>
+        {/* Cards */}
+        <div className="grid gap-5 md:grid-cols-2">
 
-            <ul className="mt-7 space-y-3">
+          {/* Free */}
+          <div className="scroll-reveal flex flex-col rounded-modal border border-border-base bg-white p-7 shadow-soft" data-delay="1">
+            <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/40">Free</p>
+            <div className="mt-3 flex items-end gap-1">
+              <span className="text-4xl font-extrabold text-navy">$0</span>
+              <span className="mb-1 text-sm text-charcoal/45">/ forever</span>
+            </div>
+
+            <ul className="mt-6 space-y-2.5">
               {FREE_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-charcoal/80">
-                  <Tick /> {f}
-                </li>
-              ))}
-              {PRO_ONLY.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-charcoal/35 line-through decoration-charcoal/20">
-                  <Cross /> {f}
+                <li key={f} className="flex items-center gap-2.5 text-sm text-charcoal/75">
+                  <Check className="h-4 w-4 shrink-0 text-emerald-500" /> {f}
                 </li>
               ))}
             </ul>
 
+            <div className="flex-1" />
             <button
               onClick={onTryFree}
-              className="mt-8 w-full rounded-soft border border-border-base bg-white py-3 text-sm font-semibold text-navy transition hover:border-navy/20 hover:bg-mist"
+              className="mt-7 w-full rounded-soft border border-border-base bg-white py-2.5 text-sm font-semibold text-navy transition hover:border-navy/25 hover:bg-mist"
             >
               Start free
             </button>
           </div>
 
-          {/* Pro tier */}
-          <div className="scroll-reveal relative overflow-hidden rounded-modal border border-accent/40 bg-gradient-to-br from-navy to-navy-light p-8 shadow-soft-md" data-delay="2">
-            {/* Popular badge */}
-            <span className="absolute right-6 top-6 rounded-full bg-accent px-3 py-1 text-xs font-bold text-navy">
-              Most popular
+          {/* Pro */}
+          <div className="scroll-reveal relative flex flex-col overflow-hidden rounded-modal border border-accent/30 bg-gradient-to-br from-navy to-navy-light p-7 shadow-soft-md" data-delay="2">
+            <span className="absolute right-5 top-5 inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-bold text-navy">
+              <Sparkles className="h-3 w-3" /> Most popular
             </span>
 
-            <p className="text-xs font-semibold uppercase tracking-widest text-white/50">Pro</p>
-            <p className="mt-3 text-4xl font-extrabold text-white">$9<span className="text-xl font-medium text-white/60">/mo</span></p>
-            <p className="mt-1 text-sm text-white/50">Cancel any time</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-white/45">Pro</p>
+            <div className="mt-3 flex items-end gap-1">
+              <span className="text-4xl font-extrabold text-white">$9</span>
+              <span className="mb-1 text-sm text-white/45">/ month</span>
+            </div>
+            <p className="mt-0.5 text-xs text-white/35">Cancel any time</p>
 
-            <ul className="mt-7 space-y-3">
-              {FREE_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-white/75">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" /> {f}
-                </li>
-              ))}
-              {PRO_ONLY.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-sm font-medium text-white">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" /> {f}
+            {/* Everything in free */}
+            <p className="mt-5 text-xs font-semibold uppercase tracking-widest text-white/40">Everything in Free, plus</p>
+            <ul className="mt-3 space-y-2.5">
+              {PRO_EXTRAS.map((f) => (
+                <li key={f} className="flex items-center gap-2.5 text-sm font-medium text-white">
+                  <Check className="h-4 w-4 shrink-0 text-accent" /> {f}
                 </li>
               ))}
             </ul>
 
+            <div className="flex-1" />
             <button
               onClick={onUpgrade}
-              className="btn-shine mt-8 w-full rounded-soft bg-gradient-to-br from-accent to-accent-dark py-3 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.01] active:scale-[0.98]"
+              className="btn-shine mt-7 w-full rounded-soft bg-gradient-to-br from-accent to-accent-dark py-2.5 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.01] active:scale-[0.98]"
             >
               Upgrade to Pro
             </button>
-            <p className="mt-3 text-center text-xs text-white/35">Secure checkout via Stripe</p>
+            <p className="mt-2.5 text-center text-[11px] text-white/30">Secure checkout · Stripe</p>
           </div>
+
         </div>
       </div>
     </section>
