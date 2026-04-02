@@ -122,12 +122,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const [grammarLoading, setGrammarLoading] = useState(false);
   const grammarTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Auto-analyze refs ──────────────────────────────────────────────────────
-  const autoAnalyzeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasUserEdited = useRef(false);       // don't fire on the pre-loaded sample
-  const lastAnalyzedText = useRef("");       // skip if text hasn't changed
-  const isAutoAnalyze = useRef(false);       // suppress toast/history for silent runs
-  // Keep a fresh ref to onAnalyze so the debounce always calls the latest closure
+  // Keep a fresh ref to onAnalyze so Cmd+Enter always calls the latest closure
   const onAnalyzeRef = useRef<() => Promise<void>>(async () => {});
 
   // Load history item into editor when parent sends a loadRequest
@@ -312,29 +307,10 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken]);
 
-  // ── Auto-analyze debounce ─────────────────────────────────────────────────
-  // Keep the ref in sync with the latest closure every render
+  // Keep the ref in sync with the latest closure every render (used by Cmd+Enter)
   useEffect(() => {
     onAnalyzeRef.current = onAnalyze;
   });
-
-  useEffect(() => {
-    if (!hasUserEdited.current) return;            // skip the pre-loaded sample
-    if (autoAnalyzeTimer.current) clearTimeout(autoAnalyzeTimer.current);
-    if (wordCount < 30) return;                    // too short — skip
-    if (text === lastAnalyzedText.current) return; // unchanged — skip
-    if (quotaHit) return;                          // quota hit — don't burn retries
-
-    autoAnalyzeTimer.current = setTimeout(() => {
-      if (loading) return;                         // manual analyze in flight — skip
-      lastAnalyzedText.current = text;
-      isAutoAnalyze.current = true;
-      void onAnalyzeRef.current().finally(() => { isAutoAnalyze.current = false; });
-    }, 800);
-
-    return () => { if (autoAnalyzeTimer.current) clearTimeout(autoAnalyzeTimer.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text]);
 
   async function onAnalyze() {
     setLoading(true);
@@ -353,8 +329,8 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
         setQuota(response.quota);
       }
 
-      // Toast + history refresh on successful save (suppress for silent auto-analyze)
-      if (accessToken && !isAutoAnalyze.current) {
+      // Toast + history refresh on successful save
+      if (accessToken) {
         toast("Analysis saved to your history ✓", "success");
         if (workspace && onAnalyzed) {
           onAnalyzed(); // parent refreshes history in workspace mode
@@ -438,122 +414,10 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               </button>
             </div>
 
-            {/* ── Inline rubric bar ───────────────────────────────────────────── */}
-            <div className="mt-3">
-              {/* Collapsed state: rubric has content → show active tag */}
-              {!showRubric && rubric.trim() && (
-                <div className="mb-2 flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                    <FileText className="h-3 w-3" />
-                    Rubric active
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowRubric(true)}
-                    className="text-xs text-charcoal/50 transition hover:text-navy hover:underline"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setRubric(""); setShowRubric(false); }}
-                    className="text-xs text-charcoal/40 transition hover:text-danger"
-                    aria-label="Remove rubric"
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
-
-              {/* Collapsed state: no rubric → show + Add Rubric button */}
-              {!showRubric && !rubric.trim() && (
-                <div className="relative mb-2 inline-block">
-                  <button
-                    type="button"
-                    onClick={() => { setShowRubric(true); dismissNudge(); }}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border-base px-3 py-1 text-xs font-medium text-charcoal/55 transition hover:border-accent hover:text-accent"
-                  >
-                    <FileText className="h-3 w-3" />
-                    + Add rubric
-                  </button>
-                  {/* One-time nudge tooltip */}
-                  {showRubricNudge && (
-                    <div
-                      role="tooltip"
-                      className="absolute bottom-full left-0 z-20 mb-2 flex w-max max-w-[240px] items-start gap-2 rounded-soft bg-navy px-3 py-2.5 text-xs text-white shadow-lg"
-                    >
-                      <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
-                      <span>Add your rubric — Wrex checks every criterion and rewrites to hit them all.</span>
-                      <button
-                        type="button"
-                        onClick={dismissNudge}
-                        aria-label="Dismiss tip"
-                        className="ml-1 shrink-0 text-white/50 hover:text-white"
-                      >
-                        ✕
-                      </button>
-                      <span className="absolute -bottom-1.5 left-4 h-3 w-3 rotate-45 bg-navy" />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Expanded state: rubric textarea */}
-              {showRubric && (
-                <div className="mb-3 rounded-input border border-accent/30 bg-accent/5 p-3">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 text-xs font-semibold text-navy">
-                      <FileText className="h-3.5 w-3.5 text-accent" />
-                      Rubric / assignment brief
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <select
-                        value=""
-                        onChange={(e) => { if (e.target.value) setRubric(e.target.value); }}
-                        className="rounded border border-border-base bg-white px-2 py-0.5 text-xs text-charcoal/70 outline-none transition focus:border-accent focus:ring-[2px] focus:ring-accent/15 cursor-pointer"
-                      >
-                        <option value="">Load template…</option>
-                        {RUBRIC_TEMPLATES.map((t) => (
-                          <option key={t.label} value={t.value}>{t.label}</option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() => setShowRubric(false)}
-                        className="rounded-full p-0.5 text-charcoal/40 transition hover:text-charcoal"
-                        aria-label="Collapse rubric"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                          <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                  <textarea
-                    value={rubric}
-                    onChange={(e) => setRubric(e.target.value)}
-                    placeholder={"1. Discuss the causes of the French Revolution\n2. Analyze the social impact\n3. Evaluate economic factors"}
-                    rows={4}
-                    className="w-full rounded-input border border-border-base bg-white px-3 py-2.5 text-sm leading-6 text-charcoal outline-none transition placeholder:text-charcoal/30 focus:border-accent focus:ring-[3px] focus:ring-accent/15"
-                  />
-                  <div className="mt-2 flex items-center justify-between">
-                    <p className="text-[11px] text-charcoal/45">One criterion per line. Wrex checks each one.</p>
-                    <button
-                      type="button"
-                      onClick={() => setShowRubric(false)}
-                      className="rounded-soft bg-accent px-3 py-1 text-xs font-bold text-navy transition hover:bg-accent-dark"
-                    >
-                      {rubric.trim() ? "Save & close" : "Close"}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
             <textarea
               ref={textareaRef}
               value={text}
-              onChange={(event) => { hasUserEdited.current = true; setText(event.target.value); }}
+              onChange={(event) => { setText(event.target.value); }}
               placeholder="Paste your text here to analyze..."
               className={`mt-3 w-full rounded-input border border-border-base bg-white px-4 py-3 text-base leading-7 text-charcoal placeholder:text-charcoal/30 outline-none transition focus:border-accent focus:ring-[3px] focus:ring-accent/15 resize-none overflow-hidden ${workspace ? "min-h-[420px]" : "min-h-[300px]"}`}
             />
@@ -567,7 +431,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                 {!wordLimitExceeded && readingTime > 0 && <> · ~{readingTime} min read</>}
                 {wordLimitExceeded && <> — {isPro ? "Pro" : "Free"} limit reached</>}
               </span>
-              {loading && hasUserEdited.current && <span className="animate-pulse text-accent">Scoring…</span>}
+              {loading && <span className="animate-pulse text-accent">Scoring…</span>}
               {!loading && grammarLoading && <span className="animate-pulse">Checking grammar…</span>}
               {!grammarLoading && grammarMatches.length > 0 && (
                 <span>
@@ -620,6 +484,78 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
             )}
 
 
+
+            {/* ── Rubric section (below textarea) ─────────────────────────── */}
+            <div className="mt-4">
+              {/* Collapsed: rubric has content */}
+              {!showRubric && rubric.trim() && (
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                    <FileText className="h-3 w-3" />
+                    Rubric active
+                  </span>
+                  <button type="button" onClick={() => setShowRubric(true)} className="text-xs text-charcoal/50 transition hover:text-navy hover:underline">Edit</button>
+                  <button type="button" onClick={() => { setRubric(""); setShowRubric(false); }} className="text-xs text-charcoal/40 transition hover:text-danger" aria-label="Remove rubric">Remove</button>
+                </div>
+              )}
+
+              {/* Collapsed: no rubric → inline nudge banner */}
+              {!showRubric && !rubric.trim() && (
+                <div className="flex items-center gap-3 rounded-input border border-dashed border-accent/30 bg-accent/4 px-3 py-2.5">
+                  <Sparkles className="h-3.5 w-3.5 shrink-0 text-accent" />
+                  <p className="flex-1 text-xs text-charcoal/60">
+                    <span className="font-semibold text-navy">Got a rubric?</span> Add it and Wrex checks every criterion — then rewrites to hit them all.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setShowRubric(true); dismissNudge(); }}
+                    className="shrink-0 inline-flex items-center gap-1 rounded-full border border-accent/40 bg-white px-3 py-1 text-xs font-semibold text-navy transition hover:border-accent hover:shadow-soft"
+                  >
+                    <FileText className="h-3 w-3" />+ Add rubric
+                  </button>
+                </div>
+              )}
+
+              {/* Expanded rubric textarea */}
+              {showRubric && (
+                <div className="rounded-input border border-accent/30 bg-accent/5 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-xs font-semibold text-navy">
+                      <FileText className="h-3.5 w-3.5 text-accent" />
+                      Rubric / assignment brief
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value=""
+                        onChange={(e) => { if (e.target.value) setRubric(e.target.value); }}
+                        className="rounded border border-border-base bg-white px-2 py-0.5 text-xs text-charcoal/70 outline-none transition focus:border-accent focus:ring-[2px] focus:ring-accent/15 cursor-pointer"
+                      >
+                        <option value="">Load template…</option>
+                        {RUBRIC_TEMPLATES.map((t) => (
+                          <option key={t.label} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
+                      <button type="button" onClick={() => setShowRubric(false)} className="rounded-full p-0.5 text-charcoal/40 transition hover:text-charcoal" aria-label="Collapse rubric">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3.5 3.5l7 7M10.5 3.5l-7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <textarea
+                    value={rubric}
+                    onChange={(e) => setRubric(e.target.value)}
+                    placeholder={"1. Discuss the causes of the French Revolution\n2. Analyze the social impact\n3. Evaluate economic factors"}
+                    rows={4}
+                    className="w-full rounded-input border border-border-base bg-white px-3 py-2.5 text-sm leading-6 text-charcoal outline-none transition placeholder:text-charcoal/30 focus:border-accent focus:ring-[3px] focus:ring-accent/15"
+                  />
+                  <div className="mt-2 flex items-center justify-between">
+                    <p className="text-[11px] text-charcoal/45">One criterion per line. Wrex checks each one.</p>
+                    <button type="button" onClick={() => setShowRubric(false)} className="rounded-soft bg-accent px-3 py-1 text-xs font-bold text-navy transition hover:bg-accent-dark">
+                      {rubric.trim() ? "Save & close" : "Close"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* ── Quota wall: anonymous hit limit ─────────────────────────── */}
             {quotaHit === "anon" && (
@@ -937,11 +873,11 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                                   type="button"
                                   onClick={() => {
                                     handleReplaceSentence(s.sentence, s.rewrite);
-                                    toast("Sentence replaced in editor ✓", "success");
+                                    toast("Sentence accepted ✓", "success");
                                   }}
-                                  className="rounded bg-navy px-2 py-0.5 text-[11px] font-medium text-white shadow-sm transition hover:bg-navy/80"
+                                  className="btn-shine rounded-soft bg-gradient-to-br from-emerald-500 to-emerald-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-sm transition hover:opacity-90"
                                 >
-                                  Replace ↑
+                                  ✓ Accept
                                 </button>
                               </div>
                             </div>

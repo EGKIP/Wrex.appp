@@ -114,12 +114,20 @@ function SentenceHighlighter({
 
   return (
     <section className="rounded-modal border border-border-base bg-white p-6 shadow-soft">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="font-heading text-base font-semibold text-navy">Writing analysis</h4>
-        <div className="flex items-center gap-3 text-xs text-charcoal/50">
-          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />Needs polish</span>
-          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400" />Sounds natural</span>
-        </div>
+      <div className="mb-3 flex items-center justify-between">
+        <h4 className="font-heading text-base font-semibold text-navy">Sentence analysis</h4>
+      </div>
+
+      {/* Legend + hint */}
+      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-input border border-border-base bg-mist px-3 py-2">
+        <span className="flex items-center gap-1.5 text-xs text-charcoal/60">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />
+          <span className="font-semibold text-amber-700">Flagged</span> — click to get a rewrite
+        </span>
+        <span className="flex items-center gap-1.5 text-xs text-charcoal/60">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400" />
+          <span className="font-semibold text-emerald-700">Natural</span> — sounds human
+        </span>
       </div>
 
       <div className="space-y-1 text-sm text-charcoal leading-8">
@@ -141,23 +149,14 @@ function SentenceHighlighter({
 
           return (
             <span key={i} className="inline">
-              {/* Reason chip — always visible on flagged sentences */}
-              {flag.reason && !isActive && (
-                <span
-                  className="mr-1 inline-flex items-center rounded-full border border-amber-300/60 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 align-middle leading-none select-none"
-                  title={flag.reason}
-                >
-                  {flag.reason.length > 38 ? flag.reason.slice(0, 35) + "…" : flag.reason}
-                </span>
-              )}
               <button
                 type="button"
                 onClick={() => handleSentenceClick(sentence, i)}
                 title={isPro ? "Click to rewrite this sentence" : "Upgrade to Pro to rewrite"}
-                className={`rounded px-0.5 text-left cursor-pointer transition-all duration-150 ${isActive ? "ring-2 ring-amber-400/50" : "hover:brightness-95"}`}
+                className={`rounded-sm px-1 py-0.5 text-left cursor-pointer transition-all duration-150 ${isActive ? "ring-2 ring-amber-400/60" : "hover:ring-1 hover:ring-amber-300"}`}
                 style={{
-                  background: isActive ? "rgba(245,158,11,0.18)" : "rgba(245,158,11,0.08)",
-                  borderBottom: "2px solid #f59e0b",
+                  background: isActive ? "rgba(245,158,11,0.22)" : "rgba(245,158,11,0.14)",
+                  borderBottom: "2.5px solid #f59e0b",
                   textDecoration: isActive ? "line-through" : "none",
                   textDecorationColor: "#f59e0b",
                 }}
@@ -167,10 +166,10 @@ function SentenceHighlighter({
               {" "}
               {isActive && (
                 <span className="block mt-2 mb-3">
-                  {/* Active reason chip */}
+                  {/* Reason chip */}
                   {flag.reason && (
-                    <span className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-amber-300/70 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                    <span className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-amber-300/70 bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                       {flag.reason}
                     </span>
                   )}
@@ -179,49 +178,36 @@ function SentenceHighlighter({
                     <span className="flex items-start gap-3 rounded-input border border-accent/30 bg-accent/5 px-4 py-3">
                       <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-accent" />
                       <span className="flex-1">
-                        <span className="block text-xs font-semibold text-navy">Pro feature</span>
-                        <span className="block text-xs text-charcoal/65 mt-0.5">Click to rewrite this sentence with AI — available on Wrex Pro.</span>
-                        <button
-                          type="button"
-                          onClick={onUpgrade}
-                          className="mt-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-3 py-1 text-xs font-bold text-navy transition hover:opacity-90"
-                        >
+                        <span className="block text-xs font-semibold text-navy">Rewrite with AI — Pro feature</span>
+                        <span className="block text-xs text-charcoal/65 mt-0.5">Upgrade to Pro to fix flagged sentences with one click.</span>
+                        <button type="button" onClick={onUpgrade} className="mt-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-3 py-1 text-xs font-bold text-navy transition hover:opacity-90">
                           Upgrade to Pro
                         </button>
                       </span>
                       <button type="button" onClick={() => setActiveIdx(null)} className="text-charcoal/30 hover:text-charcoal/60 text-base leading-none">×</button>
                     </span>
                   ) : rewriting ? (
-                    /* Loading */
                     <span className="flex items-center gap-2 rounded-input bg-mist px-4 py-3 text-xs text-charcoal/60">
                       <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-                      Rewriting…
+                      Rewriting sentence…
                     </span>
                   ) : rewriteError ? (
-                    /* Error */
                     <span className="flex items-center justify-between rounded-input border border-danger/20 bg-danger/5 px-4 py-3 text-xs text-danger">
                       {rewriteError}
                       <button type="button" onClick={() => { setActiveIdx(null); setRewriteError(""); }} className="ml-3 text-charcoal/40 hover:text-charcoal/70">×</button>
                     </span>
                   ) : rewrite?.idx === i ? (
                     /* Rewrite result */
-                    <span className="block rounded-input border border-emerald-200 bg-emerald-50 px-4 py-3">
+                    <span className="block rounded-input border border-emerald-300 bg-emerald-50 px-4 py-3">
                       <span className="flex items-center justify-between mb-2">
-                        <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700"><Wand2 className="h-3 w-3" />Suggested rewrite</span>
+                        <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700"><Wand2 className="h-3 w-3" />AI suggestion</span>
                         <button type="button" onClick={() => { setActiveIdx(null); setRewrite(null); }} className="text-charcoal/30 hover:text-charcoal/60 text-base leading-none">×</button>
                       </span>
                       <span className="block text-sm leading-7 text-charcoal">{rewrite.rewritten}</span>
                       {rewrite.summary && (
-                        <span className="block mt-2 text-xs text-charcoal/50 italic">{rewrite.summary}</span>
+                        <span className="block mt-1.5 text-xs text-charcoal/50 italic">{rewrite.summary}</span>
                       )}
                       <span className="mt-3 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(rewrite.rewritten)}
-                          className="rounded-soft border border-emerald-300 bg-white px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
-                        >
-                          {copied ? "Copied!" : "Copy rewrite"}
-                        </button>
                         {onReplaceSentence && (
                           <button
                             type="button"
@@ -230,11 +216,18 @@ function SentenceHighlighter({
                               setActiveIdx(null);
                               setRewrite(null);
                             }}
-                            className="rounded-soft border border-emerald-400 bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                            className="btn-shine inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-emerald-500 to-emerald-600 px-4 py-1.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90"
                           >
-                            Replace in editor ↑
+                            ✓ Accept
                           </button>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(rewrite.rewritten)}
+                          className="rounded-soft border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                        >
+                          {copied ? "Copied!" : "Copy"}
+                        </button>
                       </span>
                     </span>
                   ) : null}
@@ -246,7 +239,9 @@ function SentenceHighlighter({
       </div>
 
       <p className="mt-4 text-xs text-charcoal/40">
-        {isPro ? "Click any amber sentence to get an AI rewrite." : "Click any amber sentence to see rewrite options."}
+        {isPro
+          ? "Click any amber-highlighted sentence → review the suggestion → hit ✓ Accept to apply."
+          : "Click any amber-highlighted sentence to see rewrite options."}
       </p>
     </section>
   );
