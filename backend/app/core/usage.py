@@ -11,7 +11,6 @@ Returns a QuotaInfo dict so the route can attach it to the response.
 
 from __future__ import annotations
 
-import sqlite3
 from datetime import date
 from typing import Optional, TypedDict
 
@@ -77,41 +76,53 @@ def _anon_check_and_record(ip: str) -> QuotaInfo:
 # ── Authenticated quota (Supabase) ────────────────────────────────────────────
 
 def _auth_check_and_record(user_id: str) -> QuotaInfo:
-    """Check + record one authenticated usage by user_id. Raises 429 if limit hit."""
+    """Check + record one authenticated usage by user_id. Raises 429 if limit hit.
+    If Supabase is unreachable, logs and allows the request through (fail-open)."""
     from app.core.supabase import get_supabase
+    from app.core.logging import get_logger
 
+    logger = get_logger(__name__)
     today = str(date.today())
     limit = settings.free_daily_limit
-    client = get_supabase()
 
-    # Count today's usage
-    result = (
-        client.table("usage_logs")
-        .select("id", count="exact")
-        .eq("user_id", user_id)
-        .eq("usage_date", today)
-        .execute()
-    )
-    used = result.count or 0
+    try:
+        client = get_supabase()
 
-    if used >= limit:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Daily limit reached ({limit}/day). Upgrade for unlimited analyses.",
+        # Count today's usage
+        result = (
+            client.table("usage_logs")
+            .select("id", count="exact")
+            .eq("user_id", user_id)
+            .eq("usage_date", today)
+            .execute()
+        )
+        used = result.count or 0
+
+        if used >= limit:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Daily limit reached ({limit}/day). Upgrade for unlimited analyses.",
+            )
+
+        # Record this usage
+        client.table("usage_logs").insert(
+            {"user_id": user_id, "usage_date": today}
+        ).execute()
+
+        new_used = used + 1
+        return QuotaInfo(
+            used=new_used,
+            limit=limit,
+            remaining=max(0, limit - new_used),
+            is_authenticated=True,
         )
 
-    # Record this usage
-    client.table("usage_logs").insert(
-        {"user_id": user_id, "usage_date": today}
-    ).execute()
-
-    new_used = used + 1
-    return QuotaInfo(
-        used=new_used,
-        limit=limit,
-        remaining=max(0, limit - new_used),
-        is_authenticated=True,
-    )
+    except HTTPException:
+        raise  # Re-raise 429 — that's intentional
+    except Exception as exc:
+        # Supabase unreachable — fail open so the user can still analyze
+        logger.warning("quota_check_failed_open", extra={"user_id": user_id, "error": str(exc)})
+        return QuotaInfo(used=0, limit=limit, remaining=limit, is_authenticated=True)
 
 
 # ── Public dependency ──────────────────────────────────────────────────────────
@@ -123,10 +134,21 @@ def check_quota(
     """
     Call from route handlers. Pass the result of get_optional_user as `user`.
     Returns QuotaInfo for inclusion in the response.
+
+    Pro users are returned an unlimited quota immediately — no DB hit.
+    Anonymous IP is resolved from X-Forwarded-For so Render's load-balancer
+    proxy does not collapse all anonymous users onto a single IP.
     """
     if user is not None:
+        # Pro users: unlimited — skip quota entirely
+        if getattr(user, "is_pro", False):
+            return QuotaInfo(used=0, limit=0, remaining=0, is_authenticated=True)
         return _auth_check_and_record(user.id)  # type: ignore[attr-defined]
 
-    ip = request.client.host if request.client else "unknown"
+    # Anonymous: read the real client IP from X-Forwarded-For (Render / Vercel proxy)
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    ip = forwarded_for.split(",")[0].strip() if forwarded_for else (
+        request.client.host if request.client else "unknown"
+    )
     return _anon_check_and_record(ip)
 

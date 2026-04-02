@@ -30,8 +30,9 @@ _bearer = HTTPBearer(auto_error=False)
 class AuthUser:
     """Minimal user info extracted from a verified Supabase JWT."""
 
-    id: str          # Supabase user UUID
-    email: str       # user email
+    id: str               # Supabase user UUID
+    email: str            # user email
+    is_pro: bool = False  # fetched from profiles table; False if profile missing
 
 
 def _verify_token(token: str) -> AuthUser:
@@ -58,7 +59,23 @@ def _verify_token(token: str) -> AuthUser:
             )
 
         user = response.user
-        return AuthUser(id=str(user.id), email=user.email or "")
+
+        # Fetch is_pro from profiles table — default False if row missing or error
+        is_pro = False
+        try:
+            profile_resp = (
+                client.table("profiles")
+                .select("is_pro")
+                .eq("id", str(user.id))
+                .maybe_single()
+                .execute()
+            )
+            if profile_resp.data:
+                is_pro = bool(profile_resp.data.get("is_pro", False))
+        except Exception:
+            pass  # Non-fatal: new users may not have a profile row yet
+
+        return AuthUser(id=str(user.id), email=user.email or "", is_pro=is_pro)
 
     except HTTPException:
         raise
