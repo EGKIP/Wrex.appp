@@ -23,6 +23,7 @@ interface NavbarProps {
   onGoHome?: () => void;
   /** Called when "Go to workspace" is clicked in landing mode by a logged-in user */
   onGoWorkspace?: () => void;
+  accessToken?: string | null;
 }
 
 function getInitials(email: string): string {
@@ -56,7 +57,7 @@ function Avatar({ email, isPro }: { email: string; isPro: boolean }) {
   );
 }
 
-export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAuth, onUpgrade, onGoHome, onGoWorkspace }: NavbarProps) {
+export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAuth, onUpgrade, onGoHome, onGoWorkspace, accessToken = null }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
@@ -297,6 +298,7 @@ export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAut
       isPro={isPro}
       quota={quota}
       onUpgrade={onUpgrade ?? (() => {})}
+      accessToken={accessToken}
     />
     </>
   );
