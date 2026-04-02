@@ -231,7 +231,6 @@ function App() {
           <main>
             <Hero onTryFree={isLoggedIn ? () => setViewMode("workspace") : () => openAuth("signup")} />
             <HowItWorks />
-            <ProPreview onTryFree={isLoggedIn ? () => setViewMode("workspace") : () => openAuth("signup")} onUpgrade={handleUpgrade} />
             <AnalyzerSection
               accessToken={auth.session?.access_token ?? null}
               isPro={isPro}
@@ -239,6 +238,7 @@ function App() {
               onAuthRequired={() => openAuth("signup")}
               onUpgrade={handleUpgrade}
             />
+            <ProPreview onTryFree={isLoggedIn ? () => setViewMode("workspace") : () => openAuth("signup")} onUpgrade={handleUpgrade} />
             <FaqSection />
           </main>
           <Footer />
