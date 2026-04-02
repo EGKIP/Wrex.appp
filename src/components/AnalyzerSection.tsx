@@ -101,8 +101,8 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const readingTime = wordCount > 0 ? Math.max(1, Math.round(wordCount / 200)) : 0;
 
   // ── Word limits ────────────────────────────────────────────────────────────
-  const FREE_LIMIT = 250;
-  const PRO_LIMIT = 1250;
+  const FREE_LIMIT = 500;
+  const PRO_LIMIT = 2000;
   const wordLimit = isPro ? PRO_LIMIT : FREE_LIMIT;
   const wordLimitExceeded = wordCount > wordLimit;
   // Warning zone: last 20% of the limit
@@ -589,7 +589,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                 </div>
                 {/* Pro benefits strip */}
                 <div className="flex items-center gap-4 border-t border-accent/15 bg-white/50 px-4 py-2.5 text-[11px] text-charcoal/55">
-                  {["3 → ∞ analyses", "5× word limit", "Tone templates", "AI rewrites"].map((b) => (
+                  {["3 → ∞ analyses", "4× word limit", "Tone templates", "AI rewrites"].map((b) => (
                     <span key={b} className="flex items-center gap-1"><span className="text-accent font-bold">✓</span>{b}</span>
                   ))}
                 </div>
@@ -606,7 +606,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-navy">Daily limit reached (3 / 3)</p>
                     <p className="mt-0.5 text-xs text-charcoal/65">
-                      Upgrade to Pro for <strong>unlimited analyses</strong>, 5× word limit, and tone rewrites.
+                      Upgrade to Pro for <strong>unlimited analyses</strong>, 4× word limit, and tone rewrites.
                     </p>
                     <button
                       type="button"
@@ -618,7 +618,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                   </div>
                 </div>
                 <div className="flex items-center gap-4 border-t border-accent/15 bg-white/50 px-4 py-2.5 text-[11px] text-charcoal/55">
-                  {["Unlimited analyses", "1,250 words", "5 tone templates", "GPT-4o rewrites"].map((b) => (
+                  {["Unlimited analyses", "2,000 words", "5 tone templates", "GPT-4o rewrites"].map((b) => (
                     <span key={b} className="flex items-center gap-1"><span className="text-accent font-bold">✓</span>{b}</span>
                   ))}
                 </div>
@@ -642,7 +642,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                       {wordCount - FREE_LIMIT} words over the free limit
                     </p>
                     <p className="mt-0.5 text-xs text-charcoal/65">
-                      Pro gives you <strong>{PRO_LIMIT.toLocaleString()} words</strong> — that's 5× more space to write.
+                      Pro gives you <strong>{PRO_LIMIT.toLocaleString()} words</strong> — that's 4× more space to write.
                     </p>
                     <div className="mt-2.5 flex flex-wrap gap-2">
                       <button

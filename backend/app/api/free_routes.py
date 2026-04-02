@@ -44,8 +44,8 @@ def _save_submission(user_id: str, payload: AnalyzeRequest, result: AnalyzeRespo
         logger.warning("submission_save_failed", extra={"user_id": user_id, "error": str(exc)})
 
 
-FREE_WORD_LIMIT = 250
-PRO_WORD_LIMIT = 1250
+FREE_WORD_LIMIT = 500
+PRO_WORD_LIMIT = 2000
 
 
 def _count_words(text: str) -> int:
@@ -69,7 +69,7 @@ def analyze_text(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"{tier} plan limit is {limit} words. Your text has {word_count} words. "
-                   f"{'Upgrade to Pro for up to 1,250 words.' if not is_pro else ''}",
+                   f"{'Upgrade to Pro for up to 2,000 words.' if not is_pro else ''}",
         )
 
     try:

@@ -11,14 +11,14 @@ const FREE_FEATURES = [
   "Sentence-level flags & reasons",
   "Rubric alignment check",
   "Writing improvement tips",
-  "250 words · 3 analyses/day",
+  "500 words · 3 analyses/day",
 ];
 
 const PRO_EXTRAS = [
   "Sentence-level rewrites (inline)",
   "Humanize — 5 tone templates",
   "Deep rubric gap detection",
-  "Up to 1,250 words per analysis",
+  "Up to 2,000 words per analysis",
   "Unlimited daily analyses",
 ];
 

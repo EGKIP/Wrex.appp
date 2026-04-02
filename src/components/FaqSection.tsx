@@ -19,7 +19,7 @@ const FAQS = [
   },
   {
     q: "What's the difference between free and Pro?",
-    a: "Free gives you AI-pattern detection, sentence-level flags, rubric alignment, and writing tips — up to 250 words, 3 times per day. Pro unlocks sentence-by-sentence rewrites, full humanize with 5 tone templates, deeper rubric gap detection, 1,250 words per analysis, and unlimited daily analyses — for $9/month.",
+    a: "Free gives you AI-pattern detection, sentence-level flags, rubric alignment, and writing tips — up to 500 words, 3 times per day. Pro unlocks sentence-by-sentence rewrites, full humanize with 5 tone templates, deeper rubric gap detection, 2,000 words per analysis, and unlimited daily analyses — for $9/month.",
   },
   {
     q: "Does Wrex store my writing?",
