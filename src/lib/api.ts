@@ -109,6 +109,17 @@ export async function createCheckoutSession(accessToken: string): Promise<{ clie
   return handleResponse<{ client_secret: string }>(response);
 }
 
+export async function createBillingPortalSession(accessToken: string): Promise<{ url: string }> {
+  const response = await fetch(`${API_BASE_URL}/pro/billing-portal`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+  return handleResponse<{ url: string }>(response);
+}
+
 export async function checkGrammar(
   text: string,
   language = "en-US",

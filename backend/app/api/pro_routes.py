@@ -1,12 +1,13 @@
 """
 Pro feature routes — Stripe checkout, webhook, status, and AI writing tools.
 
-POST /pro/checkout       — create a Stripe Checkout session (auth required)
-POST /pro/webhook        — handle Stripe events (no auth, uses Stripe signature)
-GET  /pro/status         — return { is_pro: bool } for the current user
-POST /pro/improve        — GPT-4o mini improvement suggestions (Pro only)
-POST /pro/humanize       — GPT-4o mini humanise rewrite (Pro only)
-POST /pro/rubric-rewrite — GPT-4o mini rewrite to hit rubric criteria (Pro only)
+POST /pro/checkout        — create a Stripe Checkout session (auth required)
+POST /pro/billing-portal  — create a Stripe Customer Portal session (auth required)
+POST /pro/webhook         — handle Stripe events (no auth, uses Stripe signature)
+GET  /pro/status          — return { is_pro: bool } for the current user
+POST /pro/improve         — GPT-4o mini improvement suggestions (Pro only)
+POST /pro/humanize        — GPT-4o mini humanise rewrite (Pro only)
+POST /pro/rubric-rewrite  — GPT-4o mini rewrite to hit rubric criteria (Pro only)
 """
 
 from __future__ import annotations
@@ -55,6 +56,10 @@ def _supabase():
 
 class CheckoutResponse(BaseModel):
     client_secret: str
+
+
+class BillingPortalResponse(BaseModel):
+    url: str
 
 
 class ProStatusResponse(BaseModel):
@@ -107,6 +112,44 @@ def create_checkout_session(
 
     logger.info("checkout_session_created", extra={"user_id": user.id, "session_id": session.id})
     return CheckoutResponse(client_secret=session.client_secret or "")
+
+
+@router.post("/billing-portal", response_model=BillingPortalResponse)
+def create_billing_portal_session(
+    user: AuthUser = Depends(get_required_user),
+) -> BillingPortalResponse:
+    """Create a Stripe Customer Portal session so the user can manage or cancel their subscription."""
+    _require_stripe()
+    client = _get_stripe_client()
+    sb = _supabase()
+
+    profile = (
+        sb.table("profiles")
+        .select("stripe_customer_id")
+        .eq("id", user.id)
+        .maybe_single()
+        .execute()
+    )
+    stripe_customer_id: str | None = (
+        profile.data.get("stripe_customer_id") if profile.data else None
+    )
+
+    if not stripe_customer_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No billing account found. Please contact support@wrex.app.",
+        )
+
+    origin = settings.allowed_origins[0] if settings.allowed_origins else "http://localhost:5173"
+    portal_session = client.billing_portal.sessions.create(
+        params={
+            "customer": stripe_customer_id,
+            "return_url": origin,
+        }
+    )
+
+    logger.info("billing_portal_session_created", extra={"user_id": user.id})
+    return BillingPortalResponse(url=portal_session.url)
 
 
 @router.post("/webhook", status_code=status.HTTP_200_OK)

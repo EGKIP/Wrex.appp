@@ -260,6 +260,7 @@ function App() {
         isPro={isPro}
         quota={quota}
         onUpgrade={handleUpgrade}
+        accessToken={auth.session?.access_token ?? null}
       />
 
       {checkoutClientSecret && (
