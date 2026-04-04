@@ -99,6 +99,7 @@ export type AnalyzeResponse = {
     text: string;
     score: number;
     reason: string;
+    risk_level: "high" | "medium";
   }[];
   basic_tips: string[];
   pro_prompt: {

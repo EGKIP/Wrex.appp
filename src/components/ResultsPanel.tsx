@@ -56,7 +56,7 @@ function splitSentences(text: string): string[] {
 
 // ── Sentence highlight section ────────────────────────────────────────────────
 
-type FlaggedMap = Map<number, { score: number; reason: string }>;
+type FlaggedMap = Map<number, { score: number; reason: string; risk_level: "high" | "medium" }>;
 
 type RewriteState = {
   idx: number;
@@ -127,9 +127,14 @@ function SentenceHighlighter({
       {/* Legend + hint */}
       <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-input border border-border-base bg-mist px-3 py-2">
         <span className="flex items-center gap-1.5 text-xs text-charcoal/60">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" />
+          <span className="font-semibold text-red-700">High risk</span>
+          {isPro ? " — click to rewrite" : " — click to see why"}
+        </span>
+        <span className="flex items-center gap-1.5 text-xs text-charcoal/60">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />
-          <span className="font-semibold text-amber-700">Flagged</span>
-          {isPro ? " — click to rewrite with AI" : " — click to see why"}
+          <span className="font-semibold text-amber-700">Medium risk</span>
+          {isPro ? " — click to rewrite" : " — click to see why"}
         </span>
         <span className="flex items-center gap-1.5 text-xs text-charcoal/60">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400" />
@@ -154,18 +159,32 @@ function SentenceHighlighter({
             );
           }
 
+          // Three-tier colour system
+          const isHigh = flag.risk_level === "high";
+          const bgColor = isActive
+            ? isHigh ? "rgba(239,68,68,0.20)" : "rgba(245,158,11,0.20)"
+            : isHigh ? "rgba(239,68,68,0.12)" : "rgba(245,158,11,0.12)";
+          const borderColor = isHigh ? "#ef4444" : "#f59e0b";
+          const ringClass = isHigh
+            ? isActive ? "ring-2 ring-red-400/60" : "hover:ring-1 hover:ring-red-300"
+            : isActive ? "ring-2 ring-amber-400/60" : "hover:ring-1 hover:ring-amber-300";
+          const chipClass = isHigh
+            ? "border-red-300/70 bg-red-100 text-red-800"
+            : "border-amber-300/70 bg-amber-100 text-amber-800";
+          const dotClass = isHigh ? "bg-red-500" : "bg-amber-500";
+
           return (
             <span key={i} className="inline">
               <button
                 type="button"
                 onClick={() => handleSentenceClick(sentence, i)}
                 title={isPro ? "Click to rewrite this sentence" : "Upgrade to Pro to rewrite"}
-                className={`rounded-sm px-1 py-0.5 text-left cursor-pointer transition-all duration-150 ${isActive ? "ring-2 ring-amber-400/60" : "hover:ring-1 hover:ring-amber-300"}`}
+                className={`rounded-sm px-1 py-0.5 text-left cursor-pointer transition-all duration-150 ${ringClass}`}
                 style={{
-                  background: isActive ? "rgba(245,158,11,0.22)" : "rgba(245,158,11,0.14)",
-                  borderBottom: "2.5px solid #f59e0b",
+                  background: bgColor,
+                  borderBottom: `2.5px solid ${borderColor}`,
                   textDecoration: isActive ? "line-through" : "none",
-                  textDecorationColor: "#f59e0b",
+                  textDecorationColor: borderColor,
                 }}
               >
                 {sentence}
@@ -175,8 +194,8 @@ function SentenceHighlighter({
                 <span className="block mt-2 mb-3">
                   {/* Reason chip */}
                   {flag.reason && (
-                    <span className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-amber-300/70 bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    <span className={`mb-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${chipClass}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} />
                       {flag.reason}
                     </span>
                   )}
@@ -247,8 +266,8 @@ function SentenceHighlighter({
 
       <p className="mt-4 text-xs text-charcoal/40">
         {isPro
-          ? "Click any amber-highlighted sentence → review the AI suggestion → hit ✓ Accept to apply."
-          : "Click any flagged sentence to see why it was flagged. Upgrade to Pro for one-click AI rewrites."}
+          ? "Red = high AI risk · Amber = medium risk · Green = natural. Click any flagged sentence → accept the AI rewrite."
+          : "Red = high AI risk · Amber = medium risk · Green = natural. Click any flagged sentence to see why it was flagged."}
       </p>
     </section>
   );
@@ -489,7 +508,10 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
 
   // Build flagged-sentence map for the inline highlighter
   const flaggedMap: FlaggedMap = new Map(
-    results.flagged_sentences.map((s) => [s.index, { score: s.score, reason: s.reason }])
+    results.flagged_sentences.map((s) => [
+      s.index,
+      { score: s.score, reason: s.reason, risk_level: s.risk_level },
+    ])
   );
 
   // Show inline signup nudge for anonymous users after their free trial runs out

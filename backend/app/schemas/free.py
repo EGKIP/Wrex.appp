@@ -24,6 +24,7 @@ class FlaggedSentence(BaseModel):
     text: str
     score: float
     reason: str
+    risk_level: str = "high"  # "high" | "medium"
 
 
 class ProPrompt(BaseModel):
