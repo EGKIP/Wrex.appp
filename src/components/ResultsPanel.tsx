@@ -128,17 +128,17 @@ function SentenceHighlighter({
       <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-input border border-border-base bg-mist px-3 py-2">
         <span className="flex items-center gap-1.5 text-xs text-charcoal/60">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" />
-          <span className="font-semibold text-red-700">High risk</span>
+          <span className="font-semibold text-red-700">Sounds AI-written</span>
           {isPro ? " — click to rewrite" : " — click to see why"}
         </span>
         <span className="flex items-center gap-1.5 text-xs text-charcoal/60">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />
-          <span className="font-semibold text-amber-700">Medium risk</span>
+          <span className="font-semibold text-amber-700">Needs your touch</span>
           {isPro ? " — click to rewrite" : " — click to see why"}
         </span>
         <span className="flex items-center gap-1.5 text-xs text-charcoal/60">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400" />
-          <span className="font-semibold text-emerald-700">Natural</span> — sounds human
+          <span className="font-semibold text-emerald-700">Authentic</span> — sounds like you
         </span>
       </div>
 
@@ -204,8 +204,8 @@ function SentenceHighlighter({
                     <span className="flex items-start gap-3 rounded-input border border-accent/30 bg-accent/5 px-4 py-3">
                       <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-accent" />
                       <span className="flex-1">
-                        <span className="block text-xs font-semibold text-navy">Rewrite with AI — Pro feature</span>
-                        <span className="block text-xs text-charcoal/65 mt-0.5">Upgrade to Pro to fix flagged sentences with one click.</span>
+                        <span className="block text-xs font-semibold text-navy">Make it yours — Pro feature</span>
+                        <span className="block text-xs text-charcoal/65 mt-0.5">Upgrade to Pro to rewrite any sentence in your own voice with one click.</span>
                         <button type="button" onClick={onUpgrade} className="mt-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-3 py-1 text-xs font-bold text-navy transition hover:opacity-90">
                           Upgrade to Pro
                         </button>
@@ -266,8 +266,8 @@ function SentenceHighlighter({
 
       <p className="mt-4 text-xs text-charcoal/40">
         {isPro
-          ? "Red = high AI risk · Amber = medium risk · Green = natural. Click any flagged sentence → accept the AI rewrite."
-          : "Red = high AI risk · Amber = medium risk · Green = natural. Click any flagged sentence to see why it was flagged."}
+          ? "Red = sounds AI-written · Amber = needs your touch · Green = authentic. Click any sentence → accept the rewrite."
+          : "Red = sounds AI-written · Amber = needs your touch · Green = authentic. Click any sentence to see why."}
       </p>
     </section>
   );
@@ -293,9 +293,9 @@ function scoreColor(score: number) {
 }
 
 function scoreLabel(score: number) {
-  if (score >= 70) return "Needs significant polish";
-  if (score >= 40) return "A few areas to strengthen";
-  return "Writing sounds natural";
+  if (score >= 70) return "Sounds AI-written — make it yours";
+  if (score >= 40) return "A few spots need your touch";
+  return "Sounds authentically you";
 }
 
 /** Compact dual-score header: AI Risk + optional Rubric Match side-by-side */
@@ -310,9 +310,9 @@ function DualScoreCard({ results }: { results: AnalyzeResponse }) {
   return (
     <section className={`rounded-modal bg-gradient-to-br p-4 shadow-card ${scoreGradient(ai)}`}>
       <div className={`grid gap-4 ${rubric ? "grid-cols-2" : "grid-cols-1"}`}>
-        {/* AI Risk */}
+        {/* Authenticity Score */}
         <div className="text-center">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-charcoal/50">AI Risk</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-charcoal/50">Authenticity Score</p>
           <p className="font-stat mt-1 text-[2.4rem] font-bold leading-none" style={{ color: aiColor }}>{ai}</p>
           <p className="mt-0.5 text-xs text-charcoal/60">{scoreLabel(ai)}</p>
           <span className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${confidenceTone(results.confidence)}`}>
@@ -435,13 +435,13 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
     const features = [
       {
         icon: <BarChart2 className="h-5 w-5 text-accent" />,
-        label: "AI-pattern score",
-        desc: "0–100 likelihood based on writing patterns",
+        label: "Authenticity Score",
+        desc: "0–100 — how much the writing sounds like you",
       },
       {
         icon: <ScanSearch className="h-5 w-5 text-amber-500" />,
-        label: "Sentence flags",
-        desc: "Highlights sentences that read AI-written",
+        label: "Writing signals",
+        desc: "Highlights sentences that need your voice",
       },
       {
         icon: <ClipboardList className="h-5 w-5 text-navy" />,

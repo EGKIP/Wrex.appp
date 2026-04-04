@@ -24,6 +24,53 @@ import { ResultsPanel } from "./ResultsPanel";
 
 const SAMPLE_TEXT = `In today's academic environment, technology has become an increasingly important part of how students learn and communicate. Moreover, it offers convenience and efficiency in many different contexts. However, it is also important to think carefully about how writing can remain personal, specific, and grounded in real understanding.`;
 
+/** Pre-computed result for SAMPLE_TEXT — served instantly, zero API cost. */
+const CACHED_SAMPLE_RESULT: AnalyzeResponse = {
+  score: 46,
+  confidence: "Medium",
+  summary: "This text shows some patterns commonly associated with AI-assisted writing.",
+  stats: {
+    word_count: 47,
+    sentence_count: 3,
+    avg_sentence_length: 15.7,
+    sentence_length_variance: 17.6,
+    vocabulary_diversity: 0.85,
+    repetition_index: 0.15,
+    punctuation_diversity: 0.17,
+    transition_phrase_count: 2,
+  },
+  red_flags: [
+    "Sentence lengths are unusually consistent.",
+    "Multiple sentences open with generic transitions.",
+  ],
+  flagged_sentences: [
+    {
+      index: 2,
+      text: "However, it is also important to think carefully about how writing can remain personal, specific, and grounded in real understanding.",
+      score: 0.35,
+      reason: "Moderate AI-pattern signal — generic transition opener.",
+      risk_level: "medium",
+    },
+    {
+      index: 1,
+      text: "Moreover, it offers convenience and efficiency in many different contexts.",
+      score: 0.34,
+      reason: "Moderate AI-pattern signal — generic transition opener.",
+      risk_level: "medium",
+    },
+  ],
+  basic_tips: [
+    "Your sentence lengths are very uniform (variance 18). Deliberately mix short punchy sentences with longer ones to sound more natural.",
+  ],
+  pro_prompt: {
+    title: "Improve this writing with Pro",
+    message: "Get deeper rewrite suggestions, gap detection, and humanizing support with Pro.",
+    cta_label: "Explore Pro",
+  },
+  rubric_result: null,
+  quota: null,
+};
+
 function countWords(text: string) {
   return text.trim() ? text.trim().split(/\s+/).length : 0;
 }
@@ -350,6 +397,18 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     setLoading(true);
     setError("");
     setQuotaHit(null);
+
+    // ── Demo cache: serve instantly when the visitor hasn't changed the sample text ──
+    const isSampleUnchanged = !workspace && text.trim() === SAMPLE_TEXT.trim() && !rubric.trim();
+    if (isSampleUnchanged) {
+      // Tiny artificial delay so it feels like something happened
+      await new Promise((r) => setTimeout(r, 320));
+      setResults(CACHED_SAMPLE_RESULT);
+      setResultsStale(false);
+      setSplitRatio(0.36);
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await analyzeText(
@@ -893,10 +952,10 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                 {/* Feature preview grid */}
                 <div className="grid grid-cols-2 gap-px bg-accent/15">
                   {[
-                    { icon: <Sparkles className="h-4 w-4 text-accent-dark" />, label: "Sentence rewrites", sub: "Fix flagged sentences one-by-one" },
-                    { icon: <FileText className="h-4 w-4 text-accent-dark" />, label: "Full humanize", sub: "Natural, Academic, Speech & more" },
+                    { icon: <Sparkles className="h-4 w-4 text-accent-dark" />, label: "Make it yours", sub: "Rewrite any sentence in your voice" },
+                    { icon: <FileText className="h-4 w-4 text-accent-dark" />, label: "Voice transform", sub: "Natural, Academic, Speech & more" },
                     { icon: <Crown className="h-4 w-4 text-accent-dark" />, label: "Tone templates", sub: "5 distinct writing voices" },
-                    { icon: <Users className="h-4 w-4 text-accent-dark" />, label: "Rubric alignment", sub: "Rewrite to match your rubric" },
+                    { icon: <Users className="h-4 w-4 text-accent-dark" />, label: "Rubric alignment", sub: "Rewrite to hit every criterion" },
                   ].map(({ icon, label, sub }) => (
                     <div key={label} className="flex items-start gap-2.5 bg-white/60 px-3.5 py-3">
                       <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/15">{icon}</div>
@@ -985,7 +1044,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                 {proTab === "humanize" && (
                   <>
                     <p className="mb-3 text-sm text-charcoal/65">
-                      Rewrite your text in a chosen voice — reducing detectable AI patterns.
+                      Rewrite your text in a chosen voice — make it sound like you.
                     </p>
 
                     {/* ── Tone picker ───────────────────────────────────── */}
