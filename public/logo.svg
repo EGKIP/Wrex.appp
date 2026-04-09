@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Navy background square -->
+  <rect width="200" height="200" rx="40" fill="#0F172A"/>
+  <!-- "W" lettermark in accent green -->
+  <text
+    x="100"
+    y="143"
+    text-anchor="middle"
+    font-family="system-ui, -apple-system, sans-serif"
+    font-size="120"
+    font-weight="800"
+    fill="#34D399"
+    letter-spacing="-3"
+  >W</text>
+</svg>
