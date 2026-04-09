@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <!-- Navy background with rounded corners -->
   <rect width="64" height="64" rx="14" fill="#0F172A"/>
-  <!-- "W" lettermark in accent green -->
+  <!-- "W" lettermark in brand yellow -->
   <text
     x="32"
     y="46"
@@ -9,7 +9,7 @@
     font-family="system-ui, -apple-system, sans-serif"
     font-size="38"
     font-weight="800"
-    fill="#34D399"
+    fill="#FBBF24"
     letter-spacing="-1"
   >W</text>
 </svg>
