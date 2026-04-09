@@ -7,8 +7,7 @@ import { ProfileModal } from "./ProfileModal";
 
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "Try it", href: "#analyzer" },
+  { label: "Try it free", href: "#analyzer" },
   { label: "FAQ", href: "#faq" },
 ];
 

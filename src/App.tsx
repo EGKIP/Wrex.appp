@@ -8,7 +8,6 @@ import { Hero } from "./components/Hero";
 import { HowItWorks } from "./components/HowItWorks";
 import { Navbar } from "./components/Navbar";
 import { ProfileModal } from "./components/ProfileModal";
-import { ProPreview } from "./components/ProPreview";
 import { Toaster } from "./components/Toaster";
 import { WorkspaceSidebar } from "./components/WorkspaceSidebar";
 import { useToast } from "./context/toast";
@@ -251,7 +250,6 @@ function App() {
               onAuthRequired={() => openAuth("signup")}
               onUpgrade={handleUpgrade}
             />
-            <ProPreview onTryFree={isLoggedIn ? () => setViewMode("workspace") : () => openAuth("signup")} onUpgrade={handleUpgrade} />
             <FaqSection />
           </main>
           <Footer />

@@ -1,14 +1,13 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from app.core.auth import AuthUser, get_optional_user
 from app.core.logging import get_logger
-from app.core.usage import QuotaInfo, check_quota
-from app.schemas.free import AnalyzeRequest, AnalyzeResponse, QuotaInfo as QuotaInfoSchema
+from app.schemas.free import AnalyzeRequest, AnalyzeResponse
 from app.services.free_detector.detector import analyze_document
-from app.services.pro_writer.grammar_service import check_grammar, GrammarMatch as GrammarMatchModel
+from app.services.pro_writer.grammar_service import check_grammar
 
 router = APIRouter(tags=["free"])
 logger = get_logger(__name__)
@@ -54,13 +53,11 @@ def _count_words(text: str) -> int:
 
 @router.post("/analyze", response_model=AnalyzeResponse)
 def analyze_text(
-    request: Request,
     payload: AnalyzeRequest,
     user: Optional[AuthUser] = Depends(get_optional_user),
 ) -> AnalyzeResponse:
-    quota_info: QuotaInfo = check_quota(request, user)
-
-    # ── Word limit enforcement ─────────────────────────────────────────────────
+    # ── AI scoring is free for everyone — no daily quota enforced ─────────────
+    # Word limits still apply: 500 words (free) / 2,000 words (Pro).
     word_count = _count_words(payload.text)
     is_pro = getattr(user, "is_pro", False) if user else False
     limit = PRO_WORD_LIMIT if is_pro else FREE_WORD_LIMIT
@@ -78,8 +75,6 @@ def analyze_text(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
         ) from exc
-
-    result.quota = QuotaInfoSchema(**quota_info)
 
     # Persist for authenticated users (fire-and-forget; won't fail the request)
     if user is not None:
