@@ -24,7 +24,7 @@ Private repo. Live site → **https://wrex.app**
 **Frontend**
 ```bash
 npm install
-npm run dev       # http://localhost:5173
+npm run dev       
 ```
 
 `.env.local`:
@@ -40,7 +40,7 @@ VITE_API_BASE_URL=http://localhost:8000
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload   # http://localhost:8000
+uvicorn app.main:app --reload   
 ```
 
 `backend/.env`:
