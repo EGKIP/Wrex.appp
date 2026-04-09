@@ -177,8 +177,14 @@ function App() {
   const [viewMode, setViewMode] = useState<"workspace" | "landing">("workspace");
   const isWorkspace = isLoggedIn && viewMode === "workspace";
 
-  // Workspace: load history item into the editor
-  const [workspaceLoadText, setWorkspaceLoadText] = useState<{ text: string; rubric: string | null } | null>(null);
+  // Workspace: load history item into the editor (optionally auto-analyze)
+  const [workspaceLoadText, setWorkspaceLoadText] = useState<{ text: string; rubric: string | null; autoAnalyze?: boolean } | null>(null);
+
+  // Called when a logged-in user hits Analyze on the landing page
+  function handleLandingAnalyze(text: string, rubric: string | null) {
+    setWorkspaceLoadText({ text, rubric, autoAnalyze: true });
+    setViewMode("workspace");
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-charcoal">
@@ -227,19 +233,6 @@ function App() {
       ) : (
         /* ── Marketing landing page ───────────────────────────────────────────── */
         <>
-          {/* Sticky "back to workspace" banner — only shown when a logged-in user browses the landing page */}
-          {isLoggedIn && (
-            <div className="sticky top-[72px] z-10 flex items-center justify-center gap-3 border-b border-accent/20 bg-accent/8 px-4 py-2 text-sm">
-              <span className="text-charcoal/70">You're viewing the landing page.</span>
-              <button
-                type="button"
-                onClick={() => setViewMode("workspace")}
-                className="inline-flex items-center gap-1.5 rounded-soft bg-navy px-3 py-1 text-xs font-semibold text-white transition hover:bg-navy/80"
-              >
-                ← Back to my workspace
-              </button>
-            </div>
-          )}
           <main>
             <Hero onTryFree={isLoggedIn ? () => setViewMode("workspace") : () => openAuth("signup")} />
             <HowItWorks />
@@ -249,6 +242,7 @@ function App() {
               onQuotaUpdate={setQuota}
               onAuthRequired={() => openAuth("signup")}
               onUpgrade={handleUpgrade}
+              onSwitchToWorkspace={isLoggedIn ? handleLandingAnalyze : undefined}
             />
             <FaqSection />
           </main>

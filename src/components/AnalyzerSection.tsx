@@ -121,11 +121,16 @@ interface AnalyzerSectionProps {
   /** Called after a successful analysis so the parent can refresh history */
   onAnalyzed?: () => void;
   /** When set, loads this text+rubric into the editor (from sidebar history click) */
-  loadRequest?: { text: string; rubric: string | null } | null;
+  loadRequest?: { text: string; rubric: string | null; autoAnalyze?: boolean } | null;
   onLoadRequestConsumed?: () => void;
+  /**
+   * Landing-page only: called when a logged-in user hits Analyze so the parent
+   * can switch to workspace and auto-run the analysis there.
+   */
+  onSwitchToWorkspace?: (text: string, rubric: string | null) => void;
 }
 
-export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onAuthRequired, onUpgrade, workspace = false, externalHistory, externalHistoryLoading, onAnalyzed, loadRequest, onLoadRequestConsumed }: AnalyzerSectionProps) {
+export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onAuthRequired, onUpgrade, workspace = false, externalHistory, externalHistoryLoading, onAnalyzed, loadRequest, onLoadRequestConsumed, onSwitchToWorkspace }: AnalyzerSectionProps) {
   const { toast } = useToast();
   const [text, setText] = useState(() => workspace ? "" : SAMPLE_TEXT);
   const [rubric, setRubric] = useState("");
@@ -179,6 +184,10 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     }
     setResults(null);
     onLoadRequestConsumed?.();
+    // Auto-analyze after a short delay so React commits the text state first
+    if (loadRequest.autoAnalyze) {
+      setTimeout(() => onAnalyzeRef.current(), 80);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadRequest]);
 
@@ -325,6 +334,13 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   });
 
   async function onAnalyze() {
+    // ── Logged-in user on landing page → hand off to workspace ───────────────
+    // Switch to workspace view and auto-analyze there for a better experience.
+    if (!workspace && accessToken && onSwitchToWorkspace) {
+      onSwitchToWorkspace(text, showRubric && rubric.trim() ? rubric : null);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
