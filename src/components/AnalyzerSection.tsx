@@ -549,6 +549,77 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
 
 
 
+            {/* ── Rubric section ───────────────────────────────────────────── */}
+            <div className="mt-4">
+              {isPro ? (
+                /* Pro: full rubric input */
+                <>
+                  {!showRubric && rubric.trim() ? (
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                        <FileText className="h-3 w-3" />Rubric active
+                      </span>
+                      <button type="button" onClick={() => setShowRubric(true)} className="text-xs text-charcoal/50 hover:text-navy hover:underline">Edit</button>
+                      <button type="button" onClick={() => { setRubric(""); setShowRubric(false); }} className="text-xs text-charcoal/40 hover:text-danger">Remove</button>
+                    </div>
+                  ) : !showRubric ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowRubric(true)}
+                      className="flex items-center gap-2 rounded-input border border-dashed border-accent/40 bg-accent/4 px-3 py-2 text-xs text-charcoal/60 transition hover:border-accent hover:text-navy"
+                    >
+                      <FileText className="h-3.5 w-3.5 text-accent" />
+                      + Add rubric / assignment brief
+                    </button>
+                  ) : (
+                    <div className="rounded-input border border-accent/30 bg-accent/5 p-3">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 text-xs font-semibold text-navy">
+                          <FileText className="h-3.5 w-3.5 text-accent" />Rubric / assignment brief
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value=""
+                            onChange={(e) => { if (e.target.value) setRubric(e.target.value); }}
+                            className="rounded border border-border-base bg-white px-2 py-0.5 text-xs text-charcoal/70 outline-none transition focus:border-accent cursor-pointer"
+                          >
+                            <option value="">Load template…</option>
+                            {RUBRIC_TEMPLATES.map((t) => (
+                              <option key={t.label} value={t.value}>{t.label}</option>
+                            ))}
+                          </select>
+                          <button type="button" onClick={() => setShowRubric(false)} className="text-charcoal/40 hover:text-charcoal text-sm">×</button>
+                        </div>
+                      </div>
+                      <textarea
+                        value={rubric}
+                        onChange={(e) => setRubric(e.target.value)}
+                        placeholder={"1. Discuss the causes of the French Revolution\n2. Analyze the social impact\n3. Evaluate economic factors"}
+                        rows={4}
+                        className="w-full rounded-input border border-border-base bg-white px-3 py-2.5 text-sm leading-6 text-charcoal outline-none transition placeholder:text-charcoal/30 focus:border-accent focus:ring-[3px] focus:ring-accent/15"
+                      />
+                      <div className="mt-2 flex items-center justify-between">
+                        <p className="text-[11px] text-charcoal/45">One criterion per line. Wrex checks each one after analysis.</p>
+                        <button type="button" onClick={() => setShowRubric(false)} className="rounded-soft bg-accent px-3 py-1 text-xs font-bold text-navy transition hover:bg-accent-dark">
+                          {rubric.trim() ? "Save & close" : "Close"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* Non-Pro: locked rubric row */
+                <button
+                  type="button"
+                  onClick={handleUpgrade}
+                  className="flex items-center gap-2 rounded-input border border-dashed border-charcoal/15 bg-mist px-3 py-2 text-xs text-charcoal/40 transition hover:border-accent/40 hover:text-charcoal/60"
+                >
+                  <Crown className="h-3.5 w-3.5 text-accent-dark" />
+                  Add rubric &amp; check criteria — <span className="font-semibold text-accent-dark">Pro feature</span>
+                </button>
+              )}
+            </div>
+
             {/* ── Word limit wall ─────────────────────────────────────────── */}
             {wordLimitExceeded && !isPro && (
               <div className="mt-4 flex items-center gap-3 rounded-input border border-amber-300 bg-amber-50 px-4 py-3">

@@ -87,7 +87,6 @@ function SentenceHighlighter({
   const [rewriteError, setRewriteError] = useState("");
 
   async function handleSentenceClick(sentence: string, idx: number) {
-    // Toggle off if already open
     if (activeIdx === idx) {
       setActiveIdx(null);
       setRewrite(null);
@@ -98,8 +97,10 @@ function SentenceHighlighter({
     setRewrite(null);
     setRewriteError("");
 
-    if (!isPro || !accessToken) return; // free users: just open the nudge card
+    // Free users: panel opens showing the reason — no API call needed
+    if (!isPro || !accessToken) return;
 
+    // Pro users: auto-fetch a rewrite
     setRewriting(true);
     try {
       const res = await proHumanize(sentence, accessToken);
@@ -129,18 +130,26 @@ function SentenceHighlighter({
         <span className="flex items-center gap-1.5 text-xs text-charcoal/60">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" />
           <span className="font-semibold text-red-700">Sounds AI-written</span>
-          {isPro ? " — click to rewrite" : " — click to see why"}
+          {" — click to see why"}
         </span>
         <span className="flex items-center gap-1.5 text-xs text-charcoal/60">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />
           <span className="font-semibold text-amber-700">Needs your touch</span>
-          {isPro ? " — click to rewrite" : " — click to see why"}
+          {" — click to see why"}
         </span>
         <span className="flex items-center gap-1.5 text-xs text-charcoal/60">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400" />
           <span className="font-semibold text-emerald-700">Authentic</span> — sounds like you
         </span>
       </div>
+
+      {/* All-clear state */}
+      {flagged.size === 0 && (
+        <div className="flex items-center gap-2.5 rounded-input border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          <span className="text-base">✓</span>
+          <span><strong>All sentences sound authentic.</strong> Your writing reads naturally — no AI patterns detected.</span>
+        </div>
+      )}
 
       <div className="space-y-1 text-sm text-charcoal leading-8">
         {sentences.map((sentence, i) => {
@@ -151,8 +160,7 @@ function SentenceHighlighter({
             return (
               <span
                 key={i}
-                className="rounded px-0.5 transition-colors"
-                style={{ borderBottom: "2px solid #6ee7b7" }}
+                className="rounded px-0.5"
               >
                 {sentence}{" "}
               </span>
@@ -178,13 +186,11 @@ function SentenceHighlighter({
               <button
                 type="button"
                 onClick={() => handleSentenceClick(sentence, i)}
-                title={isPro ? "Click to rewrite this sentence" : "Upgrade to Pro to rewrite"}
+                title="Click to see why this was flagged"
                 className={`rounded-sm px-1 py-0.5 text-left cursor-pointer transition-all duration-150 ${ringClass}`}
                 style={{
                   background: bgColor,
                   borderBottom: `2.5px solid ${borderColor}`,
-                  textDecoration: isActive ? "line-through" : "none",
-                  textDecorationColor: borderColor,
                 }}
               >
                 {sentence}
@@ -200,17 +206,12 @@ function SentenceHighlighter({
                     </span>
                   )}
                   {!isPro ? (
-                    /* Free user nudge */
-                    <span className="flex items-start gap-3 rounded-input border border-accent/30 bg-accent/5 px-4 py-3">
-                      <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-accent" />
-                      <span className="flex-1">
-                        <span className="block text-xs font-semibold text-navy">Make it yours — Pro feature</span>
-                        <span className="block text-xs text-charcoal/65 mt-0.5">Upgrade to Pro to rewrite any sentence in your own voice with one click.</span>
-                        <button type="button" onClick={onUpgrade} className="mt-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-3 py-1 text-xs font-bold text-navy transition hover:opacity-90">
-                          Upgrade to Pro
-                        </button>
-                      </span>
-                      <button type="button" onClick={() => setActiveIdx(null)} className="text-charcoal/30 hover:text-charcoal/60 text-base leading-none">×</button>
+                    /* Compact Pro nudge — reason already shown above */
+                    <span className="mt-2 flex items-center justify-between gap-3 rounded-input border border-accent/25 bg-accent/5 px-3 py-2">
+                      <span className="text-xs text-charcoal/60">✦ <strong className="text-navy">Pro:</strong> rewrite this sentence in your voice</span>
+                      <button type="button" onClick={onUpgrade} className="shrink-0 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-3 py-1 text-[11px] font-bold text-navy transition hover:opacity-90">
+                        Upgrade →
+                      </button>
                     </span>
                   ) : rewriting ? (
                     <span className="flex items-center gap-2 rounded-input bg-mist px-4 py-3 text-xs text-charcoal/60">
@@ -265,9 +266,7 @@ function SentenceHighlighter({
       </div>
 
       <p className="mt-4 text-xs text-charcoal/40">
-        {isPro
-          ? "Red = sounds AI-written · Amber = needs your touch · Green = authentic. Click any sentence → accept the rewrite."
-          : "Red = sounds AI-written · Amber = needs your touch · Green = authentic. Click any sentence to see why."}
+        Click any highlighted sentence to see why it was flagged.{isPro ? " Pro: rewrites load automatically." : ""}
       </p>
     </section>
   );
@@ -294,8 +293,14 @@ function scoreColor(score: number) {
 
 function scoreLabel(score: number) {
   if (score >= 70) return "Sounds AI-written — make it yours";
-  if (score >= 40) return "A few spots need your touch";
+  if (score >= 40) return "Some patterns detected — add your voice";
   return "Sounds authentically you";
+}
+
+function aiLikelihoodLabel(score: number) {
+  if (score >= 70) return "High AI likelihood";
+  if (score >= 40) return "Moderate AI likelihood";
+  return "Low AI likelihood";
 }
 
 /** Compact dual-score header: AI Risk + optional Rubric Match side-by-side */
@@ -310,13 +315,17 @@ function DualScoreCard({ results }: { results: AnalyzeResponse }) {
   return (
     <section className={`rounded-modal bg-gradient-to-br p-4 shadow-card ${scoreGradient(ai)}`}>
       <div className={`grid gap-4 ${rubric ? "grid-cols-2" : "grid-cols-1"}`}>
-        {/* Authenticity Score */}
+        {/* AI Likelihood Score */}
         <div className="text-center">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-charcoal/50">Authenticity Score</p>
-          <p className="font-stat mt-1 text-[2.4rem] font-bold leading-none" style={{ color: aiColor }}>{ai}</p>
-          <p className="mt-0.5 text-xs text-charcoal/60">{scoreLabel(ai)}</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-charcoal/50">AI Likelihood</p>
+          <div className="mt-1 flex items-end justify-center gap-0.5 leading-none">
+            <p className="font-stat text-[2.6rem] font-bold" style={{ color: aiColor }}>{ai}</p>
+            <p className="mb-1.5 text-base font-bold" style={{ color: aiColor }}>%</p>
+          </div>
+          <p className="mt-0.5 text-xs font-medium text-charcoal/60">{aiLikelihoodLabel(ai)}</p>
+          <p className="mt-0.5 text-xs text-charcoal/45">{scoreLabel(ai)}</p>
           <span className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${confidenceTone(results.confidence)}`}>
-            {results.confidence} signal
+            {results.confidence} confidence
           </span>
         </div>
         {/* Rubric Match — only when a rubric was analyzed */}
@@ -435,13 +444,13 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
     const features = [
       {
         icon: <BarChart2 className="h-5 w-5 text-accent" />,
-        label: "Authenticity Score",
-        desc: "0–100 — how much the writing sounds like you",
+        label: "AI Likelihood %",
+        desc: "How AI-like your writing reads — 0 is perfect, 100 is fully AI",
       },
       {
         icon: <ScanSearch className="h-5 w-5 text-amber-500" />,
-        label: "Writing signals",
-        desc: "Highlights sentences that need your voice",
+        label: "Sentence highlights",
+        desc: "Click any sentence to see exactly why it was flagged — free",
       },
       {
         icon: <ClipboardList className="h-5 w-5 text-navy" />,
@@ -500,7 +509,7 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
 
         {/* Subtle footer */}
         <p className="mt-5 text-center text-[11px] text-charcoal/35">
-          Free for your first analysis — no account required.
+          AI score + grammar free forever — no account required.
         </p>
       </aside>
     );
@@ -514,48 +523,14 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
     ])
   );
 
-  // Show inline signup nudge for anonymous users after their free trial runs out
-  const showAnonNudge = !accessToken && quota && quota.remaining === 0 && !quota.is_authenticated;
-
   return (
     <aside className="space-y-4">
-      {/* ── Anon trial done — inline signup nudge ── */}
-      {showAnonNudge && (
-        <div className="overflow-hidden rounded-modal border border-emerald-300 bg-gradient-to-br from-emerald-50 to-white shadow-soft">
-          <div className="flex items-start gap-3 px-4 py-4">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100">
-              <Sparkles className="h-4 w-4 text-emerald-600" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-navy">Your free analysis is ready ✓</p>
-              <p className="mt-0.5 text-xs text-charcoal/65">
-                Create a free account to unlock <strong>3 analyses per day</strong> — no credit card needed.
-              </p>
-              <button
-                type="button"
-                onClick={onAuthRequired}
-                className="btn-shine mt-3 inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-emerald-500 to-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-button transition hover:opacity-90 hover:scale-[1.02] active:scale-[0.97]"
-              >
-                <Sparkles className="h-3 w-3" />Sign up free — it takes 30 seconds
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Stale results banner — shown after text was updated via a rewrite ── */}
-      {resultsStale && (
-        <div className="flex items-center gap-2.5 rounded-input border border-amber-300/60 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-800">
-          <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-400" />
-          <span className="flex-1">Text updated — hit <strong>Analyze</strong> again to see your new score.</span>
-        </div>
-      )}
 
       {/* ── Dual score header (AI Risk + optional Rubric Match) ── */}
       <DualScoreCard results={results} />
 
-      {/* ── Sentence-level highlights (the editor-adjacent view) ── */}
-      {text && results.flagged_sentences.length > 0 && (
+      {/* ── Sentence-level highlights — always shown after analysis ── */}
+      {text && (
         <SentenceHighlighter
           text={text}
           flagged={flaggedMap}
