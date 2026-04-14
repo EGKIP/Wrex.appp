@@ -21,6 +21,7 @@ import type {
 } from "../types";
 import { HistoryPanel } from "./HistoryPanel";
 import { ResultsPanel } from "./ResultsPanel";
+import { GrammarEditor } from "./GrammarEditor";
 
 const SAMPLE_TEXT = `In today's academic environment, technology has become an increasingly important part of how students learn and communicate. Moreover, it offers convenience and efficiency in many different contexts. However, it is also important to think carefully about how writing can remain personal, specific, and grounded in real understanding.`;
 
@@ -156,15 +157,6 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const wordLimitExceeded = wordCount > wordLimit;
   // Warning zone: last 20% of the limit
   const wordLimitWarning = !wordLimitExceeded && wordCount >= wordLimit * 0.8;
-
-  // ── Textarea auto-grow ─────────────────────────────────────────────────────
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  }, [text]);
 
   // ── Grammar check state ────────────────────────────────────────────────────
   const [grammarMatches, setGrammarMatches] = useState<GrammarMatch[]>([]);
@@ -409,11 +401,11 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
       id="analyzer"
       className={
         workspace
-          ? "bg-mist px-4 py-6 lg:px-6 lg:py-8"
+          ? "flex-1 overflow-y-auto bg-mist px-4 py-6 lg:px-8 lg:py-8"
           : "bg-mist px-6 py-16 lg:px-10 lg:py-20"
       }
     >
-      <div className="mx-auto w-full max-w-3xl">
+      <div className={`mx-auto w-full ${workspace ? "max-w-4xl" : "max-w-3xl"}`}>
         {!workspace && (
           <div className="mb-8 text-center">
             <h2 className="text-[1.75rem] font-bold tracking-tight text-navy lg:text-[2.25rem]">
@@ -426,30 +418,48 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
         )}
 
         {/* Vertical single-column layout */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
 
           {/* ── Editor card ─────────────────────────────────────────────────── */}
-          <div className={`rounded-modal border border-border-base bg-white shadow-soft ${workspace ? "p-4 sm:p-5" : "p-5 sm:p-6"}`}>
+          <div className={`rounded-modal border border-border-base bg-white shadow-soft ${workspace ? "p-5 sm:p-6" : "p-5 sm:p-6"}`}>
             {/* Header row */}
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-navy">Your writing</p>
-              <button
-                type="button"
-                onClick={() => setText("")}
-                className="text-xs text-charcoal/45 transition hover:text-charcoal hover:underline"
-              >
-                Clear
-              </button>
+            <div className="mb-1 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-navy">Your writing</p>
+                {workspace && (
+                  <span className="rounded-full bg-mist px-2 py-0.5 text-[10px] font-medium text-charcoal/50">
+                    {wordCount > 0 ? `${wordCount} words` : "empty"}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                {grammarMatches.length > 0 && !grammarLoading && (
+                  <span className="hidden sm:inline text-[11px] text-charcoal/45 italic">
+                    Click underlined words to fix
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => { setText(""); setGrammarMatches([]); setResults(null); }}
+                  className="text-xs text-charcoal/40 transition hover:text-charcoal hover:underline"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
 
-            <textarea
-              ref={textareaRef}
-              value={text}
-              onChange={(event) => { setText(event.target.value); }}
-              placeholder="Paste your text here to analyze..."
-              className={`mt-3 w-full rounded-input border border-border-base bg-white px-4 py-3 text-base leading-7 text-charcoal placeholder:text-charcoal/30 outline-none transition focus:border-accent focus:ring-[3px] focus:ring-accent/15 resize-none overflow-hidden ${workspace ? "min-h-[420px]" : "min-h-[300px]"}`}
-            />
-            <div className="mt-2 flex items-center justify-between text-xs text-charcoal/40">
+            <div className="mt-3">
+              <GrammarEditor
+                value={text}
+                onChange={(val) => { setText(val); setResultsStale(true); }}
+                grammarMatches={grammarMatches}
+                grammarLoading={grammarLoading}
+                onApplyFix={applyGrammarFix}
+                placeholder="Paste your text here to analyze…"
+                minHeight={workspace ? "420px" : "300px"}
+              />
+            </div>
+            <div className="mt-2 flex items-center justify-between text-xs">
               <span className={
                 wordLimitExceeded ? "font-semibold text-danger" :
                 wordLimitWarning  ? "font-semibold text-warning" :
@@ -459,93 +469,16 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                 {!wordLimitExceeded && readingTime > 0 && <> · ~{readingTime} min read</>}
                 {wordLimitExceeded && <> — {isPro ? "Pro" : "Free"} limit reached</>}
               </span>
-              {loading && <span className="animate-pulse text-accent">Scoring…</span>}
-              {!loading && grammarLoading && <span className="animate-pulse">Checking grammar…</span>}
-              {!grammarLoading && grammarMatches.length > 0 && (
-                <span>
-                  <span className="font-semibold text-danger">
-                    {grammarMatches.filter((m) => m.match_type === "error").length} errors
-                  </span>
+              {loading && <span className="animate-pulse text-accent font-medium">Scoring…</span>}
+              {!loading && !grammarLoading && grammarMatches.length > 0 && (
+                <span className="text-charcoal/50">
+                  <span className="font-semibold text-danger">{grammarMatches.filter((m) => m.match_type === "error").length}e</span>
                   {" · "}
-                  <span className="font-semibold text-warning">
-                    {grammarMatches.filter((m) => m.match_type === "suggestion").length} suggestions
-                  </span>
+                  <span className="font-semibold text-warning">{grammarMatches.filter((m) => m.match_type === "suggestion").length}s</span>
+                  {" found"}
                 </span>
               )}
             </div>
-
-            {/* Grammar & Spelling — Accept / Copy cards */}
-            {grammarMatches.length > 0 && (
-              <div className="mt-3">
-                <div className="mb-1.5 flex items-center gap-2">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/40">
-                    Grammar &amp; spelling
-                  </p>
-                  <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
-                    {grammarMatches.length}
-                  </span>
-                </div>
-                <div className="max-h-[300px] space-y-1.5 overflow-y-auto">
-                  {grammarMatches.slice(0, 15).map((m, i) => {
-                    const errorText = text.slice(m.offset, m.offset + m.length);
-                    const topFix = m.replacements[0] ?? null;
-                    return (
-                      <div
-                        key={i}
-                        className="flex items-center gap-2 rounded-soft border border-border-base bg-white px-3 py-2 shadow-sm"
-                      >
-                        {/* Dot */}
-                        <span
-                          className="h-2 w-2 shrink-0 rounded-full"
-                          style={{ backgroundColor: m.match_type === "error" ? "#EF4444" : "#F59E0B" }}
-                        />
-                        {/* Text */}
-                        <div className="min-w-0 flex-1 text-xs leading-5">
-                          {errorText && topFix ? (
-                            <span>
-                              <span className="font-mono text-danger line-through opacity-70">{errorText}</span>
-                              <span className="mx-1 text-charcoal/35">→</span>
-                              <span className="font-mono font-semibold text-navy">{topFix}</span>
-                              <span className="ml-1.5 text-charcoal/45">· {m.message}</span>
-                            </span>
-                          ) : (
-                            <span className="text-charcoal">{m.message}</span>
-                          )}
-                        </div>
-                        {/* Actions */}
-                        <div className="flex shrink-0 gap-1">
-                          {topFix && (
-                            <button
-                              type="button"
-                              onClick={() => applyGrammarFix(m, topFix)}
-                              className="rounded-soft bg-emerald-500 px-2.5 py-1 text-[11px] font-bold text-white transition hover:bg-emerald-600 active:scale-95"
-                              title="Apply this fix in the editor"
-                            >
-                              ✓ Accept
-                            </button>
-                          )}
-                          {topFix && (
-                            <button
-                              type="button"
-                              onClick={() => navigator.clipboard.writeText(topFix)}
-                              className="rounded-soft border border-border-base bg-mist px-2 py-1 text-[11px] text-charcoal/60 transition hover:bg-white hover:text-charcoal active:scale-95"
-                              title="Copy the suggestion"
-                            >
-                              Copy
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {grammarMatches.length > 15 && (
-                    <p className="pt-1 text-center text-xs text-charcoal/40">
-                      +{grammarMatches.length - 15} more issues
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
 
 
 
