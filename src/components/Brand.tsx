@@ -8,7 +8,7 @@ export function Brand({ logoSrc = "/logo.svg", onClick }: BrandProps) {
   const inner = (
     <>
       {/* Logo mark — the highlight-W icon */}
-      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl">
+      <div className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg">
         <img
           src={logoSrc}
           alt="Wrex logo"
@@ -16,8 +16,8 @@ export function Brand({ logoSrc = "/logo.svg", onClick }: BrandProps) {
         />
       </div>
       {/* Wordmark — "Wrex" bold + ".app" lighter */}
-      <p className="text-[15px] font-bold tracking-tight text-navy leading-none">
-        Wrex<span className="font-normal text-charcoal/40 text-[13px]">.app</span>
+      <p className="text-[14px] font-bold tracking-tight text-navy leading-none">
+        Wrex<span className="font-normal text-charcoal/40 text-[12px]">.app</span>
       </p>
     </>
   );
@@ -27,7 +27,7 @@ export function Brand({ logoSrc = "/logo.svg", onClick }: BrandProps) {
       <button
         type="button"
         onClick={onClick}
-        className="flex items-center gap-3 rounded-lg px-1 py-0.5 transition-opacity hover:opacity-75"
+        className="flex items-center gap-2 rounded-lg px-1 py-0.5 transition-opacity hover:opacity-75"
         title="Go to home"
       >
         {inner}
@@ -35,5 +35,5 @@ export function Brand({ logoSrc = "/logo.svg", onClick }: BrandProps) {
     );
   }
 
-  return <div className="flex items-center gap-3">{inner}</div>;
+  return <div className="flex items-center gap-2">{inner}</div>;
 }
