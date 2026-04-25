@@ -3,15 +3,15 @@ import { useEffect, useRef, useState } from "react";
 const FAQS = [
   {
     q: "Is it free?",
-    a: "Yes. You get 1 analysis free without any account. Create a free account to get 3 analyses per day, every day — no credit card needed.",
+    a: "Yes — the core features are free forever. Paste your draft, get your authenticity score, see sentence-level flags, and fix grammar inline. No account required to start, no credit card, no trial period.",
   },
   {
     q: "How does Wrex analyze my writing?",
-    a: "Wrex reads your draft sentence by sentence — checking sentence-length consistency, vocabulary variety, phrase repetition, and transition word patterns. It's the same intuitive scan a careful reader would do. Your text is processed securely and never shared with third parties.",
+    a: "Wrex reads your draft sentence by sentence — checking vocabulary variety, phrase repetition, sentence rhythm, and transition patterns. It pinpoints the exact sentences that sound AI-generated and explains why, so you know what to rewrite. Your text is processed securely and never shared with third parties.",
   },
   {
     q: "What is rubric alignment?",
-    a: "Paste your assignment brief or marking criteria alongside your draft and Wrex maps each requirement to what you've written. You see which points are well-covered, which are thin, and which you've missed — before you submit.",
+    a: "Paste your assignment brief or marking criteria alongside your draft and Wrex maps each requirement to what you've written. You see which points are well-covered, which are thin, and which you've missed — before you submit. Rubric analysis is a Pro feature.",
   },
   {
     q: "Will my school see this?",
@@ -19,7 +19,7 @@ const FAQS = [
   },
   {
     q: "What's the difference between free and Pro?",
-    a: "Free gives you AI-pattern detection, sentence-level flags, rubric alignment, and writing tips — up to 500 words, 3 times per day. Pro unlocks sentence-by-sentence rewrites, full humanize with 5 tone templates, deeper rubric gap detection, 2,000 words per analysis, and unlimited daily analyses — for $9/month.",
+    a: "Free gives you the authenticity score, sentence-level flags, grammar fixes, and writing tips — up to 500 words per analysis. Pro unlocks sentence-by-sentence rewrites, Humanize with 5 voice templates, deeper rubric gap detection, 2,000 words per analysis, and unlimited daily analyses — for $9/month.",
   },
   {
     q: "Does Wrex store my writing?",
@@ -27,7 +27,7 @@ const FAQS = [
   },
   {
     q: "Can I use it on my phone?",
-    a: "Yes — Wrex is fully responsive. The editor, results panel, and Pro tools all work on mobile. We recommend landscape mode for the best editing experience on smaller screens.",
+    a: "Yes — Wrex is fully responsive. The editor, results panel, and grammar fixes all work on mobile. For longer essays, a tablet or desktop gives you more room to review the highlighted sentences.",
   },
 ];
 
