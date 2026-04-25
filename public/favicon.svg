@@ -1,15 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Navy background with rounded corners -->
+  <!-- Navy background -->
   <rect width="64" height="64" rx="14" fill="#0F172A"/>
-  <!-- "W" lettermark in brand yellow -->
-  <text
-    x="32"
-    y="46"
-    text-anchor="middle"
-    font-family="system-ui, -apple-system, sans-serif"
-    font-size="38"
-    font-weight="800"
-    fill="#FBBF24"
-    letter-spacing="-1"
-  >W</text>
+  <!-- Yellow highlight bar -->
+  <rect x="7" y="40" width="50" height="9" rx="2.5" fill="#FBBF24"/>
+  <!-- Geometric W mark — scaled from 200x200 -->
+  <path
+    d="M 10,15 L 23,51 L 32,30 L 41,51 L 54,15"
+    stroke="white"
+    stroke-width="8"
+    fill="none"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
 </svg>

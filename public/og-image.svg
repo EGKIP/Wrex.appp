@@ -25,9 +25,16 @@
   <text x="900" y="300" text-anchor="middle" font-family="system-ui, sans-serif" font-size="64" font-weight="700" fill="white">72</text>
   <text x="900" y="345" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" fill="#94A3B8">Authenticity score</text>
 
-  <!-- Logo / wordmark -->
-  <text x="100" y="200" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="800" fill="white">Wrex</text>
-  <text x="270" y="200" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="800" fill="url(#accent)">.app</text>
+  <!-- Logo mark — geometric W with yellow highlight bar (scaled to ~72px) -->
+  <g transform="translate(96, 130) scale(0.36)">
+    <rect width="200" height="200" rx="40" fill="#0F172A"/>
+    <rect x="22" y="124" width="156" height="30" rx="8" fill="#FBBF24"/>
+    <path d="M 32,46 L 72,158 L 100,94 L 128,158 L 168,46"
+      stroke="white" stroke-width="26" fill="none"
+      stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <!-- Wordmark -->
+  <text x="196" y="195" font-family="system-ui, -apple-system, sans-serif" font-size="68" font-weight="800" fill="white">Wrex<tspan fill="#FBBF24" font-size="54" font-weight="400" dy="6">.app</tspan></text>
 
   <!-- Tagline -->
   <text x="100" y="258" font-family="system-ui, sans-serif" font-size="30" fill="#94A3B8">Write with confidence. Sound like you.</text>

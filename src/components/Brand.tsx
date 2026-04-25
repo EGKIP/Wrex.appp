@@ -7,17 +7,18 @@ type BrandProps = {
 export function Brand({ logoSrc = "/logo.svg", onClick }: BrandProps) {
   const inner = (
     <>
-      {/* Logo mark — navy square with green "W" */}
-      <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl">
+      {/* Logo mark — the highlight-W icon */}
+      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl">
         <img
           src={logoSrc}
-          alt="Wrex.app logo"
+          alt="Wrex logo"
           className="h-full w-full object-contain"
         />
       </div>
-      <div>
-        <p className="text-base font-semibold tracking-tight text-navy">Wrex.app</p>
-      </div>
+      {/* Wordmark — "Wrex" bold + ".app" lighter */}
+      <p className="text-[15px] font-bold tracking-tight text-navy leading-none">
+        Wrex<span className="font-normal text-charcoal/40 text-[13px]">.app</span>
+      </p>
     </>
   );
 
