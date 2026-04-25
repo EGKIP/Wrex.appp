@@ -178,7 +178,7 @@ async def stripe_webhook(
         event_obj = stripe.Webhook.construct_event(
             payload, stripe_signature, settings.stripe_webhook_secret
         )
-    except (stripe.error.SignatureVerificationError, ValueError):
+    except (stripe.SignatureVerificationError, ValueError):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid Stripe signature")
 
     sb = _supabase()
@@ -303,16 +303,12 @@ def sync_subscription(
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _require_pro(user: AuthUser) -> None:
-    """Raise 403 if the user is not a Pro subscriber."""
-    sb = _supabase()
-    profile = (
-        sb.table("profiles")
-        .select("is_pro")
-        .eq("id", user.id)
-        .maybe_single()
-        .execute()
-    )
-    if not (profile.data and profile.data.get("is_pro")):
+    """Raise 403 if the user is not a Pro subscriber.
+
+    is_pro is already resolved by _verify_token() when the JWT is validated —
+    no extra DB round-trip needed here.
+    """
+    if not user.is_pro:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This feature requires a Wrex Pro subscription.",

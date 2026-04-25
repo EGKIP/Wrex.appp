@@ -5,7 +5,6 @@ from typing import Optional
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.core.rate_limit import get_rate_limit_context
 from app.core.sanitizer import sanitize
 from app.schemas.free import AnalyzeResponse, DocumentStats, ProPrompt
 from app.services.free_detector.feature_extractor import DocumentFeatures, extract_features
@@ -113,9 +112,6 @@ def build_tips(score: int, features: DocumentFeatures | None = None) -> list[str
 
 def analyze_document(text: str, rubric: Optional[str] = None) -> AnalyzeResponse:
     cleaned_text = validate_text(text)
-    # Rate-limit context is prepared for Phase 1.5 (Supabase auth + quotas)
-    get_rate_limit_context()
-
     t0 = time.perf_counter()
 
     processed = preprocess_text(cleaned_text)

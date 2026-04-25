@@ -29,37 +29,40 @@ logger = get_logger(__name__)
 # ── Welcome email HTML ────────────────────────────────────────────────────────
 
 def _welcome_html(email: str) -> str:
+    name = email.split("@")[0].capitalize()
     return f"""
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f8fafc;font-family:system-ui,sans-serif;color:#0f172a">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:40px auto;background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden">
-    <tr><td style="background:#f0fdf4;padding:28px 32px;border-bottom:1px solid #e2e8f0">
-      <p style="margin:0;font-size:22px;font-weight:700;letter-spacing:-0.5px">✍️ Wrex.app</p>
+    <tr><td style="background:#0f172a;padding:24px 32px;border-bottom:3px solid #FBBF24">
+      <p style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.5px;color:#ffffff">Wrex<span style="font-weight:400;color:#FBBF24">.app</span></p>
     </td></tr>
     <tr><td style="padding:32px">
-      <h1 style="margin:0 0 12px;font-size:20px;font-weight:700">Welcome to Wrex!</h1>
+      <h1 style="margin:0 0 12px;font-size:20px;font-weight:700;color:#0f172a">Welcome, {name}.</h1>
       <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#334155">
-        Hi {email.split("@")[0]}, glad you're here. Wrex helps you write to your rubric — every time.
+        Wrex helps your writing sound like you — not like everyone else using AI.
+        Paste any draft and get your authenticity score in seconds.
       </p>
-      <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#0f172a">Here's what you can do right now (free):</p>
-      <ul style="margin:0 0 20px;padding-left:20px;font-size:14px;line-height:1.8;color:#334155">
-        <li>Paste your essay and get an AI detection score</li>
-        <li>Check grammar and spelling with one click</li>
-        <li>Add your rubric and see which criteria you've covered</li>
+      <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#0f172a">Free forever, no account needed to start:</p>
+      <ul style="margin:0 0 24px;padding-left:20px;font-size:14px;line-height:1.9;color:#334155">
+        <li>Authenticity score — see how much your writing sounds like you</li>
+        <li>Sentence-level flags — pinpoints exactly what reads as AI-generated</li>
+        <li>Grammar and spelling — one-click fixes, inline</li>
       </ul>
       <a href="https://wrex.app/#analyzer"
-         style="display:inline-block;background:#a3e635;color:#0f172a;font-weight:700;font-size:14px;padding:12px 24px;border-radius:8px;text-decoration:none">
-        Start writing →
+         style="display:inline-block;background:#FBBF24;color:#0f172a;font-weight:700;font-size:14px;padding:13px 26px;border-radius:8px;text-decoration:none">
+        Check your writing now
       </a>
       <p style="margin:28px 0 0;font-size:13px;color:#94a3b8">
-        Want unlimited analyses + AI rewrites?
-        <a href="https://wrex.app/#pricing" style="color:#65a30d;text-decoration:none">Upgrade to Pro — $9/mo</a>
+        Want sentence-by-sentence rewrites, humanize, and rubric matching?
+        <a href="https://wrex.app/#pricing" style="color:#0f172a;font-weight:600;text-decoration:underline">Upgrade to Pro — $9/mo</a>
       </p>
     </td></tr>
     <tr><td style="padding:16px 32px;border-top:1px solid #e2e8f0;font-size:12px;color:#94a3b8">
-      You're receiving this because you just signed up at wrex.app.
+      You're receiving this because you signed up at wrex.app. Not you?
+      <a href="mailto:support@wrex.app" style="color:#94a3b8">Contact us</a>.
     </td></tr>
   </table>
 </body>

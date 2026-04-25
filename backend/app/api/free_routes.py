@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from app.core.auth import AuthUser, get_optional_user
 from app.core.logging import get_logger
+from app.core.sanitizer import sanitize
 from app.schemas.free import AnalyzeRequest, AnalyzeResponse
 from app.services.free_detector.detector import analyze_document
 from app.services.pro_writer.grammar_service import check_grammar
@@ -45,6 +46,7 @@ def _save_submission(user_id: str, payload: AnalyzeRequest, result: AnalyzeRespo
 
 FREE_WORD_LIMIT = 500
 PRO_WORD_LIMIT = 2000
+GRAMMAR_CHECK_MAX_CHARS = 5_000
 
 
 def _count_words(text: str) -> int:
@@ -110,7 +112,16 @@ def grammar_check(payload: GrammarCheckRequest) -> GrammarCheckResponse:
     Proxy LanguageTool to return spelling and grammar matches.
     Available to all users (free tier). No API key needed.
     """
-    raw_matches = check_grammar(payload.text, payload.language)
+    clean_text = sanitize(payload.text)
+    if not clean_text:
+        return GrammarCheckResponse(matches=[], language=payload.language)
+    if len(clean_text) > GRAMMAR_CHECK_MAX_CHARS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Grammar check supports up to {GRAMMAR_CHECK_MAX_CHARS:,} characters. "
+                   f"Your text has {len(clean_text):,}.",
+        )
+    raw_matches = check_grammar(clean_text, payload.language)
     out = [
         GrammarMatchOut(
             offset=m.offset,
