@@ -1,12 +1,5 @@
 import { useEffect, useRef } from "react";
-import { BarChart2, Highlighter, ClipboardList, Lightbulb, ShieldCheck, EyeOff, GraduationCap } from "lucide-react";
-
-const FEATURES = [
-  { Icon: BarChart2, label: "Authenticity Score", desc: "0–100 score showing how much your writing sounds like you" },
-  { Icon: Highlighter, label: "Writing signals", desc: "Highlights sentences that need your personal touch" },
-  { Icon: ClipboardList, label: "Grammar & spelling", desc: "One-click fixes — accept like Grammarly, free forever" },
-  { Icon: Lightbulb, label: "Writing tips", desc: "Concrete suggestions to strengthen your voice" },
-];
+import { ShieldCheck, EyeOff, GraduationCap } from "lucide-react";
 
 interface HeroProps {
   onTryFree?: () => void;
@@ -14,9 +7,65 @@ interface HeroProps {
 
 const TRUST = [
   { Icon: ShieldCheck, label: "Private by default" },
-  { Icon: EyeOff, label: "No school access" },
+  { Icon: EyeOff, label: "Not shared with schools" },
   { Icon: GraduationCap, label: "Built for students" },
 ];
+
+/** A static mockup of the Wrex score UI — shows the actual product, not icon rows */
+function ScorePreview() {
+  return (
+    <div className="rounded-modal bg-white p-5 shadow-float select-none">
+      {/* Top bar */}
+      <div className="flex items-center justify-between border-b border-border-base pb-4">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-charcoal/40">Authenticity Score</p>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="font-mono text-4xl font-extrabold text-navy">63</span>
+            <span className="text-lg font-bold text-charcoal/40">%</span>
+          </div>
+          <p className="mt-0.5 text-xs font-medium text-amber-600">Moderate AI likelihood</p>
+        </div>
+        {/* Score ring */}
+        <svg width="72" height="72" viewBox="0 0 72 72" className="shrink-0">
+          <circle cx="36" cy="36" r="28" fill="none" stroke="#F1F5F9" strokeWidth="7" />
+          <circle
+            cx="36" cy="36" r="28" fill="none" stroke="#FBBF24" strokeWidth="7"
+            strokeDasharray={`${Math.PI * 56 * 0.63} ${Math.PI * 56 * 0.37}`}
+            strokeLinecap="round"
+            transform="rotate(-90 36 36)"
+          />
+          <text x="36" y="40" textAnchor="middle" fontSize="13" fontWeight="800" fill="#0F172A" fontFamily="Inter,sans-serif">63%</text>
+        </svg>
+      </div>
+      {/* Flagged sentences */}
+      <div className="mt-4 space-y-2">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-charcoal/40">Writing signals</p>
+        <div className="rounded-input border-l-2 border-amber-400 bg-amber-50/60 px-3 py-2">
+          <p className="text-xs leading-5 text-charcoal/80">
+            <span className="rounded bg-amber-200/70 px-0.5">Moreover, it offers convenience</span> and efficiency in many contexts.
+          </p>
+          <p className="mt-1 text-[10px] text-amber-700">Generic transition opener — rewrite in your own voice</p>
+        </div>
+        <div className="rounded-input border-l-2 border-red-400 bg-red-50/50 px-3 py-2">
+          <p className="text-xs leading-5 text-charcoal/80">
+            <span className="rounded bg-red-200/70 px-0.5">It is important to think carefully</span> about how writing…
+          </p>
+          <p className="mt-1 text-[10px] text-red-600">High AI-pattern signal — add your specific perspective</p>
+        </div>
+      </div>
+      {/* Grammar fix row */}
+      <div className="mt-3 flex items-center gap-2 rounded-input border border-border-base bg-mist px-3 py-2">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-danger" />
+        <span className="flex-1 text-[11px] text-charcoal/70">
+          <span className="font-mono line-through opacity-50">recieve</span>
+          <span className="mx-1 text-charcoal/30">→</span>
+          <span className="font-mono font-semibold text-navy">receive</span>
+        </span>
+        <span className="rounded-soft bg-emerald-500 px-2 py-0.5 text-[10px] font-bold text-white">✓ Fix</span>
+      </div>
+    </div>
+  );
+}
 
 export function Hero({ onTryFree }: HeroProps) {
   const rightRef = useRef<HTMLDivElement>(null);
@@ -34,87 +83,70 @@ export function Hero({ onTryFree }: HeroProps) {
 
   return (
     <section className="relative overflow-hidden px-6 pb-20 pt-20 lg:px-10 lg:pb-28 lg:pt-28">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-canvas via-white to-mist" />
-
-      {/* Yellow blob */}
+      {/* Clean geometric accent — intentional, not decorative noise */}
+      <div className="absolute inset-0 bg-gradient-to-b from-canvas to-white" />
       <div
-        className="blob-yellow"
-        style={{ width: 520, height: 520, top: -120, right: -80 }}
+        className="pointer-events-none absolute -right-24 -top-24 h-[480px] w-[480px] rounded-full opacity-[0.07]"
+        style={{ background: "radial-gradient(circle, #FBBF24 0%, transparent 70%)" }}
+      />
+      <div
+        className="pointer-events-none absolute -left-16 bottom-0 h-[320px] w-[320px] rounded-full opacity-[0.04]"
+        style={{ background: "radial-gradient(circle, #0F172A 0%, transparent 70%)" }}
       />
 
       <div className="relative mx-auto max-w-7xl">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:gap-16">
+        <div className="grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:gap-20">
 
           {/* Left — text */}
           <div className="animate-fade-in-up">
-            <span className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 text-xs font-semibold text-charcoal">
-              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-              Free forever — no account needed
+            <span className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-navy/80">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+              Free forever — score + grammar, no account needed
             </span>
-            <h1 className="font-heading mt-6 text-[3rem] font-extrabold leading-[1.1] tracking-tight text-navy lg:text-[3.5rem]">
-              Does your writing<br />
+
+            <h1 className="font-heading mt-6 text-[2.75rem] font-extrabold leading-[1.08] tracking-tight text-navy lg:text-[3.5rem]">
+              Write with confidence.<br />
               <span className="relative inline-block">
-                sound like you?
+                Sound like you.
                 <span
-                  className="absolute -bottom-1 left-0 h-[6px] w-full rounded-full opacity-60"
-                  style={{ background: "linear-gradient(90deg, #FBBF24, #F59E0B)" }}
+                  className="absolute -bottom-1.5 left-0 h-[5px] w-full rounded-full"
+                  style={{ background: "linear-gradient(90deg, #FBBF24, #F59E0B 60%, transparent)" }}
                 />
               </span>
             </h1>
-            <p className="mt-7 max-w-[480px] text-lg leading-relaxed text-charcoal/75">
-              Paste your draft. Wrex shows what sounds authentic, what needs
-              your touch, and exactly how to fix it — before you submit.
+
+            <p className="mt-7 max-w-[460px] text-[1.0625rem] leading-relaxed text-charcoal/70">
+              Paste your draft. Wrex shows your authenticity score, flags sentences
+              that sound AI-generated, and fixes grammar inline — before you submit.
             </p>
+
             <div className="mt-9 flex flex-wrap items-center gap-4">
               <button
                 onClick={onTryFree}
                 className="btn-shine rounded-soft bg-gradient-to-br from-accent to-accent-dark px-8 py-3.5 text-base font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97]"
               >
-                Try it now — free
+                Check your writing — free
               </button>
-              <a href="#how-it-works" className="text-sm font-medium text-charcoal/60 underline-offset-4 transition hover:text-navy hover:underline">
-                See how it works →
+              <a href="#how-it-works" className="text-sm font-medium text-charcoal/55 underline-offset-4 transition hover:text-navy hover:underline">
+                How it works →
               </a>
             </div>
+
             {/* Trust strip */}
-            <div className="mt-6 flex flex-wrap items-center gap-4">
+            <div className="mt-8 flex flex-wrap items-center gap-5">
               {TRUST.map(({ Icon, label }) => (
-                <span key={label} className="flex items-center gap-1.5 text-xs font-medium text-charcoal/55">
-                  <Icon className="h-3.5 w-3.5 text-accent-dark" />
+                <span key={label} className="flex items-center gap-1.5 text-xs font-medium text-charcoal/50">
+                  <Icon className="h-3.5 w-3.5 text-charcoal/35" />
                   {label}
                 </span>
               ))}
             </div>
-            <p className="mt-3 text-xs text-charcoal/35">
-              AI score + grammar free forever · Pro unlocks rewrites &amp; rubric tools
-            </p>
           </div>
 
-          {/* Right — what you get card */}
+          {/* Right — real app UI preview (not a generic card list) */}
           <div ref={rightRef} className="scroll-reveal" data-delay="1">
             <div className="animate-float">
-              <div className="rounded-modal bg-white p-6 shadow-float">
-                <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/45">
-                  What you get
-                </p>
-                <div className="mt-4 space-y-3">
-                  {FEATURES.map(({ Icon, label, desc }) => (
-                    <div key={label} className="flex items-start gap-3 rounded-input bg-mist px-4 py-3">
-                      <Icon className="mt-0.5 h-4 w-4 flex-shrink-0 text-accent" />
-                      <div>
-                        <p className="text-sm font-semibold text-navy">{label}</p>
-                        <p className="mt-0.5 text-xs leading-5 text-charcoal/60">{desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 rounded-input border border-accent/25 bg-accent/8 px-4 py-2.5">
-                  <p className="text-xs font-medium text-charcoal/70">
-                    AI score + grammar free forever · Private · No school access
-                  </p>
-                </div>
-              </div>
+              <ScorePreview />
             </div>
           </div>
 
@@ -123,3 +155,4 @@ export function Hero({ onTryFree }: HeroProps) {
     </section>
   );
 }
+
