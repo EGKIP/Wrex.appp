@@ -107,83 +107,90 @@ export function WorkspaceSidebar({
         </div>
       </aside>
 
-      {/* Slide-in history panel */}
-      {historyOpen && (
-        <div className="fixed inset-y-0 left-14 z-30 hidden sm:flex w-72 lg:w-80 flex-col border-r border-charcoal/10 bg-white shadow-xl" style={{ top: "56px" }}>
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-charcoal/10 px-4 py-3">
-            <span className="text-sm font-semibold text-navy">
-              Past submissions
-              {!historyLoading && submissions.length > 0 && (
-                <span className="ml-2 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-bold text-navy">
-                  {submissions.length}
-                </span>
-              )}
-            </span>
-            <button
-              type="button"
-              onClick={onHistoryToggle}
-              className="rounded p-1 text-charcoal/40 hover:bg-mist hover:text-charcoal"
-              aria-label="Close history"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* Body */}
-          <div className="flex-1 overflow-y-auto">
-            {historyLoading && (
-              <div className="flex items-center justify-center py-12">
-                <svg className="h-5 w-5 animate-spin text-charcoal/30" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                </svg>
-              </div>
-            )}
-            {!historyLoading && submissions.length === 0 && (
-              <p className="px-4 py-8 text-center text-sm text-charcoal/40">
-                No submissions yet. Run an analysis to start your history.
-              </p>
-            )}
+      {/* Slide-in history panel — always mounted, animated in/out */}
+      <div
+        className={`fixed inset-y-0 left-14 z-30 hidden sm:flex w-72 lg:w-80 flex-col border-r border-charcoal/10 bg-white shadow-2xl
+          transition-transform duration-200 ease-out will-change-transform
+          ${historyOpen ? "translate-x-0" : "-translate-x-full"}`}
+        style={{ top: "56px" }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-charcoal/10 px-4 py-3">
+          <span className="text-sm font-semibold text-navy">
+            History
             {!historyLoading && submissions.length > 0 && (
-              <ul className="divide-y divide-charcoal/8">
-                {submissions.map((s) => (
-                  <li
-                    key={s.id}
-                    onClick={() => { onSelectHistory(s.text_preview, s.rubric_preview); onHistoryToggle(); }}
-                    className="group flex cursor-pointer items-start gap-3 px-4 py-3 transition hover:bg-mist"
-                  >
-                    <span className={`mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${scoreBadgeClass(s.score)}`}>
-                      {s.score}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm text-charcoal/80">{s.text_preview}</p>
-                      <p className="mt-0.5 text-xs text-charcoal/40">{formatDate(s.created_at)} · {s.word_count}w</p>
-                    </div>
-                    <button
-                      onClick={(e) => handleDelete(s.id, e)}
-                      className="shrink-0 rounded p-1 text-charcoal/20 opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <span className="ml-2 rounded-full bg-accent/20 px-2 py-0.5 text-xs font-bold text-navy">
+                {submissions.length}
+              </span>
             )}
-          </div>
+          </span>
+          <button
+            type="button"
+            onClick={onHistoryToggle}
+            className="rounded p-1 text-charcoal/40 transition hover:bg-mist hover:text-charcoal"
+            aria-label="Close history"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
-      )}
 
-      {/* Overlay backdrop — click to close (sm+ only, matches rail visibility) */}
-      {historyOpen && (
-        <div
-          className="fixed inset-0 z-20 hidden sm:block bg-black/10"
-          style={{ top: "56px", left: "56px" }}
-          onClick={onHistoryToggle}
-          aria-hidden="true"
-        />
-      )}
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto">
+          {historyLoading && (
+            <div className="flex items-center justify-center py-12">
+              <svg className="h-5 w-5 animate-spin text-charcoal/30" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+            </div>
+          )}
+          {!historyLoading && submissions.length === 0 && (
+            <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
+              <History className="h-8 w-8 text-charcoal/20" />
+              <p className="text-sm text-charcoal/40">No submissions yet.</p>
+              <p className="text-xs text-charcoal/30">Run an analysis to start your history.</p>
+            </div>
+          )}
+          {!historyLoading && submissions.length > 0 && (
+            <ul className="divide-y divide-charcoal/6">
+              {submissions.map((s) => (
+                <li
+                  key={s.id}
+                  onClick={() => { onSelectHistory(s.text_preview, s.rubric_preview); onHistoryToggle(); }}
+                  className="group flex cursor-pointer items-start gap-3 px-4 py-3.5 transition-colors hover:bg-mist"
+                >
+                  {/* Score chip */}
+                  <span className={`mt-0.5 shrink-0 rounded-md px-2 py-0.5 text-xs font-bold tabular-nums ${scoreBadgeClass(s.score)}`}>
+                    {s.score}
+                  </span>
+                  {/* Text + meta */}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm leading-snug text-charcoal/80">{s.text_preview}</p>
+                    <p className="mt-0.5 text-[11px] text-charcoal/35">{formatDate(s.created_at)} · {s.word_count}w</p>
+                  </div>
+                  {/* Delete */}
+                  <button
+                    onClick={(e) => handleDelete(s.id, e)}
+                    className="shrink-0 rounded p-1 text-charcoal/20 opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+                    title="Delete"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {/* Backdrop — fades in/out, click to close */}
+      <div
+        className={`fixed inset-0 z-20 hidden sm:block transition-opacity duration-200
+          ${historyOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        style={{ top: "56px", left: "56px", background: "rgba(0,0,0,0.08)" }}
+        onClick={onHistoryToggle}
+        aria-hidden="true"
+      />
     </>
   );
 }
