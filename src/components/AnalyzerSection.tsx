@@ -136,7 +136,8 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const [text, setText] = useState(() => workspace ? "" : SAMPLE_TEXT);
   const [rubric, setRubric] = useState("");
   const [showRubric, setShowRubric] = useState(false);
-  const [results, setResults] = useState<AnalyzeResponse | null>(null);
+  // Landing page: pre-populate with cached demo result so the score is visible immediately
+  const [results, setResults] = useState<AnalyzeResponse | null>(() => workspace ? null : CACHED_SAMPLE_RESULT);
   const [resultsStale, setResultsStale] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -470,10 +471,10 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
         {!workspace && (
           <div className="mb-8 text-center">
             <h2 className="text-[1.75rem] font-bold tracking-tight text-navy lg:text-[2.25rem]">
-              Try it now — free
+              See how your writing scores
             </h2>
             <p className="mt-2 text-sm text-charcoal/60">
-              Paste your writing below. See your authenticity score instantly.
+              Replace the sample below with your own writing, then hit Analyze.
             </p>
           </div>
         )}
