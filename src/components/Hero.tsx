@@ -11,57 +11,112 @@ const TRUST = [
   { Icon: GraduationCap, label: "Built for students" },
 ];
 
-/** A static mockup of the Wrex score UI — shows the actual product, not icon rows */
-function ScorePreview() {
+/** Full browser-chrome mockup of the Wrex workspace — shows editor + results side by side */
+function AppMockup() {
   return (
-    <div className="rounded-modal bg-white p-5 shadow-float select-none">
-      {/* Top bar */}
-      <div className="flex items-center justify-between border-b border-border-base pb-4">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-charcoal/40">Authenticity Score</p>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="font-mono text-4xl font-extrabold text-navy">63</span>
-            <span className="text-lg font-bold text-charcoal/40">%</span>
+    <div className="select-none overflow-hidden rounded-xl border border-charcoal/10 shadow-float">
+      {/* Browser chrome */}
+      <div className="flex items-center gap-3 bg-[#1e293b] px-3 py-2.5">
+        <div className="flex gap-1.5">
+          <div className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
+          <div className="h-2.5 w-2.5 rounded-full bg-amber-400/80" />
+          <div className="h-2.5 w-2.5 rounded-full bg-emerald-400/80" />
+        </div>
+        <div className="flex flex-1 justify-center">
+          <div className="flex items-center gap-1.5 rounded bg-[#0f172a]/60 px-3 py-1 text-[10px] text-slate-400">
+            <span className="text-slate-500">🔒</span> wrex.app
           </div>
-          <p className="mt-0.5 text-xs font-medium text-amber-600">Moderate AI likelihood</p>
         </div>
-        {/* Score ring */}
-        <svg width="72" height="72" viewBox="0 0 72 72" className="shrink-0">
-          <circle cx="36" cy="36" r="28" fill="none" stroke="#F1F5F9" strokeWidth="7" />
-          <circle
-            cx="36" cy="36" r="28" fill="none" stroke="#FBBF24" strokeWidth="7"
-            strokeDasharray={`${Math.PI * 56 * 0.63} ${Math.PI * 56 * 0.37}`}
-            strokeLinecap="round"
-            transform="rotate(-90 36 36)"
-          />
-          <text x="36" y="40" textAnchor="middle" fontSize="13" fontWeight="800" fill="#0F172A" fontFamily="Inter,sans-serif">63%</text>
-        </svg>
+        <div className="w-14" />
       </div>
-      {/* Flagged sentences */}
-      <div className="mt-4 space-y-2">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-charcoal/40">Writing signals</p>
-        <div className="rounded-input border-l-2 border-amber-400 bg-amber-50/60 px-3 py-2">
-          <p className="text-xs leading-5 text-charcoal/80">
-            <span className="rounded bg-amber-200/70 px-0.5">Moreover, it offers convenience</span> and efficiency in many contexts.
-          </p>
-          <p className="mt-1 text-[10px] text-amber-700">Generic transition opener — rewrite in your own voice</p>
-        </div>
-        <div className="rounded-input border-l-2 border-red-400 bg-red-50/50 px-3 py-2">
-          <p className="text-xs leading-5 text-charcoal/80">
-            <span className="rounded bg-red-200/70 px-0.5">It is important to think carefully</span> about how writing…
-          </p>
-          <p className="mt-1 text-[10px] text-red-600">High AI-pattern signal — add your specific perspective</p>
-        </div>
+
+      {/* App toolbar */}
+      <div className="flex items-center gap-2 border-b border-[#e2e8f0] bg-white px-3 py-2">
+        <span className="text-[10px] font-bold text-[#0f172a]">Wrex</span>
+        <span className="text-[10px] text-[#cbd5e1]">/</span>
+        <span className="text-[10px] text-[#475569]">My essay draft</span>
+        <div className="flex-1" />
+        <span className="rounded bg-red-50 px-1.5 py-0.5 text-[8px] font-semibold text-red-500">2 errors</span>
+        <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[8px] font-semibold text-amber-600">1 suggestion</span>
+        <div className="mx-1 h-3 w-px bg-[#e2e8f0]" />
+        <span className="text-[8px] text-[#94a3b8]">63 words</span>
       </div>
-      {/* Grammar fix row */}
-      <div className="mt-3 flex items-center gap-2 rounded-input border border-border-base bg-mist px-3 py-2">
-        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-danger" />
-        <span className="flex-1 text-[11px] text-charcoal/70">
-          <span className="font-mono line-through opacity-50">recieve</span>
-          <span className="mx-1 text-charcoal/30">→</span>
-          <span className="font-mono font-semibold text-navy">receive</span>
-        </span>
-        <span className="rounded-soft bg-emerald-500 px-2 py-0.5 text-[10px] font-bold text-white">✓ Fix</span>
+
+      {/* 2-column workspace content */}
+      <div className="flex bg-[#f1f5f9]">
+        {/* Left: Editor */}
+        <div className="flex-1 border-r border-[#e2e8f0] p-3">
+          <div className="rounded-lg border border-[#e2e8f0] bg-white p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[9px] font-semibold text-[#0f172a]">Your writing</span>
+              <span className="rounded-full bg-[#f1f5f9] px-1.5 py-0.5 text-[8px] text-[#94a3b8]">47 words</span>
+            </div>
+            {/* Text with underlines */}
+            <p className="text-[10.5px] leading-[1.65] text-[#334155]">
+              In today's environment, technology has{" "}
+              <span className="border-b-2 border-red-400">recieve</span>d much attention.{" "}
+              <span className="border-b-2 border-amber-400">Moreover, it offers</span>{" "}
+              convenience in many different contexts.
+            </p>
+            {/* Inline fix popover */}
+            <div className="mt-2 flex items-center gap-1.5 rounded border border-[#e2e8f0] bg-[#f8fafc] px-2 py-1.5">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
+              <span className="font-mono text-[9px] line-through text-[#94a3b8]">recieve</span>
+              <span className="text-[9px] text-[#cbd5e1]">→</span>
+              <span className="font-mono text-[9px] font-bold text-[#0f172a]">receive</span>
+              <span className="ml-auto rounded bg-emerald-500 px-1.5 py-0.5 text-[8px] font-bold text-white">✓ Fix</span>
+            </div>
+            {/* Re-analyze row */}
+            <div className="mt-2.5 flex items-center gap-2 rounded border border-amber-200 bg-amber-50 px-2 py-1.5">
+              <span className="text-[9px] text-amber-700 flex-1">✏️ Changes detected</span>
+              <span className="rounded-md bg-[#FBBF24] px-2 py-0.5 text-[8px] font-bold text-[#0f172a]">↑ Re-analyze</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Score + results */}
+        <div className="w-36 shrink-0 space-y-2 p-3">
+          {/* Score card */}
+          <div className="rounded-lg border border-[#e2e8f0] bg-white p-3">
+            <p className="text-[8px] font-semibold uppercase tracking-widest text-[#94a3b8]">Score</p>
+            <div className="mt-1.5 flex justify-center">
+              <svg width="54" height="54" viewBox="0 0 54 54">
+                <circle cx="27" cy="27" r="21" fill="none" stroke="#F1F5F9" strokeWidth="5.5" />
+                <circle
+                  cx="27" cy="27" r="21" fill="none" stroke="#FBBF24" strokeWidth="5.5"
+                  strokeDasharray={`${Math.PI * 42 * 0.63} ${Math.PI * 42 * 0.37}`}
+                  strokeLinecap="round"
+                  transform="rotate(-90 27 27)"
+                />
+                <text x="27" y="31" textAnchor="middle" fontSize="10" fontWeight="800" fill="#0F172A" fontFamily="Inter,sans-serif">63%</text>
+              </svg>
+            </div>
+            <p className="mt-1 text-center text-[8px] font-medium text-amber-600">Moderate signals</p>
+          </div>
+
+          {/* Flagged signals */}
+          <div className="space-y-1.5">
+            <div className="rounded border-l-2 border-amber-400 bg-white px-2 py-1.5">
+              <p className="text-[8px] leading-tight text-[#334155]">Generic opener — rewrite in your voice</p>
+            </div>
+            <div className="rounded border-l-2 border-red-400 bg-white px-2 py-1.5">
+              <p className="text-[8px] leading-tight text-[#334155]">High AI-pattern signal</p>
+            </div>
+          </div>
+
+          {/* Pro tools teaser */}
+          <div className="rounded-lg border border-[#FBBF24]/30 bg-white p-2">
+            <p className="text-[8px] font-bold text-[#FBBF24]">✦ Pro tools</p>
+            <div className="mt-1.5 space-y-1">
+              {["Humanize tone", "Improve sentences", "Rubric align"].map((t) => (
+                <div key={t} className="flex items-center gap-1">
+                  <span className="h-1 w-1 rounded-full bg-[#FBBF24] shrink-0" />
+                  <span className="text-[8px] text-[#475569]">{t}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -95,7 +150,7 @@ export function Hero({ onTryFree }: HeroProps) {
       />
 
       <div className="relative mx-auto max-w-7xl">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:gap-20">
+        <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
 
           {/* Left — text */}
           <div className="animate-fade-in-up">
@@ -143,11 +198,9 @@ export function Hero({ onTryFree }: HeroProps) {
             </div>
           </div>
 
-          {/* Right — real app UI preview (not a generic card list) */}
+          {/* Right — full workspace browser mockup */}
           <div ref={rightRef} className="scroll-reveal" data-delay="1">
-            <div className="animate-float">
-              <ScorePreview />
-            </div>
+            <AppMockup />
           </div>
 
         </div>

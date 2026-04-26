@@ -166,6 +166,9 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   // Keep a fresh ref to onAnalyze so Cmd+Enter always calls the latest closure
   const onAnalyzeRef = useRef<() => Promise<void>>(async () => {});
 
+  // Increment to trigger GrammarEditor focus (e.g. after loading from history)
+  const [editorFocusKey, setEditorFocusKey] = useState(0);
+
   // Load history item into editor when parent sends a loadRequest
   useEffect(() => {
     if (!loadRequest) return;
@@ -175,6 +178,8 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
       setShowRubric(true);
     }
     setResults(null);
+    setResultsStale(false);
+    setEditorFocusKey((k) => k + 1); // auto-focus editor so user can start editing immediately
     onLoadRequestConsumed?.();
     // Auto-analyze after a short delay so React commits the text state first
     if (loadRequest.autoAnalyze) {
@@ -401,11 +406,67 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
       id="analyzer"
       className={
         workspace
-          ? "flex-1 overflow-y-auto bg-mist px-4 py-6 lg:px-8 lg:py-8"
+          ? "flex-1 overflow-y-auto bg-mist flex flex-col"
           : "bg-mist px-6 py-16 lg:px-10 lg:py-20"
       }
     >
-      <div className={`mx-auto w-full ${workspace ? "max-w-4xl" : "max-w-3xl"}`}>
+      {/* ── Workspace sticky toolbar ──────────────────────────────────────── */}
+      {workspace && (
+        <div className="sticky top-0 z-20 flex shrink-0 items-center gap-2 border-b border-charcoal/8 bg-white px-4 py-2.5 lg:px-8">
+          {/* Doc label */}
+          <span className="text-[13px] font-semibold text-navy">Document</span>
+
+          {/* Grammar status badges */}
+          {grammarLoading && (
+            <span className="animate-pulse text-[11px] text-charcoal/40">Checking grammar…</span>
+          )}
+          {!grammarLoading && grammarMatches.filter((m) => m.match_type === "error").length > 0 && (
+            <span className="rounded bg-danger/10 px-2 py-0.5 text-[11px] font-semibold text-danger">
+              {grammarMatches.filter((m) => m.match_type === "error").length}{" "}
+              error{grammarMatches.filter((m) => m.match_type === "error").length !== 1 ? "s" : ""}
+            </span>
+          )}
+          {!grammarLoading && grammarMatches.filter((m) => m.match_type === "suggestion").length > 0 && (
+            <span className="rounded bg-warning/10 px-2 py-0.5 text-[11px] font-semibold text-warning">
+              {grammarMatches.filter((m) => m.match_type === "suggestion").length}{" "}
+              suggestion{grammarMatches.filter((m) => m.match_type === "suggestion").length !== 1 ? "s" : ""}
+            </span>
+          )}
+          {!grammarLoading && grammarMatches.length === 0 && wordCount > 20 && results && (
+            <span className="text-[11px] font-medium text-success">✓ No grammar issues</span>
+          )}
+
+          <div className="flex-1" />
+
+          {/* Word count */}
+          {wordCount > 0 && (
+            <span className="text-[11px] text-charcoal/40">{wordCount} words</span>
+          )}
+
+          {/* Re-analyze CTA — appears only when text has changed since last score */}
+          {results && resultsStale && !loading && (
+            <button
+              type="button"
+              onClick={onAnalyze}
+              disabled={loading || wordLimitExceeded}
+              className="inline-flex items-center gap-1.5 rounded-soft bg-accent px-3 py-1.5 text-[11px] font-bold text-navy transition hover:bg-accent-dark active:scale-[0.97] disabled:opacity-50"
+            >
+              ↑ Re-analyze
+            </button>
+          )}
+          {loading && (
+            <span className="inline-flex items-center gap-1.5 text-[11px] text-accent font-medium animate-pulse">
+              <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+              Analyzing…
+            </span>
+          )}
+        </div>
+      )}
+
+      <div className={`mx-auto w-full ${workspace ? "max-w-5xl flex-1 px-4 py-6 lg:px-8 lg:py-8" : "max-w-3xl"}`}>
         {!workspace && (
           <div className="mb-8 text-center">
             <h2 className="text-[1.75rem] font-bold tracking-tight text-navy lg:text-[2.25rem]">
@@ -417,30 +478,46 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
           </div>
         )}
 
-        {/* Vertical single-column layout */}
-        <div className="flex flex-col gap-5">
+        {/* Layout: 2-col grid in workspace, single col on landing */}
+        <div className={workspace
+          ? "grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px] lg:items-start"
+          : "flex flex-col gap-5"
+        }>
+
+          {/* ── LEFT COLUMN: editor + stale banner ──────────────────────────── */}
+          <div className="flex flex-col gap-4">
 
           {/* ── Editor card ─────────────────────────────────────────────────── */}
-          <div className={`rounded-modal border border-border-base bg-white shadow-soft ${workspace ? "p-5 sm:p-6" : "p-5 sm:p-6"}`}>
+          <div className={`rounded-modal border bg-white shadow-soft p-5 sm:p-6 transition-all duration-200 ${
+            results && resultsStale
+              ? "border-amber-300 ring-2 ring-amber-200/50"
+              : "border-border-base"
+          }`}>
             {/* Header row */}
             <div className="mb-1 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <p className="text-sm font-semibold text-navy">Your writing</p>
-                {workspace && (
+                {results && resultsStale && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    Editing
+                  </span>
+                )}
+                {workspace && !resultsStale && wordCount > 0 && (
                   <span className="rounded-full bg-mist px-2 py-0.5 text-[10px] font-medium text-charcoal/50">
-                    {wordCount > 0 ? `${wordCount} words` : "empty"}
+                    {wordCount} words
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-3">
                 {grammarMatches.length > 0 && !grammarLoading && (
                   <span className="hidden sm:inline text-[11px] text-charcoal/45 italic">
-                    Click underlined words to fix
+                    Click underlined text to fix
                   </span>
                 )}
                 <button
                   type="button"
-                  onClick={() => { setText(""); setGrammarMatches([]); setResults(null); }}
+                  onClick={() => { setText(""); setGrammarMatches([]); setResults(null); setResultsStale(false); }}
                   className="text-xs text-charcoal/40 transition hover:text-charcoal hover:underline"
                 >
                   Clear
@@ -455,8 +532,9 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                 grammarMatches={grammarMatches}
                 grammarLoading={grammarLoading}
                 onApplyFix={applyGrammarFix}
-                placeholder="Paste your text here to analyze…"
-                minHeight={workspace ? "420px" : "300px"}
+                placeholder="Paste your writing here — or start typing…"
+                minHeight={workspace ? "480px" : "300px"}
+                focusKey={editorFocusKey}
               />
             </div>
             <div className="mt-2 flex items-center justify-between text-xs">
@@ -617,7 +695,12 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
             </div>
           )}
 
-          {/* ── Results panel (below editor) ─────────────────────────────────── */}
+          </div>{/* end LEFT COLUMN */}
+
+          {/* ── RIGHT COLUMN: results + pro tools (sticky in workspace) ─────── */}
+          <div className={workspace ? "flex flex-col gap-4 lg:sticky lg:top-[49px] lg:max-h-[calc(100vh-64px)] lg:overflow-y-auto" : "flex flex-col gap-4"}>
+
+          {/* ── Results panel ─────────────────────────────────────────────────── */}
           {(results || loading) && (
             <ResultsPanel
               results={results}
@@ -957,6 +1040,8 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
           </div>
         )}
 
+          </div>{/* end RIGHT COLUMN */}
+
           {/* ── History panel — landing page only ───────────────────────── */}
           {!workspace && accessToken && (
             <HistoryPanel
@@ -967,7 +1052,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               onRefresh={fetchHistory}
             />
           )}
-        </div>{/* end vertical stack */}
+        </div>{/* end layout grid/flex */}
       </div>
     </section>
   );

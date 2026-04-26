@@ -9,6 +9,8 @@ interface GrammarEditorProps {
   onApplyFix: (match: GrammarMatch, replacement: string) => void;
   placeholder?: string;
   minHeight?: string;
+  /** Increment this value to programmatically focus the textarea (e.g. after loading history) */
+  focusKey?: number;
 }
 
 /** Escape HTML special chars so user text renders safely in the backdrop div. */
@@ -49,10 +51,18 @@ export function GrammarEditor({
   onApplyFix,
   placeholder = "Paste your text here…",
   minHeight = "300px",
+  focusKey,
 }: GrammarEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const [activeMatch, setActiveMatch] = useState<GrammarMatch | null>(null);
+
+  // Focus the textarea when focusKey changes (e.g. after loading from history)
+  useEffect(() => {
+    if (focusKey !== undefined && focusKey > 0) {
+      setTimeout(() => textareaRef.current?.focus(), 50);
+    }
+  }, [focusKey]);
 
   // Auto-grow
   useEffect(() => {
