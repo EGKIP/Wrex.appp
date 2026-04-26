@@ -478,14 +478,8 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
           </div>
         )}
 
-        {/* Layout: 2-col grid in workspace, single col on landing */}
-        <div className={workspace
-          ? "grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px] lg:items-start"
-          : "flex flex-col gap-5"
-        }>
-
-          {/* ── LEFT COLUMN: editor + stale banner ──────────────────────────── */}
-          <div className="flex flex-col gap-4">
+        {/* Single-column layout — keeps the flow clean, no sideways scrolling */}
+        <div className="flex flex-col gap-5">
 
           {/* ── Editor card ─────────────────────────────────────────────────── */}
           <div className={`rounded-modal border bg-white shadow-soft p-5 sm:p-6 transition-all duration-200 ${
@@ -694,11 +688,6 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               </button>
             </div>
           )}
-
-          </div>{/* end LEFT COLUMN */}
-
-          {/* ── RIGHT COLUMN: results + pro tools (sticky in workspace) ─────── */}
-          <div className={workspace ? "flex flex-col gap-4 lg:sticky lg:top-[49px] lg:max-h-[calc(100vh-64px)] lg:overflow-y-auto" : "flex flex-col gap-4"}>
 
           {/* ── Results panel ─────────────────────────────────────────────────── */}
           {(results || loading) && (
@@ -1039,8 +1028,6 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
             ))}
           </div>
         )}
-
-          </div>{/* end RIGHT COLUMN */}
 
           {/* ── History panel — landing page only ───────────────────────── */}
           {!workspace && accessToken && (

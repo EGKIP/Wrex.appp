@@ -198,9 +198,11 @@ export function Hero({ onTryFree }: HeroProps) {
             </div>
           </div>
 
-          {/* Right — full workspace browser mockup */}
+          {/* Right — full workspace browser mockup, smoothly floating */}
           <div ref={rightRef} className="scroll-reveal" data-delay="1">
-            <AppMockup />
+            <div className="animate-float-smooth will-change-transform">
+              <AppMockup />
+            </div>
           </div>
 
         </div>

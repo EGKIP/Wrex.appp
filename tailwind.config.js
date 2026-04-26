@@ -46,6 +46,7 @@ export default {
       },
       animation: {
         float: "float 6s ease-in-out infinite",
+        "float-smooth": "floatSmooth 5s cubic-bezier(0.45,0.05,0.55,0.95) infinite",
         "fade-in-up": "fadeInUp 0.6s cubic-bezier(0.4,0,0.2,1) forwards",
         shimmer: "shimmer 2s infinite",
         "pulse-once": "pulseOnce 1.5s ease-in-out 1",
@@ -59,6 +60,13 @@ export default {
         float: {
           "0%, 100%": { transform: "rotate(3deg) translateY(0px)" },
           "50%": { transform: "rotate(3deg) translateY(-12px)" },
+        },
+        floatSmooth: {
+          "0%":   { transform: "translateY(0px) scale(1)" },
+          "30%":  { transform: "translateY(-10px) scale(1.008)" },
+          "60%":  { transform: "translateY(-16px) scale(1.012)" },
+          "80%":  { transform: "translateY(-8px) scale(1.005)" },
+          "100%": { transform: "translateY(0px) scale(1)" },
         },
         fadeInUp: {
           from: { opacity: "0", transform: "translateY(24px)" },
