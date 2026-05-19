@@ -6,9 +6,11 @@ import {
 } from "@stripe/react-stripe-js";
 import { X } from "lucide-react";
 
-const stripePromise = loadStripe(
-  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "",
-);
+const stripePublishableKey =
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY?.trim() ?? "";
+const stripePromise = stripePublishableKey
+  ? loadStripe(stripePublishableKey)
+  : null;
 
 interface CheckoutModalProps {
   clientSecret: string;
@@ -51,12 +53,30 @@ export function CheckoutModal({ clientSecret, onClose }: CheckoutModalProps) {
 
         {/* Stripe Embedded Checkout */}
         <div className="max-h-[70vh] overflow-y-auto px-2 py-2">
-          <EmbeddedCheckoutProvider
-            stripe={stripePromise}
-            options={{ fetchClientSecret }}
-          >
-            <EmbeddedCheckout />
-          </EmbeddedCheckoutProvider>
+          {stripePromise ? (
+            <EmbeddedCheckoutProvider
+              stripe={stripePromise}
+              options={{ fetchClientSecret }}
+            >
+              <EmbeddedCheckout />
+            </EmbeddedCheckoutProvider>
+          ) : (
+            <div className="px-4 py-8 text-center">
+              <p className="text-sm font-semibold text-navy">
+                Checkout is not configured in this environment.
+              </p>
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-charcoal/60">
+                Add a Stripe publishable key to enable upgrades locally.
+              </p>
+              <button
+                type="button"
+                onClick={onClose}
+                className="mt-5 rounded-soft bg-navy px-4 py-2 text-xs font-bold text-white transition hover:bg-navy/80"
+              >
+                Close
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Trust footer */}
@@ -67,4 +87,3 @@ export function CheckoutModal({ clientSecret, onClose }: CheckoutModalProps) {
     </div>
   );
 }
-

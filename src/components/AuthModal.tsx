@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { KeyRound } from "lucide-react";
 import type { AuthState } from "../hooks/useAuth";
 import { useToast } from "../context/toast";
 
@@ -55,12 +56,12 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
       }
       const err = await auth.updatePassword(password);
       if (!err) {
-        toast("Password updated! You're now signed in 🔑", "success");
+        toast("Password updated. You're now signed in.", "success");
         onClose();
       }
     } else if (showForgot) {
       const err = await auth.resetPassword(email);
-      if (!err) toast("Reset link sent — check your inbox 📬", "info");
+      if (!err) toast("Reset link sent. Check your inbox.", "info");
     } else if (tab === "signin") {
       const err = await auth.signIn(email, password);
       // success toast fires from App.tsx via auth.user change; just close the modal
@@ -69,7 +70,7 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
       const err = await auth.signUp(email, password);
       if (!err) {
         // null return = no API error = confirmation email sent
-        toast("Account created! Check your email to confirm 📧", "success");
+        toast("Account created. Check your email to confirm.", "success");
       }
     }
     setSubmitting(false);
@@ -91,7 +92,9 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
         {isRecovery ? (
           <>
             <div className="mb-6 text-center">
-              <div className="text-3xl mb-2">🔑</div>
+              <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-accent/15 text-navy">
+                <KeyRound className="h-5 w-5" />
+              </div>
               <h2 className="text-lg font-bold text-navy">Set your new password</h2>
               <p className="text-sm text-charcoal/60 mt-1">Choose a password you'll remember.</p>
             </div>
@@ -268,4 +271,3 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
     </div>
   );
 }
-

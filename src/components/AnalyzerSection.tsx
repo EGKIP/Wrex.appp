@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Crown, Sparkles, Users, FileText } from "lucide-react";
+import { Crown, FileText, RefreshCw, Sparkles, Users } from "lucide-react";
 import {
-  ApiError,
   analyzeText,
   checkGrammar,
   getHistory,
@@ -24,6 +23,8 @@ import { ResultsPanel } from "./ResultsPanel";
 import { GrammarEditor } from "./GrammarEditor";
 
 const SAMPLE_TEXT = `In today's academic environment, technology has become an increasingly important part of how students learn and communicate. Moreover, it offers convenience and efficiency in many different contexts. However, it is also important to think carefully about how writing can remain personal, specific, and grounded in real understanding.`;
+
+const GRAMMAR_IGNORE_TERMS = new Set(["wrex", "wrex.app"]);
 
 /** Pre-computed result for SAMPLE_TEXT — served instantly, zero API cost. */
 const CACHED_SAMPLE_RESULT: AnalyzeResponse = {
@@ -76,6 +77,17 @@ function countWords(text: string) {
   return text.trim() ? text.trim().split(/\s+/).length : 0;
 }
 
+function filterGrammarMatches(text: string, matches: GrammarMatch[]) {
+  return matches.filter((match) => {
+    const matchedText = text.slice(match.offset, match.offset + match.length);
+    const normalized = matchedText
+      .trim()
+      .replace(/^[^\w.]+|[^\w.]+$/g, "")
+      .toLowerCase();
+    return !GRAMMAR_IGNORE_TERMS.has(normalized);
+  });
+}
+
 const RUBRIC_TEMPLATES: { label: string; value: string }[] = [
   {
     label: "5-Paragraph Essay",
@@ -99,12 +111,12 @@ const RUBRIC_TEMPLATES: { label: string; value: string }[] = [
   },
 ];
 
-const TONE_OPTIONS: { value: string; label: string; emoji: string; desc: string }[] = [
-  { value: "natural",    label: "Natural",    emoji: "✦", desc: "Human, varied, natural flow" },
-  { value: "narrative",  label: "Narrative",  emoji: "📖", desc: "Story-driven, first-person" },
-  { value: "speech",     label: "Speech",     emoji: "🎙️", desc: "Conversational and punchy" },
-  { value: "academic",   label: "Academic",   emoji: "🎓", desc: "Formal, structured, hedged" },
-  { value: "persuasive", label: "Persuasive", emoji: "⚡", desc: "Argument-forward, rhetorical" },
+const TONE_OPTIONS: { value: string; label: string; desc: string }[] = [
+  { value: "natural",    label: "Natural",    desc: "Human, varied, natural flow" },
+  { value: "narrative",  label: "Narrative",  desc: "Story-driven, first-person" },
+  { value: "speech",     label: "Speech",     desc: "Conversational and punchy" },
+  { value: "academic",   label: "Academic",   desc: "Formal, structured, hedged" },
+  { value: "persuasive", label: "Persuasive", desc: "Argument-forward, rhetorical" },
 ];
 
 interface AnalyzerSectionProps {
@@ -197,7 +209,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
       setGrammarLoading(true);
       try {
         const result = await checkGrammar(text);
-        setGrammarMatches(result.matches);
+        setGrammarMatches(filterGrammarMatches(text, result.matches));
       } catch {
         // non-critical — silently skip
       } finally {
@@ -408,7 +420,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
       className={
         workspace
           ? "flex-1 overflow-y-auto bg-mist flex flex-col"
-          : "bg-mist px-6 py-16 lg:px-10 lg:py-20"
+          : "bg-[#f8fafc] px-6 py-16 lg:px-10 lg:py-20"
       }
     >
       {/* ── Workspace sticky toolbar ──────────────────────────────────────── */}
@@ -469,12 +481,13 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
 
       <div className={`mx-auto w-full ${workspace ? "max-w-5xl flex-1 px-4 py-6 lg:px-8 lg:py-8" : "max-w-3xl"}`}>
         {!workspace && (
-          <div className="mb-8 text-center">
-            <h2 className="text-[1.75rem] font-bold tracking-tight text-navy lg:text-[2.25rem]">
-              See how your writing scores
+          <div className="mb-7">
+            <h2 className="text-balance text-[2rem] font-bold tracking-tight text-navy lg:text-[2.75rem]">
+              Paste your draft.
             </h2>
-            <p className="mt-2 text-sm text-charcoal/60">
-              Replace the sample below with your own writing, then hit Analyze.
+            <p className="mt-3 max-w-2xl text-base leading-7 text-charcoal/58">
+              Start with the sample or bring your own paper. The result stays simple:
+              a score, highlighted sentences, and fixes you can act on.
             </p>
           </div>
         )}
@@ -483,10 +496,10 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
         <div className="flex flex-col gap-5">
 
           {/* ── Editor card ─────────────────────────────────────────────────── */}
-          <div className={`rounded-modal border bg-white shadow-soft p-5 sm:p-6 transition-all duration-200 ${
+          <div className={`rounded-[1.5rem] border border-navy/8 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.7)] transition-all duration-200 sm:p-6 ${
             results && resultsStale
-              ? "border-amber-300 ring-2 ring-amber-200/50"
-              : "border-border-base"
+              ? "ring-2 ring-amber-200/70"
+              : ""
           }`}>
             {/* Header row */}
             <div className="mb-1 flex items-center justify-between">
@@ -613,7 +626,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                     </div>
                   )}
                 </>
-              ) : (
+              ) : workspace ? (
                 /* Non-Pro: locked rubric row */
                 <button
                   type="button"
@@ -623,7 +636,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                   <Crown className="h-3.5 w-3.5 text-accent-dark" />
                   Add rubric &amp; check criteria — <span className="font-semibold text-accent-dark">Pro feature</span>
                 </button>
-              )}
+              ) : null}
             </div>
 
             {/* ── Word limit wall ─────────────────────────────────────────── */}
@@ -647,13 +660,13 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
             )}
 
             {/* ── Analyze button ───────────────────────────────────────────── */}
-            <div className="mt-5 flex items-center gap-4">
+            <div className="mt-5 flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={onAnalyze}
                 disabled={loading || text.trim().length < 10 || wordLimitExceeded}
                 title={wordLimitExceeded ? `${isPro ? "Pro" : "Free"} limit: ${wordLimit} words` : undefined}
-                className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-8 py-3 text-base font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
+                className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-8 py-3 text-base font-bold text-navy shadow-button transition hover:-translate-y-0.5 hover:shadow-button-hover active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {loading ? (
                   <>
@@ -678,14 +691,15 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
           {/* ── Editing mode banner ──────────────────────────────────────────── */}
           {results && resultsStale && (
             <div className="flex items-center gap-3 rounded-input border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              <span className="flex-1">✏️ You've made changes — re-analyze to see your updated score.</span>
+              <Sparkles className="h-4 w-4 shrink-0" />
+              <span className="flex-1">You've made changes. Re-analyze to see your updated score.</span>
               <button
                 type="button"
                 onClick={onAnalyze}
                 disabled={loading}
                 className="shrink-0 inline-flex items-center gap-1.5 rounded-soft bg-amber-400 px-3 py-1.5 text-xs font-bold text-navy transition hover:bg-amber-500 disabled:opacity-50"
               >
-                Re-analyze ↑
+                <RefreshCw className="h-3 w-3" /> Re-analyze
               </button>
             </div>
           )}
@@ -697,18 +711,17 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               loading={loading}
               isPro={isPro}
               onRubricRewrite={handleRubricRewriteNudge}
-              onUpgrade={handleUpgrade}
               text={text}
               accessToken={accessToken}
               onReplaceSentence={handleReplaceSentence}
-              quota={null}
+              quota={results?.quota ?? null}
               onAuthRequired={onAuthRequired}
-              resultsStale={false}
+              resultsStale={resultsStale}
             />
           )}
 
           {/* ── Pro AI panel ─────────────────────────────────────────────── */}
-          {results && (
+          {results && workspace && (
           <div ref={proPanelRef} className="rounded-modal border border-border-base bg-white p-5 shadow-soft sm:p-6">
             {/* Header row — tappable on mobile to collapse/expand */}
             <div
@@ -728,7 +741,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                   >
                     {(["improve", "humanize", "rubric-rewrite"] as const).map((tab) => {
                       const labels: Record<string, { short: string; full: string }> = {
-                        improve: { short: "✦", full: "Improve" },
+                            improve: { short: "Im", full: "Improve" },
                         humanize: { short: "~", full: "Humanize" },
                         "rubric-rewrite": { short: "✎", full: "Rewrite" },
                       };
@@ -877,7 +890,6 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                                 : "border-border-base bg-white text-charcoal/60 hover:border-accent/60 hover:text-navy"
                             }`}
                           >
-                            <span>{t.emoji}</span>
                             {t.label}
                           </button>
                         ))}

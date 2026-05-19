@@ -7,6 +7,7 @@ import json
 import urllib.request
 from typing import Optional
 
+from app.core.credits import OpenAITokenUsage
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.schemas.pro import ImproveSuggestion
@@ -17,8 +18,8 @@ _OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 _TIMEOUT = 30
 
 
-def _chat(messages: list[dict]) -> str:
-    """Make a single chat-completions request, log token usage, and return the content string."""
+def _chat(messages: list[dict]) -> tuple[str, OpenAITokenUsage]:
+    """Make a single chat-completions request and return content plus token usage."""
     body = json.dumps({
         "model": settings.openai_model,
         "messages": messages,
@@ -37,23 +38,27 @@ def _chat(messages: list[dict]) -> str:
     with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
         data = json.loads(resp.read().decode("utf-8"))
 
-    usage = data.get("usage", {})
+    usage: OpenAITokenUsage = {
+        "prompt_tokens": int(data.get("usage", {}).get("prompt_tokens", 0)),
+        "completion_tokens": int(data.get("usage", {}).get("completion_tokens", 0)),
+        "total_tokens": int(data.get("usage", {}).get("total_tokens", 0)),
+    }
     logger.info(
         "openai_tokens",
         extra={
             "service": "improve",
             "model": settings.openai_model,
-            "prompt_tokens": usage.get("prompt_tokens", 0),
-            "completion_tokens": usage.get("completion_tokens", 0),
-            "total_tokens": usage.get("total_tokens", 0),
+            "prompt_tokens": usage["prompt_tokens"],
+            "completion_tokens": usage["completion_tokens"],
+            "total_tokens": usage["total_tokens"],
         },
     )
-    return data["choices"][0]["message"]["content"]
+    return data["choices"][0]["message"]["content"], usage
 
 
 def get_improve_suggestions(
     text: str, rubric: Optional[str] = None
-) -> list[ImproveSuggestion]:
+) -> tuple[list[ImproveSuggestion], OpenAITokenUsage]:
     """Return up to 8 sentence-level improvement suggestions."""
     rubric_section = f"\n\nRubric:\n{rubric}" if rubric else ""
 
@@ -71,17 +76,20 @@ def get_improve_suggestions(
     user = f"Essay:\n{text}{rubric_section}"
 
     try:
-        raw = _chat([{"role": "system", "content": system}, {"role": "user", "content": user}])
+        raw, usage = _chat([{"role": "system", "content": system}, {"role": "user", "content": user}])
         items: list[dict] = json.loads(raw)
-        return [
-            ImproveSuggestion(
-                sentence=str(i.get("sentence", "")),
-                issue=str(i.get("issue", "")),
-                rewrite=str(i.get("rewrite", "")),
-            )
-            for i in items
-            if isinstance(i, dict)
-        ]
+        return (
+            [
+                ImproveSuggestion(
+                    sentence=str(i.get("sentence", "")),
+                    issue=str(i.get("issue", "")),
+                    rewrite=str(i.get("rewrite", "")),
+                )
+                for i in items
+                if isinstance(i, dict)
+            ],
+            usage,
+        )
     except Exception as exc:
         logger.error("improve_error", extra={"error": str(exc)})
         raise

@@ -116,7 +116,7 @@ export function ProfileModal({ open, onClose, auth, isPro, quota, onUpgrade, acc
         {!isPro && (
           <div className="border-b border-slate-100 px-6 py-4">
             <p className="mb-3 text-sm text-slate-500">
-              Upgrade to <strong className="text-charcoal">Pro</strong> for unlimited analyses, AI rewrites, and humanizer.
+              Upgrade to <strong className="text-charcoal">Pro</strong> for longer checks, AI rewrites, rubric tools, and monthly AI credits.
             </p>
             <button
               onClick={handleUpgrade}
@@ -134,7 +134,7 @@ export function ProfileModal({ open, onClose, auth, isPro, quota, onUpgrade, acc
               <Sparkles className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold text-charcoal">Wrex Pro · $9 / month</p>
-                <p className="text-xs text-slate-400 mt-0.5">Unlimited analyses · 2,000 words · AI rewrites · Humanizer</p>
+                <p className="text-xs text-slate-400 mt-0.5">2,000 words · AI rewrites · Humanizer · monthly AI credits</p>
               </div>
             </div>
 
@@ -166,4 +166,3 @@ export function ProfileModal({ open, onClose, auth, isPro, quota, onUpgrade, acc
     </>
   );
 }
-

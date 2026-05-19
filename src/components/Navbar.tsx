@@ -7,6 +7,7 @@ import { ProfileModal } from "./ProfileModal";
 
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
+  { label: "Pricing", href: "#pricing" },
   { label: "Try it free", href: "#analyzer" },
   { label: "FAQ", href: "#faq" },
 ];
@@ -63,7 +64,7 @@ export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAut
   const isWorkspace = mode === "workspace";
 
   useEffect(() => {
-    const sections = ["how-it-works", "analyzer", "faq"];
+    const sections = ["how-it-works", "pricing", "analyzer", "faq"];
     const observers = sections.map((id) => {
       const el = document.getElementById(id);
       if (!el) return null;
@@ -159,7 +160,7 @@ export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAut
                   <button
                     type="button"
                     onClick={onGoWorkspace}
-                    className="flex items-center gap-1.5 rounded-soft border border-navy/20 px-3 py-1.5 text-xs font-semibold text-navy transition hover:bg-navy hover:text-white"
+                    className="flex items-center gap-1.5 rounded-soft border border-navy/15 bg-white/65 px-3 py-1.5 text-xs font-semibold text-navy transition duration-300 hover:-translate-y-0.5 hover:bg-navy hover:text-white"
                   >
                     <LayoutDashboard className="h-3.5 w-3.5" />
                     My workspace
@@ -167,7 +168,7 @@ export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAut
                 )}
                 <button
                   onClick={() => setProfileOpen(true)}
-                  className="flex items-center gap-2 rounded-lg px-2 py-1 transition-colors hover:bg-slate-100"
+                  className="flex items-center gap-2 rounded-lg px-2 py-1 transition duration-300 hover:-translate-y-0.5 hover:bg-slate-100"
                   title={auth.user.email}
                 >
                   <Avatar email={auth.user.email!} isPro={isPro} />
@@ -188,7 +189,7 @@ export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAut
                 </button>
                 <button
                   onClick={() => onOpenAuth("signup")}
-                  className="btn-shine rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.03] active:scale-[0.97]"
+                  className="btn-shine rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2 text-sm font-bold text-navy shadow-button transition duration-300 hover:-translate-y-0.5 hover:shadow-button-hover active:translate-y-0 active:scale-[0.98]"
                 >
                   Try free
                 </button>
