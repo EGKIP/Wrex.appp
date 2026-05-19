@@ -12,12 +12,15 @@ POST /pro/rubric-rewrite  — GPT-4o mini rewrite to hit rubric criteria (Pro on
 
 from __future__ import annotations
 
+from typing import Optional
+
 import stripe
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel
 
 from app.core.auth import AuthUser, get_required_user
 from app.core.config import settings
+from app.core.credits import debit_ai_credits, ensure_ai_credits_available, initialize_ai_credit_period
 from app.core.logging import get_logger
 from app.schemas.pro import (
     HumanizeRequest,
@@ -63,6 +66,9 @@ class BillingPortalResponse(BaseModel):
 
 class ProStatusResponse(BaseModel):
     is_pro: bool
+    ai_credits_remaining: Optional[int] = None
+    ai_credits_monthly: Optional[int] = None
+    ai_credits_period_end: Optional[str] = None
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -98,14 +104,13 @@ def create_checkout_session(
                 "id", user.id
             ).execute()
 
-        origin = settings.allowed_origins[0] if settings.allowed_origins else "http://localhost:5173"
         session = client.checkout.sessions.create(
             params={
                 "customer": stripe_customer_id,
                 "mode": "subscription",
                 "ui_mode": "embedded",
                 "line_items": [{"price": settings.stripe_price_id, "quantity": 1}],
-                "return_url": f"{origin}/?checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
+                "return_url": f"{settings.frontend_url}/?checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
                 "metadata": {"supabase_user_id": user.id},
             }
         )
@@ -146,12 +151,11 @@ def create_billing_portal_session(
             detail="No billing account found. Please contact support@wrex.app.",
         )
 
-    origin = settings.allowed_origins[0] if settings.allowed_origins else "http://localhost:5173"
     try:
         portal_session = client.billing_portal.sessions.create(
             params={
                 "customer": stripe_customer_id,
-                "return_url": origin,
+                "return_url": settings.frontend_url,
             }
         )
     except stripe.StripeError as exc:
@@ -193,6 +197,7 @@ async def stripe_webhook(
             if sub_id:
                 update_payload["stripe_subscription_id"] = sub_id
             sb.table("profiles").update(update_payload).eq("id", user_id).execute()
+            initialize_ai_credit_period(user_id)
             logger.info("pro_activated", extra={"user_id": user_id, "subscription_id": sub_id})
 
     elif event_type == "customer.subscription.created":
@@ -213,6 +218,7 @@ async def stripe_webhook(
                 sb.table("profiles").update(
                     {"stripe_subscription_id": sub_id, "is_pro": True}
                 ).eq("stripe_customer_id", customer_id).execute()
+                initialize_ai_credit_period(str(profile.data["id"]))
                 logger.info("subscription_id_stored", extra={"subscription_id": sub_id, "customer_id": customer_id})
 
     elif event_type in ("customer.subscription.deleted", "customer.subscription.paused"):
@@ -251,7 +257,25 @@ def get_pro_status(
         .execute()
     )
     is_pro = bool(profile.data and profile.data.get("is_pro"))
-    return ProStatusResponse(is_pro=is_pro)
+    if not is_pro:
+        return ProStatusResponse(is_pro=False)
+
+    try:
+        balance = ensure_ai_credits_available(user.id, endpoint="status")
+    except HTTPException as exc:
+        if exc.status_code != status.HTTP_402_PAYMENT_REQUIRED:
+            raise
+        return ProStatusResponse(
+            is_pro=True,
+            ai_credits_remaining=0,
+            ai_credits_monthly=settings.pro_monthly_ai_credits,
+        )
+    return ProStatusResponse(
+        is_pro=True,
+        ai_credits_remaining=balance.remaining_credits,
+        ai_credits_monthly=balance.monthly_credits,
+        ai_credits_period_end=balance.period_end.isoformat(),
+    )
 
 
 @router.post("/sync-subscription", response_model=ProStatusResponse)
@@ -293,6 +317,7 @@ def sync_subscription(
                 "stripe_subscription_id": sub.id,
             }).eq("id", user.id).execute()
             logger.info("subscription_synced", extra={"user_id": user.id, "subscription_id": sub.id})
+            initialize_ai_credit_period(user.id)
             return ProStatusResponse(is_pro=True)
     except stripe.StripeError as exc:
         logger.error("stripe_sync_error", extra={"user_id": user.id, "error": str(exc)})
@@ -324,6 +349,11 @@ def _require_openai() -> None:
         )
 
 
+def _preflight_ai_credits(user: AuthUser, endpoint: str) -> None:
+    """Check the monthly Pro AI credit ledger before a paid OpenAI request."""
+    ensure_ai_credits_available(user.id, endpoint=endpoint)
+
+
 # ── Pro AI endpoints ──────────────────────────────────────────────────────────
 
 @router.post("/improve", response_model=ImproveResponse)
@@ -334,9 +364,11 @@ def pro_improve(
     """Return sentence-level improvement suggestions (Pro only, GPT-4o mini)."""
     _require_pro(user)
     _require_openai()
+    _preflight_ai_credits(user, endpoint="improve")
 
     from app.services.pro_writer.writing_service import get_improve_suggestions
-    suggestions = get_improve_suggestions(payload.text, payload.rubric)
+    suggestions, usage = get_improve_suggestions(payload.text, payload.rubric)
+    debit_ai_credits(user_id=user.id, endpoint="improve", model=settings.openai_model, usage=usage)
     return ImproveResponse(suggestions=suggestions)
 
 
@@ -348,9 +380,12 @@ def pro_humanize(
     """Rewrite text to sound more natural/human (Pro only, GPT-4o mini)."""
     _require_pro(user)
     _require_openai()
+    _preflight_ai_credits(user, endpoint="humanize")
 
     from app.services.pro_writer.humanizer import humanize_text
-    return humanize_text(payload.text, tone=payload.tone or "natural")
+    response, usage = humanize_text(payload.text, tone=payload.tone or "natural")
+    debit_ai_credits(user_id=user.id, endpoint="humanize", model=settings.openai_model, usage=usage)
+    return response
 
 
 @router.post("/rubric-rewrite", response_model=RubricRewriteResponse)
@@ -361,6 +396,9 @@ def pro_rubric_rewrite(
     """Rewrite text to address rubric criteria (Pro only, GPT-4o mini)."""
     _require_pro(user)
     _require_openai()
+    _preflight_ai_credits(user, endpoint="rubric_rewrite")
 
     from app.services.pro_writer.rubric_rewriter import rewrite_for_rubric
-    return rewrite_for_rubric(payload.text, payload.rubric)
+    response, usage = rewrite_for_rubric(payload.text, payload.rubric)
+    debit_ai_credits(user_id=user.id, endpoint="rubric_rewrite", model=settings.openai_model, usage=usage)
+    return response

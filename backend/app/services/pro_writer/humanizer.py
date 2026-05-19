@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import urllib.request
 
+from app.core.credits import OpenAITokenUsage
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.schemas.pro import HumanizeResponse
@@ -16,8 +17,8 @@ _OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 _TIMEOUT = 30
 
 
-def _chat(messages: list[dict]) -> str:
-    """Make a chat-completions request, log token usage, and return the content string."""
+def _chat(messages: list[dict]) -> tuple[str, OpenAITokenUsage]:
+    """Make a chat-completions request and return content plus token usage."""
     body = json.dumps({
         "model": settings.openai_model,
         "messages": messages,
@@ -36,18 +37,22 @@ def _chat(messages: list[dict]) -> str:
     with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
         data = json.loads(resp.read().decode("utf-8"))
 
-    usage = data.get("usage", {})
+    usage: OpenAITokenUsage = {
+        "prompt_tokens": int(data.get("usage", {}).get("prompt_tokens", 0)),
+        "completion_tokens": int(data.get("usage", {}).get("completion_tokens", 0)),
+        "total_tokens": int(data.get("usage", {}).get("total_tokens", 0)),
+    }
     logger.info(
         "openai_tokens",
         extra={
             "service": "humanize",
             "model": settings.openai_model,
-            "prompt_tokens": usage.get("prompt_tokens", 0),
-            "completion_tokens": usage.get("completion_tokens", 0),
-            "total_tokens": usage.get("total_tokens", 0),
+            "prompt_tokens": usage["prompt_tokens"],
+            "completion_tokens": usage["completion_tokens"],
+            "total_tokens": usage["total_tokens"],
         },
     )
-    return data["choices"][0]["message"]["content"]
+    return data["choices"][0]["message"]["content"], usage
 
 
 _TONE_PROMPTS: dict[str, str] = {
@@ -86,18 +91,21 @@ _JSON_INSTRUCTION = (
 )
 
 
-def humanize_text(text: str, tone: str = "natural") -> HumanizeResponse:
+def humanize_text(text: str, tone: str = "natural") -> tuple[HumanizeResponse, OpenAITokenUsage]:
     """Rewrite the text to sound more natural/human in the requested tone."""
     tone_key = tone.lower() if tone and tone.lower() in _TONE_PROMPTS else "natural"
     system = _TONE_PROMPTS[tone_key] + _JSON_INSTRUCTION
     user = f"Original text:\n{text}"
 
     try:
-        raw = _chat([{"role": "system", "content": system}, {"role": "user", "content": user}])
+        raw, usage = _chat([{"role": "system", "content": system}, {"role": "user", "content": user}])
         data: dict = json.loads(raw)
-        return HumanizeResponse(
-            rewritten=str(data.get("rewritten", "")),
-            changes_summary=str(data.get("changes_summary", "")),
+        return (
+            HumanizeResponse(
+                rewritten=str(data.get("rewritten", "")),
+                changes_summary=str(data.get("changes_summary", "")),
+            ),
+            usage,
         )
     except Exception as exc:
         logger.error("humanize_error", extra={"error": str(exc), "tone": tone_key})

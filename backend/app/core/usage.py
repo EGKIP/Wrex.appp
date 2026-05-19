@@ -101,7 +101,7 @@ def _auth_check_and_record(user_id: str) -> QuotaInfo:
         if used >= limit:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=f"Daily limit reached ({limit}/day). Upgrade for unlimited analyses.",
+                detail=f"Daily limit reached ({limit}/day). Upgrade for longer checks and AI rewrite credits.",
             )
 
         # Record this usage
@@ -135,12 +135,12 @@ def check_quota(
     Call from route handlers. Pass the result of get_optional_user as `user`.
     Returns QuotaInfo for inclusion in the response.
 
-    Pro users are returned an unlimited quota immediately — no DB hit.
+    Pro users skip the free daily quota immediately — no DB hit.
     Anonymous IP is resolved from X-Forwarded-For so Render's load-balancer
     proxy does not collapse all anonymous users onto a single IP.
     """
     if user is not None:
-        # Pro users: unlimited — skip quota entirely
+        # Pro users skip the free-tier quota. Paid AI endpoints are metered separately.
         if getattr(user, "is_pro", False):
             return QuotaInfo(used=0, limit=0, remaining=0, is_authenticated=True)
         return _auth_check_and_record(user.id)  # type: ignore[attr-defined]
@@ -151,4 +151,3 @@ def check_quota(
         request.client.host if request.client else "unknown"
     )
     return _anon_check_and_record(ip)
-

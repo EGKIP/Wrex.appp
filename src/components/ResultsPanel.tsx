@@ -1,6 +1,13 @@
 import { useState } from "react";
-import { Sparkles, Wand2, BarChart2, ScanSearch, ClipboardList, PenLine } from "lucide-react";
-import type { AnalyzeResponse, CriterionResult, QuotaInfo, RubricMatchResult } from "../types";
+import {
+  AlertTriangle,
+  BarChart2,
+  CheckCircle2,
+  ScanSearch,
+  Sparkles,
+  Wand2,
+} from "lucide-react";
+import type { AnalyzeResponse, CriterionResult, QuotaInfo } from "../types";
 import { proHumanize } from "../lib/api";
 
 type ResultsPanelProps = {
@@ -8,7 +15,6 @@ type ResultsPanelProps = {
   loading?: boolean;
   isPro?: boolean;
   onRubricRewrite?: () => void;
-  onUpgrade?: () => void;
   text?: string;
   accessToken?: string | null;
   /** Called when the user clicks "Replace in editor" inside a Pro rewrite card */
@@ -69,14 +75,12 @@ function SentenceHighlighter({
   flagged,
   isPro,
   accessToken,
-  onUpgrade,
   onReplaceSentence,
 }: {
   text: string;
   flagged: FlaggedMap;
   isPro?: boolean;
   accessToken?: string | null;
-  onUpgrade?: () => void;
   onReplaceSentence?: (original: string, replacement: string) => void;
 }) {
   const sentences = splitSentences(text);
@@ -120,13 +124,13 @@ function SentenceHighlighter({
   }
 
   return (
-    <section className="rounded-modal border border-border-base bg-white p-6 shadow-soft">
+    <section className="surface-panel rounded-[1.5rem] p-5 sm:p-6">
       <div className="mb-3 flex items-center justify-between">
         <h4 className="font-heading text-base font-semibold text-navy">Sentence analysis</h4>
       </div>
 
       {/* Legend + hint */}
-      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-input border border-border-base bg-mist px-3 py-2">
+      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-input border border-border-base bg-mist/70 px-3 py-2">
         <span className="flex items-center gap-1.5 text-xs text-charcoal/60">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" />
           <span className="font-semibold text-red-700">Sounds AI-written</span>
@@ -146,7 +150,7 @@ function SentenceHighlighter({
       {/* All-clear state */}
       {flagged.size === 0 && (
         <div className="flex items-center gap-2.5 rounded-input border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          <span className="text-base">✓</span>
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
           <span><strong>All sentences sound authentic.</strong> Your writing reads naturally — no AI patterns detected.</span>
         </div>
       )}
@@ -206,12 +210,8 @@ function SentenceHighlighter({
                     </span>
                   )}
                   {!isPro ? (
-                    /* Compact Pro nudge — reason already shown above */
-                    <span className="mt-2 flex items-center justify-between gap-3 rounded-input border border-accent/25 bg-accent/5 px-3 py-2">
-                      <span className="text-xs text-charcoal/60">✦ <strong className="text-navy">Pro:</strong> rewrite this sentence in your voice</span>
-                      <button type="button" onClick={onUpgrade} className="shrink-0 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-3 py-1 text-[11px] font-bold text-navy transition hover:opacity-90">
-                        Upgrade →
-                      </button>
+                    <span className="mt-2 block rounded-input border border-border-base bg-mist px-3 py-2 text-xs leading-5 text-charcoal/60">
+                      Try adding a specific example, class detail, or sentence rhythm that sounds more like you.
                     </span>
                   ) : rewriting ? (
                     <span className="flex items-center gap-2 rounded-input bg-mist px-4 py-3 text-xs text-charcoal/60">
@@ -245,7 +245,7 @@ function SentenceHighlighter({
                             }}
                             className="btn-shine inline-flex items-center gap-1.5 rounded-soft bg-gradient-to-br from-emerald-500 to-emerald-600 px-4 py-1.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90"
                           >
-                            ✓ Accept
+                            <CheckCircle2 className="h-3 w-3" /> Accept
                           </button>
                         )}
                         <button
@@ -266,7 +266,7 @@ function SentenceHighlighter({
       </div>
 
       <p className="mt-4 text-xs text-charcoal/40">
-        Click any highlighted sentence to see why it was flagged.{isPro ? " Pro: rewrites load automatically." : ""}
+        Click any highlighted sentence to see why it was flagged.{isPro ? " Pro rewrites load automatically." : ""}
       </p>
     </section>
   );
@@ -278,13 +278,6 @@ function confidenceTone(confidence: AnalyzeResponse["confidence"]) {
   return "bg-success/10 text-success border border-success/20";
 }
 
-/** Score card gradient background based on AI score */
-function scoreGradient(score: number) {
-  if (score >= 70) return "from-red-100 to-red-50";
-  if (score >= 40) return "from-yellow-100 to-yellow-50";
-  return "from-green-100 to-green-50";
-}
-
 function scoreColor(score: number) {
   if (score >= 70) return "#EF4444";
   if (score >= 40) return "#F59E0B";
@@ -292,15 +285,15 @@ function scoreColor(score: number) {
 }
 
 function scoreLabel(score: number) {
-  if (score >= 70) return "Sounds AI-written — make it yours";
-  if (score >= 40) return "Some patterns detected — add your voice";
-  return "Sounds authentically you";
+  if (score >= 70) return "Strong rewrite pass recommended";
+  if (score >= 40) return "Add more specific voice and detail";
+  return "Reads naturally";
 }
 
 function aiLikelihoodLabel(score: number) {
-  if (score >= 70) return "High AI likelihood";
-  if (score >= 40) return "Moderate AI likelihood";
-  return "Low AI likelihood";
+  if (score >= 70) return "High voice-signal risk";
+  if (score >= 40) return "Moderate voice-signal risk";
+  return "Low voice-signal risk";
 }
 
 /** Compact dual-score header: AI Risk + optional Rubric Match side-by-side */
@@ -313,30 +306,33 @@ function DualScoreCard({ results }: { results: AnalyzeResponse }) {
     : null;
 
   return (
-    <section className={`rounded-modal bg-gradient-to-br p-4 shadow-card ${scoreGradient(ai)}`}>
-      <div className={`grid gap-4 ${rubric ? "grid-cols-2" : "grid-cols-1"}`}>
+    <section className="surface-panel overflow-hidden rounded-[1.5rem] p-0">
+      <div className="border-b border-border-base bg-white/70 px-5 py-4">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-charcoal/40">Analysis snapshot</p>
+      </div>
+      <div className={`grid gap-0 ${rubric ? "sm:grid-cols-2" : "grid-cols-1"}`}>
         {/* AI Likelihood Score */}
-        <div className="text-center">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-charcoal/50">AI Likelihood</p>
-          <div className="mt-1 flex items-end justify-center gap-0.5 leading-none">
-            <p className="font-stat text-[2.6rem] font-bold" style={{ color: aiColor }}>{ai}</p>
-            <p className="mb-1.5 text-base font-bold" style={{ color: aiColor }}>%</p>
+        <div className="p-5">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-charcoal/45">Voice signal</p>
+          <div className="mt-2 flex items-end gap-1 leading-none">
+            <p className="font-stat text-[3.1rem] font-bold" style={{ color: aiColor }}>{ai}</p>
+            <p className="mb-2 text-lg font-bold" style={{ color: aiColor }}>%</p>
           </div>
-          <p className="mt-0.5 text-xs font-medium text-charcoal/60">{aiLikelihoodLabel(ai)}</p>
-          <p className="mt-0.5 text-xs text-charcoal/45">{scoreLabel(ai)}</p>
+          <p className="mt-2 text-sm font-semibold text-navy">{aiLikelihoodLabel(ai)}</p>
+          <p className="mt-1 text-xs leading-5 text-charcoal/55">{scoreLabel(ai)}</p>
           <span className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${confidenceTone(results.confidence)}`}>
             {results.confidence} confidence
           </span>
         </div>
         {/* Rubric Match — only when a rubric was analyzed */}
         {rubric && (
-          <div className="border-l border-black/10 pl-4 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-charcoal/50">Rubric Match</p>
-            <p className="font-stat mt-1 text-[2.4rem] font-bold leading-none" style={{ color: rubricColor! }}>{rubric.overall_score}%</p>
-            <p className="mt-0.5 text-xs text-charcoal/60">
+          <div className="border-t border-border-base p-5 sm:border-l sm:border-t-0">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-charcoal/45">Rubric match</p>
+            <p className="font-stat mt-2 text-[2.8rem] font-bold leading-none" style={{ color: rubricColor! }}>{rubric.overall_score}%</p>
+            <p className="mt-2 text-sm font-semibold text-navy">
               {rubric.overall_score >= 70 ? "Strong match" : rubric.overall_score >= 40 ? "Partial match" : "Needs work"}
             </p>
-            <div className="mt-2 flex justify-center gap-3 text-[10px] font-semibold">
+            <div className="mt-2 flex gap-3 text-[10px] font-semibold">
               <span className="text-success">{rubric.strong_count} covered</span>
               <span className="text-danger">{rubric.missing_count} missing</span>
             </div>
@@ -344,7 +340,7 @@ function DualScoreCard({ results }: { results: AnalyzeResponse }) {
         )}
       </div>
       {/* One-line summary */}
-      <p className="mt-3 rounded-input border border-white/50 bg-white/50 px-3 py-2 text-xs leading-5 text-charcoal">
+      <p className="border-t border-border-base bg-mist/45 px-5 py-4 text-sm leading-6 text-charcoal/70">
         {results.summary}
       </p>
     </section>
@@ -362,50 +358,6 @@ function CoveragePill({ coverage }: { coverage: CriterionResult["coverage"] }) {
   const label = coverage === "strong" ? "Covered" : coverage === "partial" ? "Partial" : "Missing";
   return (
     <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${styles}`}>{label}</span>
-  );
-}
-
-function RubricPanel({ rubric, onRubricRewrite }: { rubric: RubricMatchResult; onRubricRewrite?: () => void }) {
-  const color =
-    rubric.overall_score >= 70 ? "text-success" : rubric.overall_score >= 40 ? "text-warning" : "text-danger";
-
-  return (
-    <section className="rounded-modal border border-border-base bg-white p-6 shadow-soft">
-      <div className="flex items-center justify-between">
-        <h4 className="font-heading text-base font-semibold text-navy">Rubric alignment</h4>
-        <span className={`font-stat text-2xl font-bold ${color}`}>{rubric.overall_score}%</span>
-      </div>
-      <p className="mt-2 text-sm leading-relaxed text-charcoal/65">{rubric.summary}</p>
-      <div className="mt-3 flex flex-wrap items-center gap-4 text-xs">
-        <span className="font-semibold text-success">{rubric.strong_count} covered</span>
-        <span className="font-semibold text-warning">{rubric.partial_count} partial</span>
-        <span className="font-semibold text-danger">{rubric.missing_count} missing</span>
-        {rubric.missing_count > 0 && onRubricRewrite && (
-          <button
-            type="button"
-            onClick={onRubricRewrite}
-            className="ml-auto rounded-soft bg-navy px-3 py-1 text-[11px] font-bold text-white transition hover:bg-navy/80"
-          >
-            <Sparkles className="inline h-3 w-3 mr-1 -mt-0.5" />Rewrite to fix missing
-          </button>
-        )}
-      </div>
-      <div className="mt-5 space-y-3">
-        {rubric.criteria.map((criterion, i) => (
-          <div key={i} className="rounded-input border border-border-base bg-mist px-4 py-3">
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-sm text-charcoal">{criterion.criterion}</p>
-              <CoveragePill coverage={criterion.coverage} />
-            </div>
-            {criterion.matched_terms.length > 0 && (
-              <p className="mt-1.5 text-xs text-charcoal/50">
-                Matched: {criterion.matched_terms.slice(0, 6).join(", ")}
-              </p>
-            )}
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }
 
@@ -437,37 +389,30 @@ function SkeletonPanel() {
   );
 }
 
-export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, onUpgrade, text, accessToken, onReplaceSentence, quota, onAuthRequired, resultsStale = false }: ResultsPanelProps) {
+export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, text, accessToken, onReplaceSentence, quota, onAuthRequired, resultsStale = false }: ResultsPanelProps) {
   if (loading) return <SkeletonPanel />;
 
   if (!results) {
     const features = [
       {
         icon: <BarChart2 className="h-5 w-5 text-accent" />,
-        label: "AI Likelihood %",
-        desc: "How AI-like your writing reads — 0 is perfect, 100 is fully AI",
+        label: "Score",
+        desc: "A quick read on how much the draft needs your voice",
       },
       {
         icon: <ScanSearch className="h-5 w-5 text-amber-500" />,
         label: "Sentence highlights",
-        desc: "Click any sentence to see exactly why it was flagged — free",
+        desc: "Click a highlighted sentence to see what felt generic",
       },
       {
-        icon: <ClipboardList className="h-5 w-5 text-navy" />,
-        label: "Rubric alignment",
-        desc: "Maps your draft against assignment criteria",
-        pro: true,
-      },
-      {
-        icon: <PenLine className="h-5 w-5 text-emerald-600" />,
+        icon: <Sparkles className="h-5 w-5 text-emerald-600" />,
         label: "Writing tips",
-        desc: "Concrete suggestions to improve your draft",
-        pro: true,
+        desc: "Simple next steps you can use while revising",
       },
     ];
 
     return (
-      <aside className="flex flex-col rounded-modal border border-dashed border-border-base bg-white p-6 shadow-soft sm:p-8">
+      <aside className="surface-panel flex flex-col rounded-[1.5rem] p-6 sm:p-8">
         {/* Icon + headline */}
         <div className="flex items-start gap-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent/10">
@@ -487,17 +432,12 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
         <div className="my-5 border-t border-border-base" />
 
         {/* Feature preview grid */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3 sm:grid-cols-3">
           {features.map((f) => (
             <div
               key={f.label}
-              className="relative flex flex-col gap-1.5 rounded-soft border border-border-base bg-mist/60 p-3.5"
+              className="relative flex flex-col gap-1.5 rounded-soft border border-border-base bg-mist/55 p-3.5"
             >
-              {f.pro && (
-                <span className="absolute right-2.5 top-2.5 rounded-full bg-accent/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-navy">
-                  Pro
-                </span>
-              )}
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white shadow-sm">
                 {f.icon}
               </span>
@@ -525,6 +465,14 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
 
   return (
     <aside className="space-y-4">
+      {resultsStale && (
+        <section className="flex items-center gap-3 rounded-input border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span className="flex-1">
+            These results are from your previous draft. Re-analyze to update the score.
+          </span>
+        </section>
+      )}
 
       {/* ── Dual score header (AI Risk + optional Rubric Match) ── */}
       <DualScoreCard results={results} />
@@ -536,14 +484,13 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
           flagged={flaggedMap}
           isPro={isPro}
           accessToken={accessToken}
-          onUpgrade={onUpgrade}
           onReplaceSentence={onReplaceSentence}
         />
       )}
 
       {/* ── Compact rubric criteria (when rubric present) ── */}
       {results.rubric_result && (
-        <section className="rounded-modal border border-border-base bg-white p-4 shadow-soft">
+        <section className="surface-panel rounded-[1.25rem] p-4">
           <div className="flex items-center justify-between gap-2">
             <h4 className="text-sm font-semibold text-navy">Rubric criteria</h4>
             {results.rubric_result.missing_count > 0 && onRubricRewrite && (
@@ -570,12 +517,12 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
 
       {/* ── Writing tips (compact chip list) ── */}
       {results.basic_tips.length > 0 && (
-        <section className="rounded-modal border border-border-base bg-white p-4 shadow-soft">
+        <section className="surface-panel rounded-[1.25rem] p-4">
           <h4 className="text-sm font-semibold text-navy">Writing tips</h4>
           <div className="mt-3 space-y-2">
             {results.basic_tips.map((tip) => (
               <p key={tip} className="flex gap-2 rounded-input bg-mist px-3 py-2 text-xs leading-5 text-charcoal">
-                <span className="shrink-0 text-accent">✦</span>{tip}
+                <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-accent-dark" />{tip}
               </p>
             ))}
           </div>
@@ -584,7 +531,7 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
 
       {/* ── Pattern flags (compact pill row) ── */}
       {results.red_flags.length > 0 && (
-        <section className="rounded-modal border border-border-base bg-white p-4 shadow-soft">
+        <section className="surface-panel rounded-[1.25rem] p-4">
           <h4 className="text-sm font-semibold text-navy">Patterns detected</h4>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {results.red_flags.map((flag) => (
@@ -596,37 +543,28 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
         </section>
       )}
 
-      {/* ── Pro CTA — free users only ── */}
-      {!isPro && (
-        <section className="rounded-modal border border-accent/20 bg-gradient-to-br from-accent/5 to-accent/10 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-charcoal/45">Wrex Pro</p>
-          <h4 className="mt-1 text-sm font-semibold text-navy">{results.pro_prompt.title}</h4>
-          <p className="mt-1.5 text-xs leading-5 text-charcoal/65">{results.pro_prompt.message}</p>
-          <button
-            type="button"
-            onClick={onUpgrade}
-            className="btn-shine mt-3 inline-block rounded-soft bg-gradient-to-br from-accent to-accent-dark px-4 py-2 text-xs font-bold text-navy transition hover:shadow-glow hover:scale-[1.02]"
-          >
-            {results.pro_prompt.cta_label}
-          </button>
+      {quota && !quota.is_authenticated && (
+        <section className="surface-panel flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] p-4">
+          <div>
+            <p className="text-sm font-semibold text-navy">
+              {quota.remaining} of {quota.limit} free analyses left today
+            </p>
+            <p className="mt-1 text-xs text-charcoal/55">
+              Create an account to save results and keep your writing history.
+            </p>
+          </div>
+          {onAuthRequired && (
+            <button
+              type="button"
+              onClick={onAuthRequired}
+              className="rounded-soft bg-navy px-4 py-2 text-xs font-bold text-white transition hover:bg-navy/80"
+            >
+              Sign up
+            </button>
+          )}
         </section>
       )}
+
     </aside>
-  );
-}
-
-type StatCardProps = {
-  label: string;
-  value: string;
-  hint?: string;
-};
-
-function StatCard({ label, value, hint }: StatCardProps) {
-  return (
-    <div className="rounded-input border border-white/60 bg-white/60 px-4 py-3">
-      <p className="text-xs font-medium text-charcoal/55">{label}</p>
-      <p className="font-stat mt-1 text-lg font-bold text-navy">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-charcoal/45">{hint}</p> : null}
-    </div>
   );
 }

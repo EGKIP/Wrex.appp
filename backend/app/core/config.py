@@ -29,6 +29,7 @@ class Settings(BaseSettings):
             "https://www.wrex.app",
         ]
     )
+    frontend_url: str = "https://wrex.app"
 
     # ── Analysis limits ────────────────────────────────────────────────────────
     min_text_words: int = 25
@@ -65,6 +66,8 @@ class Settings(BaseSettings):
     # ── OpenAI ──────────────────────────────────────────────────────────────────
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
+    pro_monthly_ai_credits: int = 100_000
+    ai_credit_metering_enabled: bool = True
 
     @property
     def openai_configured(self) -> bool:
@@ -91,6 +94,11 @@ class Settings(BaseSettings):
         if upper not in valid:
             raise ValueError(f"log_level must be one of {valid}")
         return upper
+
+    @field_validator("frontend_url")
+    @classmethod
+    def _normalize_frontend_url(cls, v: str) -> str:
+        return v.rstrip("/")
 
     @property
     def is_production(self) -> bool:

@@ -19,7 +19,7 @@ const FAQS = [
   },
   {
     q: "What's the difference between free and Pro?",
-    a: "Free gives you the authenticity score, sentence-level flags, grammar fixes, and writing tips — up to 500 words per analysis. Pro unlocks sentence-by-sentence rewrites, Humanize with 5 voice templates, deeper rubric gap detection, 2,000 words per analysis, and unlimited daily analyses — for $9/month.",
+    a: "Free gives you the authenticity score, sentence-level flags, grammar fixes, and writing tips — up to 500 words per analysis. Paid unlocks sentence rewrites, Humanize with voice templates, rubric support, 2,000 words per analysis, saved history, and monthly AI credits for $9/month.",
   },
   {
     q: "Does Wrex store my writing?",
@@ -92,4 +92,3 @@ export function FaqSection() {
     </section>
   );
 }
-

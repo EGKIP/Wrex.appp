@@ -10,12 +10,14 @@ Private repo. Live site → **https://wrex.app**
 
 | Layer | Tech |
 |---|---|
-| Frontend | React 18 + TypeScript + Vite + Tailwind CSS |
-| Backend | FastAPI + Pydantic v2 (Vercel serverless) |
+| Frontend | React 18 + TypeScript + Vite + Tailwind CSS on Vercel |
+| Backend | FastAPI + Pydantic v2 on Render |
 | Auth & DB | Supabase (Postgres + JWT) |
 | Payments | Stripe Checkout + Billing Portal + webhook |
 | AI (Pro) | OpenAI GPT-4o mini |
 | Grammar (Free) | LanguageTool public API |
+
+Production is split between a static Vercel frontend and the Render-hosted FastAPI API. `vercel.json` rewrites frontend routes to `index.html`; API calls should go to the Render backend through `VITE_API_BASE_URL`.
 
 ---
 
@@ -46,11 +48,12 @@ uvicorn app.main:app --reload
 `backend/.env`:
 ```
 WREX_SUPABASE_URL=
-WREX_SUPABASE_SERVICE_KEY=
+WREX_SUPABASE_SERVICE_ROLE_KEY=
 WREX_STRIPE_SECRET_KEY=
 WREX_STRIPE_PRICE_ID=
 WREX_STRIPE_WEBHOOK_SECRET=
 WREX_OPENAI_API_KEY=
+WREX_FRONTEND_URL=http://localhost:5173
 ```
 
 **Stripe webhook (local)**
@@ -74,6 +77,31 @@ stripe listen --forward-to localhost:8000/pro/webhook
 | POST | `/pro/checkout` | JWT | Stripe checkout session |
 | POST | `/pro/billing-portal` | JWT | Stripe Customer Portal session |
 | POST | `/pro/webhook` | Stripe-sig | Subscription lifecycle events |
+
+---
+
+## Production environment
+
+**Vercel frontend**
+```
+VITE_API_BASE_URL=https://wrex-appp.onrender.com
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+VITE_STRIPE_PUBLISHABLE_KEY=
+```
+
+**Render backend**
+```
+WREX_ENVIRONMENT=production
+WREX_ALLOWED_ORIGINS=["https://wrex.app","https://www.wrex.app"]
+WREX_FRONTEND_URL=https://wrex.app
+WREX_SUPABASE_URL=
+WREX_SUPABASE_SERVICE_ROLE_KEY=
+WREX_STRIPE_SECRET_KEY=
+WREX_STRIPE_PRICE_ID=
+WREX_STRIPE_WEBHOOK_SECRET=
+WREX_OPENAI_API_KEY=
+```
 
 ---
 

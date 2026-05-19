@@ -13,10 +13,15 @@ class DocumentStats(BaseModel):
     sentence_count: int
     avg_sentence_length: float
     sentence_length_variance: float
+    sentence_burstiness: float = 0.0
     vocabulary_diversity: float
     repetition_index: float
+    repeated_phrase_ratio: float = 0.0
     punctuation_diversity: float
     transition_phrase_count: int
+    formulaic_phrase_count: int = 0
+    passive_sentence_count: int = 0
+    generic_word_ratio: float = 0.0
 
 
 class FlaggedSentence(BaseModel):

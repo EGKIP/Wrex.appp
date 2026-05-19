@@ -60,6 +60,11 @@ def build_tips(score: int, features: DocumentFeatures | None = None) -> list[str
             f"Your sentence lengths are very uniform (variance {features.sentence_length_variance:.0f}). "
             "Deliberately mix short punchy sentences with longer ones to sound more natural."
         )
+    elif features.sentence_burstiness < 0.25 and features.sentence_count >= 4:
+        tips.append(
+            "Your sentences have a very even rhythm. Try adding one shorter sentence and one more detailed "
+            "sentence where the idea naturally needs emphasis."
+        )
 
     # Many generic transitions
     if features.transition_phrase_count >= 3:
@@ -74,6 +79,30 @@ def build_tips(score: int, features: DocumentFeatures | None = None) -> list[str
         tips.append(
             f"About {round(features.repetition_index * 100)}% of your words are repeated. "
             "Try varying your vocabulary — use synonyms or restructure repeated ideas."
+        )
+
+    if features.repeated_phrase_ratio >= 0.10:
+        tips.append(
+            "A few short phrases repeat across the draft. Reword the repeated frames so each sentence "
+            "does a more specific job."
+        )
+
+    if features.formulaic_phrase_count >= 2:
+        tips.append(
+            "Replace formulaic phrases like broad importance claims with concrete details, examples, "
+            "or wording you would actually use in conversation."
+        )
+
+    if features.generic_word_ratio >= 0.16:
+        tips.append(
+            "Swap generic words such as 'important', 'various', or 'significant' for precise nouns, "
+            "specific stakes, or named examples."
+        )
+
+    if features.passive_sentence_count >= 2:
+        tips.append(
+            "Several sentences use passive-style constructions. Name the actor when you can so the prose "
+            "feels more direct."
         )
 
     # Low vocabulary diversity
@@ -123,10 +152,15 @@ def analyze_document(text: str, rubric: Optional[str] = None) -> AnalyzeResponse
         sentence_count=features.sentence_count,
         avg_sentence_length=features.avg_sentence_length,
         sentence_length_variance=features.sentence_length_variance,
+        sentence_burstiness=features.sentence_burstiness,
         vocabulary_diversity=features.vocabulary_diversity,
         repetition_index=features.repetition_index,
+        repeated_phrase_ratio=features.repeated_phrase_ratio,
         punctuation_diversity=features.punctuation_diversity,
         transition_phrase_count=features.transition_phrase_count,
+        formulaic_phrase_count=features.formulaic_phrase_count,
+        passive_sentence_count=features.passive_sentence_count,
+        generic_word_ratio=features.generic_word_ratio,
     )
 
     rubric_result = None
