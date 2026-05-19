@@ -43,7 +43,7 @@ export function Footer() {
 
         <div className="mt-10 border-t border-border-base pt-6 flex flex-col gap-1.5 text-[11px] text-charcoal/40 md:flex-row md:justify-between">
           <p>© {year} Wrex.app — for revision and self-review only.</p>
-          <p>Not affiliated with any school, university, or AI detection service.</p>
+          <p>Deployment check active — not affiliated with any school, university, or AI detection service.</p>
         </div>
       </div>
     </footer>
