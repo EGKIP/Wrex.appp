@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { HelpCircle, LayoutDashboard, Sparkles } from "lucide-react";
 import type { AuthState } from "../hooks/useAuth";
+import type { ProCreditStatus } from "../hooks/useProStatus";
 import type { QuotaInfo } from "../types";
 import { Brand } from "./Brand";
 import { ProfileModal } from "./ProfileModal";
@@ -16,6 +17,7 @@ interface NavbarProps {
   auth: AuthState;
   quota: QuotaInfo | null;
   isPro?: boolean;
+  proCredits?: ProCreditStatus | null;
   mode?: "landing" | "workspace";
   onOpenAuth: (tab?: "signin" | "signup") => void;
   onUpgrade?: () => void;
@@ -57,7 +59,7 @@ function Avatar({ email, isPro }: { email: string; isPro: boolean }) {
   );
 }
 
-export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAuth, onUpgrade, onGoHome, onGoWorkspace, accessToken = null }: NavbarProps) {
+export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "landing", onOpenAuth, onUpgrade, onGoHome, onGoWorkspace, accessToken = null }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
@@ -296,6 +298,7 @@ export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAut
       onClose={() => setProfileOpen(false)}
       auth={auth}
       isPro={isPro}
+      proCredits={proCredits}
       quota={quota}
       onUpgrade={onUpgrade ?? (() => {})}
       accessToken={accessToken}

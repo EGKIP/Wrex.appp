@@ -246,7 +246,28 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   // ── Apply a grammar/spelling fix inline ───────────────────────────────────
   function applyGrammarFix(match: GrammarMatch, replacement: string) {
     setText((prev) => prev.slice(0, match.offset) + replacement + prev.slice(match.offset + match.length));
-    setGrammarMatches((prev) => prev.filter((m) => m !== match));
+    setGrammarMatches((prev) => {
+      const replacedStart = match.offset;
+      const replacedEnd = match.offset + match.length;
+      const delta = replacement.length - match.length;
+
+      return prev.flatMap((current) => {
+        const currentStart = current.offset;
+        const currentEnd = current.offset + current.length;
+        const isAppliedMatch =
+          current === match ||
+          (current.offset === match.offset &&
+            current.length === match.length &&
+            current.rule_id === match.rule_id);
+
+        if (isAppliedMatch) return [];
+        if (currentStart >= replacedEnd) return [{ ...current, offset: current.offset + delta }];
+        if (currentEnd > replacedStart && currentStart < replacedEnd) return [];
+        return [current];
+      });
+    });
+    setResultsStale(true);
+    toast("Fix applied — re-analyze to update your score ✓", "success");
   }
 
   // ── Tone state (Pro) ───────────────────────────────────────────────────────

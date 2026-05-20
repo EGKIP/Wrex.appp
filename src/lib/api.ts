@@ -3,6 +3,7 @@ import type {
   GrammarCheckResponse,
   HumanizeResponse,
   ImproveResponse,
+  ProStatusResponse,
   RubricRewriteResponse,
   SubmissionList,
   WaitlistResponse,
@@ -91,15 +92,15 @@ export async function deleteHistoryItem(
   await handleResponse<{ message: string }>(response);
 }
 
-export async function getProStatus(accessToken: string): Promise<{ is_pro: boolean }> {
+export async function getProStatus(accessToken: string): Promise<ProStatusResponse> {
   const response = await fetch(`${API_BASE_URL}/pro/status`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  return handleResponse<{ is_pro: boolean }>(response);
+  return handleResponse<ProStatusResponse>(response);
 }
 
 /** Call after checkout completes — syncs is_pro directly from Stripe in case webhook was delayed. */
-export async function syncSubscription(accessToken: string): Promise<{ is_pro: boolean }> {
+export async function syncSubscription(accessToken: string): Promise<ProStatusResponse> {
   const response = await fetch(`${API_BASE_URL}/pro/sync-subscription`, {
     method: "POST",
     headers: {
@@ -107,7 +108,7 @@ export async function syncSubscription(accessToken: string): Promise<{ is_pro: b
       "Content-Type": "application/json",
     },
   });
-  return handleResponse<{ is_pro: boolean }>(response);
+  return handleResponse<ProStatusResponse>(response);
 }
 
 export async function createCheckoutSession(accessToken: string): Promise<{ client_secret: string }> {

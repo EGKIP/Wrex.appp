@@ -91,4 +91,4 @@ Supabase metering is expected to provide:
 - `wrex_debit_ai_credits(...)` RPC for idempotent debit logging.
 - RLS policies allowing users to read their own credit periods/events, while backend writes use the service-role key.
 
-Apply [backend/docs/supabase_ai_credits.sql](/Users/emmanuelkiprotich/Wrex.appp/backend/docs/supabase_ai_credits.sql) in Supabase before enforcing production metering. If the RPCs are missing or Supabase is temporarily unavailable, the backend logs a warning and fails open for active Pro users; only a successful balance check with zero remaining credits returns HTTP 402.
+Apply [backend/docs/supabase_ai_credits.sql](backend/docs/supabase_ai_credits.sql) in Supabase before enforcing production metering. If the RPCs are missing or Supabase is temporarily unavailable, the backend logs a warning and fails open for active Pro users; only a successful balance check with zero remaining credits returns HTTP 402.

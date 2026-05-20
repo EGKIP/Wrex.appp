@@ -174,7 +174,7 @@ def debit_ai_credits(
     credits = _coerce_int(usage.get("total_tokens"), 0)
     if credits <= 0:
         logger.warning("ai_credit_debit_skipped_zero_tokens", extra={"user_id": user_id, "endpoint": endpoint})
-        return ensure_ai_credits_available(user_id, endpoint)
+        return _default_balance(metering_available=False)
 
     if not settings.supabase_configured or not settings.ai_credit_metering_enabled:
         return _default_balance(metering_available=False)

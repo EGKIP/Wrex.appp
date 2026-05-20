@@ -38,6 +38,13 @@ export type RubricRewriteResponse = {
   criteria_addressed: string[];
 };
 
+export type ProStatusResponse = {
+  is_pro: boolean;
+  ai_credits_remaining?: number | null;
+  ai_credits_monthly?: number | null;
+  ai_credits_period_end?: string | null;
+};
+
 export type SubmissionRecord = {
   id: string;
   user_id: string;
