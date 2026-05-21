@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { HelpCircle, LayoutDashboard, Sparkles } from "lucide-react";
+import { HelpCircle, History, LayoutDashboard, Sparkles } from "lucide-react";
 import type { AuthState } from "../hooks/useAuth";
 import type { ProCreditStatus } from "../hooks/useProStatus";
 import type { QuotaInfo } from "../types";
@@ -25,6 +25,9 @@ interface NavbarProps {
   onGoHome?: () => void;
   /** Called when "Go to workspace" is clicked in landing mode by a logged-in user */
   onGoWorkspace?: () => void;
+  /** Mobile workspace action: opens the history drawer managed by App */
+  onOpenHistory?: () => void;
+  historyCount?: number;
   accessToken?: string | null;
 }
 
@@ -59,7 +62,7 @@ function Avatar({ email, isPro }: { email: string; isPro: boolean }) {
   );
 }
 
-export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "landing", onOpenAuth, onUpgrade, onGoHome, onGoWorkspace, accessToken = null }: NavbarProps) {
+export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "landing", onOpenAuth, onUpgrade, onGoHome, onGoWorkspace, onOpenHistory, historyCount = 0, accessToken = null }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
@@ -261,6 +264,20 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
                     </button>
                   )}
                   {/* Workspace mode mobile: support link */}
+                  {isWorkspace && (
+                    <button
+                      type="button"
+                      onClick={() => { onOpenHistory?.(); setMenuOpen(false); }}
+                      className="flex items-center justify-between rounded-input border border-border-base px-3 py-2 text-sm font-semibold text-navy transition hover:bg-mist"
+                    >
+                      <span className="flex items-center gap-2">
+                        <History className="h-4 w-4" />History
+                      </span>
+                      <span className="rounded-full bg-accent/20 px-2 py-0.5 text-xs font-bold text-navy">
+                        {historyCount}
+                      </span>
+                    </button>
+                  )}
                   {isWorkspace && (
                     <a
                       href="mailto:support@wrex.app"

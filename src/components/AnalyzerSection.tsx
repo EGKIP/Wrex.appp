@@ -162,6 +162,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
 
   const wordCount = countWords(text);
   const readingTime = wordCount > 0 ? Math.max(1, Math.round(wordCount / 200)) : 0;
+  const showWorkspaceStarter = workspace && !text.trim() && !results && !loading;
 
   // ── Word limits ────────────────────────────────────────────────────────────
   const FREE_LIMIT = 500;
@@ -189,6 +190,9 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     if (loadRequest.rubric) {
       setRubric(loadRequest.rubric);
       setShowRubric(true);
+    } else {
+      setRubric("");
+      setShowRubric(false);
     }
     setResults(null);
     setResultsStale(false);
@@ -420,6 +424,9 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     if (rubricPreview) {
       setRubric(rubricPreview);
       setShowRubric(true);
+    } else {
+      setRubric("");
+      setShowRubric(false);
     }
     setResults(null);
     window.scrollTo({ top: document.getElementById("analyzer")?.offsetTop ?? 0, behavior: "smooth" });
@@ -510,6 +517,40 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               Start with the sample or bring your own paper. The result stays simple:
               a score, highlighted sentences, and fixes you can act on.
             </p>
+          </div>
+        )}
+
+        {showWorkspaceStarter && (
+          <div className="mb-5 rounded-modal border border-navy/8 bg-white p-4 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.7)] sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-navy">Ready for a new check</p>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-charcoal/55">
+                  Paste a draft below, open History from the menu, or try the sample to see how feedback appears.
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditorFocusKey((k) => k + 1)}
+                  className="rounded-soft border border-navy/12 bg-white px-3 py-2 text-xs font-semibold text-navy transition hover:bg-mist"
+                >
+                  Paste draft
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setText(SAMPLE_TEXT);
+                    setResults(null);
+                    setResultsStale(false);
+                    setEditorFocusKey((k) => k + 1);
+                  }}
+                  className="btn-shine rounded-soft bg-accent px-3 py-2 text-xs font-bold text-navy transition hover:bg-accent-dark"
+                >
+                  Try sample
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

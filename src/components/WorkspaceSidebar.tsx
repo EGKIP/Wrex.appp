@@ -1,4 +1,6 @@
-import { HelpCircle, History, Home, Settings, X, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import type { MouseEvent } from "react";
+import { HelpCircle, History, Home, Search, Settings, Trash2, X } from "lucide-react";
 import { deleteHistoryItem } from "../lib/api";
 import { useToast } from "../context/toast";
 import type { SubmissionRecord } from "../types";
@@ -30,6 +32,14 @@ function formatDate(iso: string): string {
   });
 }
 
+function getSubmissionText(submission: SubmissionRecord): string {
+  return submission.full_text?.trim() || submission.text_preview;
+}
+
+function getSubmissionRubric(submission: SubmissionRecord): string | null {
+  return submission.rubric ?? submission.rubric_preview;
+}
+
 export function WorkspaceSidebar({
   historyOpen,
   onHistoryToggle,
@@ -42,8 +52,30 @@ export function WorkspaceSidebar({
   onRefreshHistory,
 }: WorkspaceSidebarProps) {
   const { toast } = useToast();
+  const [query, setQuery] = useState("");
 
-  async function handleDelete(id: string, e: React.MouseEvent) {
+  const filteredSubmissions = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) return submissions;
+
+    return submissions.filter((submission) => {
+      const searchable = [
+        submission.text_preview,
+        submission.full_text,
+        submission.rubric_preview,
+        submission.rubric,
+        submission.confidence,
+        formatDate(submission.created_at),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchable.includes(normalizedQuery);
+    });
+  }, [query, submissions]);
+
+  async function handleDelete(id: string, e: MouseEvent) {
     e.stopPropagation();
     try {
       await deleteHistoryItem(id, accessToken);
@@ -109,7 +141,7 @@ export function WorkspaceSidebar({
 
       {/* Slide-in history panel — always mounted, animated in/out */}
       <div
-        className={`fixed inset-y-0 left-14 z-30 hidden sm:flex w-72 lg:w-80 flex-col border-r border-charcoal/10 bg-white shadow-2xl
+        className={`fixed inset-y-0 left-0 z-30 flex w-[min(22rem,calc(100vw-2rem))] flex-col border-r border-charcoal/10 bg-white shadow-2xl sm:left-14 sm:w-72 lg:w-80
           transition-transform duration-200 ease-out will-change-transform
           ${historyOpen ? "translate-x-0" : "-translate-x-full"}`}
         style={{ top: "56px" }}
@@ -135,6 +167,19 @@ export function WorkspaceSidebar({
         </div>
 
         {/* Body */}
+        <div className="border-b border-charcoal/8 px-3 py-3">
+          <label className="flex items-center gap-2 rounded-lg border border-charcoal/10 bg-mist/60 px-2.5 py-2 text-charcoal/45 focus-within:border-accent/60 focus-within:bg-white">
+            <Search className="h-3.5 w-3.5 shrink-0" />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search history"
+              className="min-w-0 flex-1 bg-transparent text-sm text-charcoal outline-none placeholder:text-charcoal/35"
+            />
+          </label>
+        </div>
+
         <div className="flex-1 overflow-y-auto">
           {historyLoading && (
             <div className="flex items-center justify-center py-12">
@@ -151,12 +196,18 @@ export function WorkspaceSidebar({
               <p className="text-xs text-charcoal/30">Run an analysis to start your history.</p>
             </div>
           )}
-          {!historyLoading && submissions.length > 0 && (
+          {!historyLoading && submissions.length > 0 && filteredSubmissions.length === 0 && (
+            <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
+              <Search className="h-8 w-8 text-charcoal/20" />
+              <p className="text-sm text-charcoal/40">No matching submissions.</p>
+            </div>
+          )}
+          {!historyLoading && filteredSubmissions.length > 0 && (
             <ul className="divide-y divide-charcoal/6">
-              {submissions.map((s) => (
+              {filteredSubmissions.map((s) => (
                 <li
                   key={s.id}
-                  onClick={() => { onSelectHistory(s.text_preview, s.rubric_preview); onHistoryToggle(); }}
+                  onClick={() => { onSelectHistory(getSubmissionText(s), getSubmissionRubric(s)); onHistoryToggle(); }}
                   className="group flex cursor-pointer items-start gap-3 px-4 py-3.5 transition-colors hover:bg-mist"
                 >
                   {/* Score chip */}
@@ -185,13 +236,12 @@ export function WorkspaceSidebar({
 
       {/* Backdrop — fades in/out, click to close */}
       <div
-        className={`fixed inset-0 z-20 hidden sm:block transition-opacity duration-200
+        className={`fixed inset-y-0 left-0 right-0 z-20 transition-opacity duration-200 sm:left-14
           ${historyOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
-        style={{ top: "56px", left: "56px", background: "rgba(0,0,0,0.08)" }}
+        style={{ top: "56px", background: "rgba(0,0,0,0.12)" }}
         onClick={onHistoryToggle}
         aria-hidden="true"
       />
     </>
   );
 }
-

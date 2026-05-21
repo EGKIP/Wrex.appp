@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import { deleteHistoryItem } from "../lib/api";
 import { useToast } from "../context/toast";
 import type { SubmissionRecord } from "../types";
@@ -72,6 +73,14 @@ function formatDate(iso: string): string {
   });
 }
 
+function getSubmissionText(submission: SubmissionRecord): string {
+  return submission.full_text?.trim() || submission.text_preview;
+}
+
+function getSubmissionRubric(submission: SubmissionRecord): string | null {
+  return submission.rubric ?? submission.rubric_preview;
+}
+
 export function HistoryPanel({
   submissions,
   accessToken,
@@ -82,6 +91,28 @@ export function HistoryPanel({
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+
+  const filteredSubmissions = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) return submissions;
+
+    return submissions.filter((submission) => {
+      const searchable = [
+        submission.text_preview,
+        submission.full_text,
+        submission.rubric_preview,
+        submission.rubric,
+        submission.confidence,
+        formatDate(submission.created_at),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchable.includes(normalizedQuery);
+    });
+  }, [query, submissions]);
 
   async function handleDelete(id: string, e: React.MouseEvent) {
     e.stopPropagation();
@@ -142,6 +173,19 @@ export function HistoryPanel({
             />
           </div>
 
+          <div className="border-t border-charcoal/10 px-5 py-3">
+            <label className="flex items-center gap-2 rounded-lg border border-charcoal/10 bg-mist/70 px-2.5 py-2 text-charcoal/45 focus-within:border-accent/60 focus-within:bg-white">
+              <Search className="h-3.5 w-3.5 shrink-0" />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search history"
+                className="min-w-0 flex-1 bg-transparent text-sm text-charcoal outline-none placeholder:text-charcoal/35"
+              />
+            </label>
+          </div>
+
           {/* Sparkline — score trend */}
           {submissions.length >= 2 && (
             <div className="px-5 pb-3">
@@ -154,11 +198,16 @@ export function HistoryPanel({
             </div>
           )}
 
+          {filteredSubmissions.length === 0 ? (
+            <p className="border-t border-charcoal/10 px-5 py-6 text-center text-sm text-charcoal/45">
+              No matching submissions.
+            </p>
+          ) : (
           <ul className="divide-y divide-charcoal/8 border-t border-charcoal/10">
-          {submissions.map((s) => (
+          {filteredSubmissions.map((s) => (
             <li
               key={s.id}
-              onClick={() => onSelect(s.text_preview, s.rubric_preview)}
+              onClick={() => onSelect(getSubmissionText(s), getSubmissionRubric(s))}
               className="group flex cursor-pointer items-start gap-4 px-5 py-3.5 transition hover:bg-mist"
             >
               {/* Score badge */}
@@ -200,9 +249,9 @@ export function HistoryPanel({
             </li>
           ))}
         </ul>
+          )}
         </>
       )}
     </div>
   );
 }
-

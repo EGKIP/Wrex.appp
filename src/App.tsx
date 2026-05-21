@@ -307,6 +307,8 @@ function App() {
         onUpgrade={handleUpgrade}
         onGoHome={() => setViewMode("landing")}
         onGoWorkspace={() => setViewMode("workspace")}
+        onOpenHistory={() => setHistoryOpen(true)}
+        historyCount={history.length}
         accessToken={auth.session?.access_token ?? null}
       />
 

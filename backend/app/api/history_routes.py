@@ -10,6 +10,15 @@ router = APIRouter(prefix="/history", tags=["history"])
 logger = get_logger(__name__)
 
 
+def _looks_like_missing_full_content_columns(error: Exception) -> bool:
+    message = str(error).lower()
+    return (
+        "column" in message
+        and ("full_text" in message or "rubric" in message)
+        and ("not found" in message or "could not find" in message or "does not exist" in message)
+    )
+
+
 @router.get("", response_model=SubmissionList)
 def get_history(user: AuthUser = Depends(get_required_user)) -> SubmissionList:
     """Return the last 20 submissions for the authenticated user."""
@@ -17,16 +26,32 @@ def get_history(user: AuthUser = Depends(get_required_user)) -> SubmissionList:
         from app.core.supabase import get_supabase
 
         client = get_supabase()
-        response = (
-            client.table("submissions")
-            .select(
-                "id, user_id, text_preview, rubric_preview, score, confidence, rubric_score, word_count, created_at"
+        try:
+            response = (
+                client.table("submissions")
+                .select(
+                    "id, user_id, text_preview, rubric_preview, full_text, rubric, score, confidence, rubric_score, word_count, created_at"
+                )
+                .eq("user_id", user.id)
+                .order("created_at", desc=True)
+                .limit(20)
+                .execute()
             )
-            .eq("user_id", user.id)
-            .order("created_at", desc=True)
-            .limit(20)
-            .execute()
-        )
+        except Exception as exc:
+            if not _looks_like_missing_full_content_columns(exc):
+                raise
+            logger.warning("history_full_content_columns_missing", extra={"user_id": user.id})
+            response = (
+                client.table("submissions")
+                .select(
+                    "id, user_id, text_preview, rubric_preview, score, confidence, rubric_score, word_count, created_at"
+                )
+                .eq("user_id", user.id)
+                .order("created_at", desc=True)
+                .limit(20)
+                .execute()
+            )
+
         rows = response.data or []
         records = [SubmissionRecord(**row) for row in rows]
         return SubmissionList(submissions=records, total=len(records))
@@ -77,4 +102,3 @@ def delete_submission(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not delete submission.",
         ) from exc
-

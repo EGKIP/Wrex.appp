@@ -50,6 +50,8 @@ export type SubmissionRecord = {
   user_id: string;
   text_preview: string;
   rubric_preview: string | null;
+  full_text?: string | null;
+  rubric?: string | null;
   score: number;
   confidence: "Low" | "Medium" | "High";
   rubric_score: number | null;
