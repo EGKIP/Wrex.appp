@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Crown, FileText, RefreshCw, Sparkles, Users } from "lucide-react";
 import {
+  ApiError,
   analyzeText,
   checkGrammar,
   getHistory,
@@ -18,6 +19,7 @@ import type {
   RubricRewriteResponse,
   SubmissionRecord,
 } from "../types";
+import type { ProCreditStatus } from "../hooks/useProStatus";
 import { HistoryPanel } from "./HistoryPanel";
 import { ResultsPanel } from "./ResultsPanel";
 import { GrammarEditor } from "./GrammarEditor";
@@ -119,9 +121,38 @@ const TONE_OPTIONS: { value: string; label: string; desc: string }[] = [
   { value: "persuasive", label: "Persuasive", desc: "Argument-forward, rhetorical" },
 ];
 
+function formatCreditResetDate(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(date);
+}
+
+function firstGrammarReplacement(match: GrammarMatch): string | null {
+  const replacement = match.replacements.find((item) => item.trim().length > 0);
+  return replacement?.trim() ?? null;
+}
+
+function proErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.status === 402) {
+      return "You've used your monthly Pro AI credits. Your credits reset next period, and we can add top-up credits next.";
+    }
+    if (error.status === 403) {
+      return "This tool is included with Wrex Pro.";
+    }
+    if (error.status === 503) {
+      return "AI writing tools are not configured yet. Check the OpenAI key before testing Pro rewrites.";
+    }
+    return error.message;
+  }
+  return "Something went wrong.";
+}
+
 interface AnalyzerSectionProps {
   accessToken?: string | null;
   isPro?: boolean;
+  quota?: QuotaInfo | null;
   onQuotaUpdate?: (quota: QuotaInfo) => void;
   onAuthRequired?: () => void;
   /** Called when the user clicks any "Upgrade" button — parent opens the checkout modal */
@@ -133,6 +164,10 @@ interface AnalyzerSectionProps {
   externalHistoryLoading?: boolean;
   /** Called after a successful analysis so the parent can refresh history */
   onAnalyzed?: () => void;
+  /** Current Pro AI credit state shown in the workspace usage strip */
+  proCredits?: ProCreditStatus | null;
+  /** Called after paid AI usage so the parent can refresh Pro credit state */
+  onProUsage?: () => void;
   /** When set, loads this text+rubric into the editor (from sidebar history click) */
   loadRequest?: { text: string; rubric: string | null; autoAnalyze?: boolean } | null;
   onLoadRequestConsumed?: () => void;
@@ -143,7 +178,7 @@ interface AnalyzerSectionProps {
   onSwitchToWorkspace?: (text: string, rubric: string | null) => void;
 }
 
-export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onAuthRequired, onUpgrade, workspace = false, externalHistory, externalHistoryLoading, onAnalyzed, loadRequest, onLoadRequestConsumed, onSwitchToWorkspace }: AnalyzerSectionProps) {
+export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQuotaUpdate, onAuthRequired, onUpgrade, workspace = false, externalHistory, externalHistoryLoading, onAnalyzed, proCredits, onProUsage, loadRequest, onLoadRequestConsumed, onSwitchToWorkspace }: AnalyzerSectionProps) {
   const { toast } = useToast();
   const [text, setText] = useState(() => workspace ? "" : SAMPLE_TEXT);
   const [rubric, setRubric] = useState("");
@@ -176,6 +211,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const [grammarMatches, setGrammarMatches] = useState<GrammarMatch[]>([]);
   const [grammarLoading, setGrammarLoading] = useState(false);
   const grammarTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const quickFixCount = grammarMatches.filter((match) => firstGrammarReplacement(match)).length;
 
   // Keep a fresh ref to onAnalyze so Cmd+Enter always calls the latest closure
   const onAnalyzeRef = useRef<() => Promise<void>>(async () => {});
@@ -274,6 +310,27 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     toast("Fix applied — re-analyze to update your score ✓", "success");
   }
 
+  function applyAllGrammarFixes() {
+    const matchesWithFixes = grammarMatches.filter((match) => firstGrammarReplacement(match));
+    if (matchesWithFixes.length === 0) return;
+
+    const appliedKeys = new Set(matchesWithFixes.map((match) => `${match.offset}:${match.length}:${match.rule_id}`));
+    const nextText = [...matchesWithFixes]
+      .sort((a, b) => b.offset - a.offset)
+      .reduce((draft, match) => {
+        const replacement = firstGrammarReplacement(match);
+        if (!replacement) return draft;
+        return draft.slice(0, match.offset) + replacement + draft.slice(match.offset + match.length);
+      }, text);
+
+    setText(nextText);
+    setGrammarMatches((prev) =>
+      prev.filter((match) => !appliedKeys.has(`${match.offset}:${match.length}:${match.rule_id}`)),
+    );
+    setResultsStale(true);
+    toast(`${matchesWithFixes.length} quick fix${matchesWithFixes.length === 1 ? "" : "es"} applied ✓`, "success");
+  }
+
   // ── Tone state (Pro) ───────────────────────────────────────────────────────
   const [tone, setTone] = useState<string>("natural");
 
@@ -302,10 +359,12 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     try {
       const res = await proImprove(text, rubric || undefined, accessToken);
       setImproveResult(res.suggestions);
+      onProUsage?.();
     } catch (e) {
-      setProError(e instanceof Error ? e.message : "Something went wrong.");
+      if (e instanceof ApiError && e.status === 402) onProUsage?.();
+      setProError(proErrorMessage(e));
     } finally { setProLoading(false); }
-  }, [accessToken, text, rubric]);
+  }, [accessToken, onProUsage, text, rubric]);
 
   const runProHumanize = useCallback(async () => {
     if (!accessToken) return;
@@ -313,10 +372,12 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     try {
       const res = await proHumanize(text, accessToken, tone);
       setHumanizeResult(res);
+      onProUsage?.();
     } catch (e) {
-      setProError(e instanceof Error ? e.message : "Something went wrong.");
+      if (e instanceof ApiError && e.status === 402) onProUsage?.();
+      setProError(proErrorMessage(e));
     } finally { setProLoading(false); }
-  }, [accessToken, text, tone]);
+  }, [accessToken, onProUsage, text, tone]);
 
   const runProRubricRewrite = useCallback(async () => {
     if (!accessToken) return;
@@ -324,10 +385,12 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     try {
       const res = await proRubricRewrite(text, rubric, accessToken);
       setRubricRewriteResult(res);
+      onProUsage?.();
     } catch (e) {
-      setProError(e instanceof Error ? e.message : "Something went wrong.");
+      if (e instanceof ApiError && e.status === 402) onProUsage?.();
+      setProError(proErrorMessage(e));
     } finally { setProLoading(false); }
-  }, [accessToken, text, rubric]);
+  }, [accessToken, onProUsage, text, rubric]);
 
   /** Called from ResultsPanel rubric nudge button — scroll to Pro panel + switch tab */
   const handleRubricRewriteNudge = useCallback(() => {
@@ -554,6 +617,65 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
           </div>
         )}
 
+        {workspace && (
+          <div className="mb-5 rounded-modal border border-navy/8 bg-white px-4 py-3 shadow-[0_18px_55px_-48px_rgba(15,23,42,0.7)]">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-charcoal/35">Workspace</p>
+                <p className="mt-0.5 text-sm font-semibold text-navy">
+                  {isPro ? "Pro writing tools active" : "Free writing check"}
+                </p>
+              </div>
+              {isPro ? (
+                <div className="min-w-0 sm:min-w-[260px]">
+                  <div className="mb-1 flex items-center justify-between gap-3 text-xs">
+                    <span className="text-charcoal/50">Monthly AI credits</span>
+                    <span className="font-semibold text-navy">
+                      {proCredits?.ai_credits_remaining != null && proCredits?.ai_credits_monthly != null
+                        ? `${proCredits.ai_credits_remaining.toLocaleString()} / ${proCredits.ai_credits_monthly.toLocaleString()} left`
+                        : "Checking..."}
+                    </span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-mist">
+                    <div
+                      className="h-full rounded-full bg-emerald-500 transition-all"
+                      style={{
+                        width:
+                          proCredits?.ai_credits_remaining != null &&
+                          proCredits?.ai_credits_monthly != null &&
+                          proCredits.ai_credits_monthly > 0
+                            ? `${Math.min(100, Math.round((proCredits.ai_credits_remaining / proCredits.ai_credits_monthly) * 100))}%`
+                            : "0%",
+                      }}
+                    />
+                  </div>
+                  {formatCreditResetDate(proCredits?.ai_credits_period_end) && (
+                    <p className="mt-1 text-[11px] text-charcoal/40">
+                      Resets {formatCreditResetDate(proCredits?.ai_credits_period_end)}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2 text-xs text-charcoal/50">
+                  <span className="rounded-full bg-mist px-2.5 py-1 font-medium">500 words per check</span>
+                  {quota?.is_authenticated && (
+                    <span className="rounded-full bg-mist px-2.5 py-1 font-medium">
+                      {quota.remaining} / {quota.limit} analyses left today
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleUpgrade}
+                    className="rounded-full bg-accent px-3 py-1 font-bold text-navy transition hover:bg-accent-dark"
+                  >
+                    Upgrade for rewrites
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Single-column layout — keeps the flow clean, no sideways scrolling */}
         <div className="flex flex-col gap-5">
 
@@ -584,6 +706,15 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                   <span className="hidden sm:inline text-[11px] text-charcoal/45 italic">
                     Click underlined text to fix
                   </span>
+                )}
+                {quickFixCount > 1 && (
+                  <button
+                    type="button"
+                    onClick={applyAllGrammarFixes}
+                    className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100"
+                  >
+                    Apply {quickFixCount} fixes
+                  </button>
                 )}
                 <button
                   type="button"
@@ -779,6 +910,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
               quota={results?.quota ?? null}
               onAuthRequired={onAuthRequired}
               resultsStale={resultsStale}
+              onProUsage={onProUsage}
             />
           )}
 

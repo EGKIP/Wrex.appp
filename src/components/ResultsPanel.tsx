@@ -8,7 +8,7 @@ import {
   Wand2,
 } from "lucide-react";
 import type { AnalyzeResponse, CriterionResult, QuotaInfo } from "../types";
-import { proHumanize } from "../lib/api";
+import { ApiError, proHumanize } from "../lib/api";
 
 type ResultsPanelProps = {
   results: AnalyzeResponse | null;
@@ -25,6 +25,8 @@ type ResultsPanelProps = {
   onAuthRequired?: () => void;
   /** True when the editor text was changed after last analysis (accepted rewrite etc.) */
   resultsStale?: boolean;
+  /** Called after paid AI usage so the parent can refresh Pro credit state */
+  onProUsage?: () => void;
 };
 
 // ── Sentence splitter (mirrors backend preprocessor.py logic) ─────────────────
@@ -80,18 +82,30 @@ type RewriteState = {
   summary: string;
 } | null;
 
+function proRewriteErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.status === 402) return "Monthly Pro AI credits are used up. Credits reset next period.";
+    if (error.status === 403) return "This rewrite needs Wrex Pro.";
+    if (error.status === 503) return "AI rewrites are not configured yet. Check the OpenAI key before testing.";
+    return error.message;
+  }
+  return "Couldn't generate a rewrite right now. Try again.";
+}
+
 function SentenceHighlighter({
   text,
   flagged,
   isPro,
   accessToken,
   onReplaceSentence,
+  onProUsage,
 }: {
   text: string;
   flagged: FlaggedMap;
   isPro?: boolean;
   accessToken?: string | null;
   onReplaceSentence?: (original: string, replacement: string) => void;
+  onProUsage?: () => void;
 }) {
   const sentences = splitSentences(text);
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
@@ -119,8 +133,10 @@ function SentenceHighlighter({
     try {
       const res = await proHumanize(sentence, accessToken);
       setRewrite({ idx, rewritten: res.rewritten, summary: res.changes_summary });
-    } catch {
-      setRewriteError("Couldn't generate a rewrite right now. Try again.");
+      onProUsage?.();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 402) onProUsage?.();
+      setRewriteError(proRewriteErrorMessage(error));
     } finally {
       setRewriting(false);
     }
@@ -416,7 +432,7 @@ function SkeletonPanel() {
   );
 }
 
-export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, text, accessToken, onReplaceSentence, quota, onAuthRequired, resultsStale = false }: ResultsPanelProps) {
+export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, text, accessToken, onReplaceSentence, quota, onAuthRequired, resultsStale = false, onProUsage }: ResultsPanelProps) {
   if (loading) return <SkeletonPanel />;
 
   if (!results) {
@@ -520,6 +536,7 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
           isPro={isPro}
           accessToken={accessToken}
           onReplaceSentence={onReplaceSentence}
+          onProUsage={onProUsage}
         />
       )}
 

@@ -335,6 +335,7 @@ function App() {
             <AnalyzerSection
               accessToken={auth.session?.access_token ?? null}
               isPro={isPro}
+              quota={quota}
               onQuotaUpdate={setQuota}
               onAuthRequired={() => openAuth("signup")}
               onUpgrade={handleUpgrade}
@@ -342,6 +343,8 @@ function App() {
               externalHistory={history}
               externalHistoryLoading={historyLoading}
               onAnalyzed={fetchHistory}
+              proCredits={proCredits}
+              onProUsage={refreshProStatus}
               loadRequest={workspaceLoadText}
               onLoadRequestConsumed={() => setWorkspaceLoadText(null)}
             />
@@ -357,9 +360,12 @@ function App() {
             <AnalyzerSection
               accessToken={auth.session?.access_token ?? null}
               isPro={isPro}
+              quota={quota}
               onQuotaUpdate={setQuota}
               onAuthRequired={() => openAuth("signup")}
               onUpgrade={handleUpgrade}
+              proCredits={proCredits}
+              onProUsage={refreshProStatus}
               onSwitchToWorkspace={isLoggedIn ? handleLandingAnalyze : undefined}
             />
             <FaqSection />
