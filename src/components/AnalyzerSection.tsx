@@ -149,6 +149,127 @@ function proErrorMessage(error: unknown): string {
   return "Something went wrong.";
 }
 
+function workspaceScoreColor(score: number) {
+  if (score >= 70) return "#EF4444";
+  if (score >= 40) return "#F59E0B";
+  return "#10B981";
+}
+
+function workspaceScoreLabel(score: number) {
+  if (score >= 70) return "Needs a voice pass";
+  if (score >= 40) return "Some parts need your touch";
+  return "Reads naturally";
+}
+
+function WorkspaceResultSummary({
+  results,
+  loading,
+  resultsStale,
+  onEdit,
+  onDetails,
+  onReanalyze,
+}: {
+  results: AnalyzeResponse | null;
+  loading: boolean;
+  resultsStale: boolean;
+  onEdit: () => void;
+  onDetails: () => void;
+  onReanalyze: () => void;
+}) {
+  if (loading && !results) {
+    return (
+      <section className="rounded-[1.6rem] border border-navy/8 bg-white p-5 shadow-[0_18px_55px_-44px_rgba(15,23,42,0.72)] sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-charcoal/35">Analyzing draft</p>
+            <p className="mt-2 text-xl font-bold text-navy">Reading your voice signals...</p>
+          </div>
+          <div className="h-14 w-14 rounded-full border-4 border-accent/25 border-t-accent animate-spin" />
+        </div>
+      </section>
+    );
+  }
+
+  if (!results) return null;
+
+  const scoreColor = workspaceScoreColor(results.score);
+  const flaggedCount = results.flagged_sentences.length;
+  const rubric = results.rubric_result;
+
+  return (
+    <section className="overflow-hidden rounded-[1.6rem] border border-navy/8 bg-white shadow-[0_22px_70px_-50px_rgba(15,23,42,0.8)]">
+      <div className="grid gap-0 lg:grid-cols-[0.82fr_1.18fr]">
+        <div className="border-b border-border-base bg-mist/55 p-5 lg:border-b-0 lg:border-r sm:p-6">
+          <p className="text-xs font-bold uppercase tracking-wide text-charcoal/35">Latest analysis</p>
+          <div className="mt-3 flex items-end gap-1 leading-none">
+            <span className="font-stat text-[4.1rem] font-bold tracking-tight" style={{ color: scoreColor }}>
+              {results.score}
+            </span>
+            <span className="mb-3 text-xl font-bold" style={{ color: scoreColor }}>%</span>
+          </div>
+          <p className="mt-2 text-base font-bold text-navy">{workspaceScoreLabel(results.score)}</p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            <span className="rounded-full border border-border-base bg-white px-3 py-1 font-semibold text-charcoal/60">
+              {results.confidence} confidence
+            </span>
+            <span className="rounded-full border border-border-base bg-white px-3 py-1 font-semibold text-charcoal/60">
+              {flaggedCount} flagged sentence{flaggedCount === 1 ? "" : "s"}
+            </span>
+            {rubric && (
+              <span className="rounded-full border border-border-base bg-white px-3 py-1 font-semibold text-charcoal/60">
+                Rubric {rubric.overall_score}%
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col justify-between p-5 sm:p-6">
+          <div>
+            {resultsStale && (
+              <span className="mb-3 inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
+                Draft changed since this score
+              </span>
+            )}
+            <p className="max-w-2xl text-base leading-7 text-charcoal/70">{results.summary}</p>
+            {results.basic_tips[0] && (
+              <p className="mt-3 rounded-input bg-mist px-3 py-2 text-sm leading-6 text-charcoal/62">
+                <span className="font-semibold text-navy">Next step: </span>
+                {results.basic_tips[0]}
+              </p>
+            )}
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {resultsStale ? (
+              <button
+                type="button"
+                onClick={onReanalyze}
+                className="rounded-soft bg-accent px-4 py-2 text-sm font-bold text-navy transition hover:bg-accent-dark active:scale-[0.98]"
+              >
+                Re-analyze
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onEdit}
+                className="rounded-soft bg-navy px-4 py-2 text-sm font-bold text-white transition hover:bg-navy/85 active:scale-[0.98]"
+              >
+                Edit draft
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onDetails}
+              className="rounded-soft border border-navy/12 bg-white px-4 py-2 text-sm font-semibold text-navy transition hover:bg-mist active:scale-[0.98]"
+            >
+              Review highlights
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 interface AnalyzerSectionProps {
   accessToken?: string | null;
   isPro?: boolean;
@@ -215,6 +336,9 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
 
   // Keep a fresh ref to onAnalyze so Cmd+Enter always calls the latest closure
   const onAnalyzeRef = useRef<() => Promise<void>>(async () => {});
+  const resultSummaryRef = useRef<HTMLDivElement>(null);
+  const editorCardRef = useRef<HTMLDivElement>(null);
+  const resultDetailsRef = useRef<HTMLDivElement>(null);
 
   // Increment to trigger GrammarEditor focus (e.g. after loading from history)
   const [editorFocusKey, setEditorFocusKey] = useState(0);
@@ -461,6 +585,11 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
       setResults(response);
       setResultsStale(false);
       if (response.quota) onQuotaUpdate?.(response.quota);
+      if (workspace) {
+        setTimeout(() => {
+          resultSummaryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 80);
+      }
 
       // Toast + history refresh on successful save
       if (accessToken) {
@@ -503,6 +632,15 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
       // Fallback: shouldn't be reached, but just in case
       toast("Upgrade is not available right now.", "error");
     }
+  }
+
+  function scrollToEditor() {
+    editorCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setEditorFocusKey((k) => k + 1);
+  }
+
+  function scrollToResultDetails() {
+    resultDetailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   return (
@@ -618,10 +756,10 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
         )}
 
         {workspace && (
-          <div className="mb-5 rounded-modal border border-navy/8 bg-white px-4 py-3 shadow-[0_18px_55px_-48px_rgba(15,23,42,0.7)]">
+          <div className="mb-4 rounded-[1.2rem] border border-navy/8 bg-white/88 px-4 py-3 shadow-[0_14px_45px_-40px_rgba(15,23,42,0.72)]">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-charcoal/35">Workspace</p>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-charcoal/35">Workspace</p>
                 <p className="mt-0.5 text-sm font-semibold text-navy">
                   {isPro ? "Pro writing tools active" : "Free writing check"}
                 </p>
@@ -678,9 +816,21 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
 
         {/* Single-column layout — keeps the flow clean, no sideways scrolling */}
         <div className="flex flex-col gap-5">
+          {workspace && (results || loading) && (
+            <div ref={resultSummaryRef}>
+              <WorkspaceResultSummary
+                results={results}
+                loading={loading}
+                resultsStale={resultsStale}
+                onEdit={scrollToEditor}
+                onDetails={scrollToResultDetails}
+                onReanalyze={onAnalyze}
+              />
+            </div>
+          )}
 
           {/* ── Editor card ─────────────────────────────────────────────────── */}
-          <div className={`rounded-[1.5rem] border border-navy/8 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.7)] transition-all duration-200 sm:p-6 ${
+          <div ref={editorCardRef} className={`rounded-[1.5rem] border border-navy/8 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.7)] transition-all duration-200 sm:p-6 ${
             results && resultsStale
               ? "ring-2 ring-amber-200/70"
               : ""
@@ -734,7 +884,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 grammarLoading={grammarLoading}
                 onApplyFix={applyGrammarFix}
                 placeholder="Paste your writing here — or start typing…"
-                minHeight={workspace ? "480px" : "300px"}
+                minHeight={workspace ? results ? "360px" : "480px" : "300px"}
                 focusKey={editorFocusKey}
               />
             </div>
@@ -899,19 +1049,21 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
 
           {/* ── Results panel ─────────────────────────────────────────────────── */}
           {(results || loading) && (
-            <ResultsPanel
-              results={results}
-              loading={loading}
-              isPro={isPro}
-              onRubricRewrite={handleRubricRewriteNudge}
-              text={text}
-              accessToken={accessToken}
-              onReplaceSentence={handleReplaceSentence}
-              quota={results?.quota ?? null}
-              onAuthRequired={onAuthRequired}
-              resultsStale={resultsStale}
-              onProUsage={onProUsage}
-            />
+            <div ref={resultDetailsRef}>
+              <ResultsPanel
+                results={results}
+                loading={loading}
+                isPro={isPro}
+                onRubricRewrite={handleRubricRewriteNudge}
+                text={text}
+                accessToken={accessToken}
+                onReplaceSentence={handleReplaceSentence}
+                quota={results?.quota ?? null}
+                onAuthRequired={onAuthRequired}
+                resultsStale={resultsStale}
+                onProUsage={onProUsage}
+              />
+            </div>
           )}
 
           {/* ── Pro AI panel ─────────────────────────────────────────────── */}
