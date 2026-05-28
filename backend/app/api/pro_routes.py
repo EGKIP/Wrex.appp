@@ -94,26 +94,54 @@ def create_checkout_session(
         profile.data.get("stripe_customer_id") if profile.data else None
     )
 
+    def _create_customer() -> str:
+        """Create a fresh Stripe customer and persist the ID."""
+        customer = client.customers.create(
+            params={"email": user.email, "metadata": {"supabase_user_id": user.id}}
+        )
+        sb.table("profiles").update({"stripe_customer_id": customer.id}).eq("id", user.id).execute()
+        logger.info("stripe_customer_created", extra={"user_id": user.id, "customer_id": customer.id})
+        return customer.id
+
     try:
         if not stripe_customer_id:
-            customer = client.customers.create(
-                params={"email": user.email, "metadata": {"supabase_user_id": user.id}}
-            )
-            stripe_customer_id = customer.id
-            sb.table("profiles").update({"stripe_customer_id": stripe_customer_id}).eq(
-                "id", user.id
-            ).execute()
+            stripe_customer_id = _create_customer()
 
-        session = client.checkout.sessions.create(
-            params={
-                "customer": stripe_customer_id,
-                "mode": "subscription",
-                "ui_mode": "embedded",
-                "line_items": [{"price": settings.stripe_price_id, "quantity": 1}],
-                "return_url": f"{settings.frontend_url}/?checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
-                "metadata": {"supabase_user_id": user.id},
-            }
-        )
+        try:
+            session = client.checkout.sessions.create(
+                params={
+                    "customer": stripe_customer_id,
+                    "mode": "subscription",
+                    "ui_mode": "embedded",
+                    "line_items": [{"price": settings.stripe_price_id, "quantity": 1}],
+                    "return_url": f"{settings.frontend_url}/?checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
+                    "metadata": {"supabase_user_id": user.id},
+                }
+            )
+        except stripe.InvalidRequestError as exc:
+            # Stale test-mode customer ID — create a fresh live customer and retry once
+            if "No such customer" in str(exc):
+                logger.warning(
+                    "stripe_stale_customer_id",
+                    extra={"user_id": user.id, "old_customer_id": stripe_customer_id},
+                )
+                sb.table("profiles").update(
+                    {"stripe_customer_id": None, "stripe_subscription_id": None}
+                ).eq("id", user.id).execute()
+                stripe_customer_id = _create_customer()
+                session = client.checkout.sessions.create(
+                    params={
+                        "customer": stripe_customer_id,
+                        "mode": "subscription",
+                        "ui_mode": "embedded",
+                        "line_items": [{"price": settings.stripe_price_id, "quantity": 1}],
+                        "return_url": f"{settings.frontend_url}/?checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
+                        "metadata": {"supabase_user_id": user.id},
+                    }
+                )
+            else:
+                raise
+
     except stripe.StripeError as exc:
         logger.error("stripe_checkout_error", extra={"user_id": user.id, "error": str(exc)})
         raise HTTPException(
