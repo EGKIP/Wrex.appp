@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { getProStatus } from "../lib/api";
+import type { ProStatusResponse } from "../types";
+
+export type ProCreditStatus = Pick<
+  ProStatusResponse,
+  "ai_credits_remaining" | "ai_credits_monthly" | "ai_credits_period_end"
+>;
 
 export interface ProStatus {
   isPro: boolean;
+  credits: ProCreditStatus | null;
   loading: boolean;
   refresh: () => void;
 }
@@ -14,6 +21,7 @@ export interface ProStatus {
  */
 export function useProStatus(accessToken: string | null | undefined): ProStatus {
   const [isPro, setIsPro] = useState(false);
+  const [credits, setCredits] = useState<ProCreditStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [tick, setTick] = useState(0);
 
@@ -22,6 +30,7 @@ export function useProStatus(accessToken: string | null | undefined): ProStatus 
   useEffect(() => {
     if (!accessToken) {
       setIsPro(false);
+      setCredits(null);
       return;
     }
 
@@ -29,11 +38,24 @@ export function useProStatus(accessToken: string | null | undefined): ProStatus 
     setLoading(true);
 
     getProStatus(accessToken)
-      .then(({ is_pro }) => {
-        if (!cancelled) setIsPro(is_pro);
+      .then((status) => {
+        if (cancelled) return;
+        setIsPro(status.is_pro);
+        setCredits(
+          status.is_pro
+            ? {
+                ai_credits_remaining: status.ai_credits_remaining,
+                ai_credits_monthly: status.ai_credits_monthly,
+                ai_credits_period_end: status.ai_credits_period_end,
+              }
+            : null,
+        );
       })
       .catch(() => {
-        if (!cancelled) setIsPro(false);
+        if (!cancelled) {
+          setIsPro(false);
+          setCredits(null);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -42,6 +64,5 @@ export function useProStatus(accessToken: string | null | undefined): ProStatus 
     return () => { cancelled = true; };
   }, [accessToken, tick]);
 
-  return { isPro, loading, refresh };
+  return { isPro, credits, loading, refresh };
 }
-

@@ -38,11 +38,20 @@ export type RubricRewriteResponse = {
   criteria_addressed: string[];
 };
 
+export type ProStatusResponse = {
+  is_pro: boolean;
+  ai_credits_remaining?: number | null;
+  ai_credits_monthly?: number | null;
+  ai_credits_period_end?: string | null;
+};
+
 export type SubmissionRecord = {
   id: string;
   user_id: string;
   text_preview: string;
   rubric_preview: string | null;
+  full_text?: string | null;
+  rubric?: string | null;
   score: number;
   confidence: "Low" | "Medium" | "High";
   rubric_score: number | null;

@@ -24,12 +24,18 @@ class DocumentStats(BaseModel):
     generic_word_ratio: float = 0.0
 
 
+class SentenceGuidance(BaseModel):
+    causes: list[str]
+    actions: list[str]
+
+
 class FlaggedSentence(BaseModel):
     index: int
     text: str
     score: float
     reason: str
     risk_level: str = "high"  # "high" | "medium"
+    free_guidance: Optional[SentenceGuidance] = None
 
 
 class ProPrompt(BaseModel):

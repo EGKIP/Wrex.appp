@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Crown, FileText, RefreshCw, Sparkles, Users } from "lucide-react";
 import {
+  ApiError,
   analyzeText,
   checkGrammar,
   getHistory,
@@ -18,6 +19,7 @@ import type {
   RubricRewriteResponse,
   SubmissionRecord,
 } from "../types";
+import type { ProCreditStatus } from "../hooks/useProStatus";
 import { HistoryPanel } from "./HistoryPanel";
 import { ResultsPanel } from "./ResultsPanel";
 import { GrammarEditor } from "./GrammarEditor";
@@ -119,9 +121,159 @@ const TONE_OPTIONS: { value: string; label: string; desc: string }[] = [
   { value: "persuasive", label: "Persuasive", desc: "Argument-forward, rhetorical" },
 ];
 
+function formatCreditResetDate(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(date);
+}
+
+function firstGrammarReplacement(match: GrammarMatch): string | null {
+  const replacement = match.replacements.find((item) => item.trim().length > 0);
+  return replacement?.trim() ?? null;
+}
+
+function proErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.status === 402) {
+      return "You've used your monthly Pro AI credits. Your credits reset next period, and we can add top-up credits next.";
+    }
+    if (error.status === 403) {
+      return "This tool is included with Wrex Pro.";
+    }
+    if (error.status === 503) {
+      return "AI writing tools are not configured yet. Check the OpenAI key before testing Pro rewrites.";
+    }
+    return error.message;
+  }
+  return "Something went wrong.";
+}
+
+function workspaceScoreColor(score: number) {
+  if (score >= 70) return "#EF4444";
+  if (score >= 40) return "#F59E0B";
+  return "#10B981";
+}
+
+function workspaceScoreLabel(score: number) {
+  if (score >= 70) return "Needs a voice pass";
+  if (score >= 40) return "Some parts need your touch";
+  return "Reads naturally";
+}
+
+function WorkspaceResultSummary({
+  results,
+  loading,
+  resultsStale,
+  onEdit,
+  onDetails,
+  onReanalyze,
+}: {
+  results: AnalyzeResponse | null;
+  loading: boolean;
+  resultsStale: boolean;
+  onEdit: () => void;
+  onDetails: () => void;
+  onReanalyze: () => void;
+}) {
+  if (loading && !results) {
+    return (
+      <section className="rounded-[1.6rem] border border-navy/8 bg-white p-5 shadow-[0_18px_55px_-44px_rgba(15,23,42,0.72)] sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-charcoal/35">Analyzing draft</p>
+            <p className="mt-2 text-xl font-bold text-navy">Reading your voice signals...</p>
+          </div>
+          <div className="h-14 w-14 rounded-full border-4 border-accent/25 border-t-accent animate-spin" />
+        </div>
+      </section>
+    );
+  }
+
+  if (!results) return null;
+
+  const scoreColor = workspaceScoreColor(results.score);
+  const flaggedCount = results.flagged_sentences.length;
+  const rubric = results.rubric_result;
+
+  return (
+    <section className="overflow-hidden rounded-[1.6rem] border border-navy/8 bg-white shadow-[0_22px_70px_-50px_rgba(15,23,42,0.8)]">
+      <div className="grid gap-0 lg:grid-cols-[0.82fr_1.18fr]">
+        <div className="border-b border-border-base bg-mist/55 p-5 lg:border-b-0 lg:border-r sm:p-6">
+          <p className="text-xs font-bold uppercase tracking-wide text-charcoal/35">Latest analysis</p>
+          <div className="mt-3 flex items-end gap-1 leading-none">
+            <span className="font-stat text-[4.1rem] font-bold tracking-tight" style={{ color: scoreColor }}>
+              {results.score}
+            </span>
+            <span className="mb-3 text-xl font-bold" style={{ color: scoreColor }}>%</span>
+          </div>
+          <p className="mt-2 text-base font-bold text-navy">{workspaceScoreLabel(results.score)}</p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            <span className="rounded-full border border-border-base bg-white px-3 py-1 font-semibold text-charcoal/60">
+              {results.confidence} confidence
+            </span>
+            <span className="rounded-full border border-border-base bg-white px-3 py-1 font-semibold text-charcoal/60">
+              {flaggedCount} flagged sentence{flaggedCount === 1 ? "" : "s"}
+            </span>
+            {rubric && (
+              <span className="rounded-full border border-border-base bg-white px-3 py-1 font-semibold text-charcoal/60">
+                Rubric {rubric.overall_score}%
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col justify-between p-5 sm:p-6">
+          <div>
+            {resultsStale && (
+              <span className="mb-3 inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
+                Draft changed since this score
+              </span>
+            )}
+            <p className="max-w-2xl text-base leading-7 text-charcoal/70">{results.summary}</p>
+            {results.basic_tips[0] && (
+              <p className="mt-3 rounded-input bg-mist px-3 py-2 text-sm leading-6 text-charcoal/62">
+                <span className="font-semibold text-navy">Next step: </span>
+                {results.basic_tips[0]}
+              </p>
+            )}
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {resultsStale ? (
+              <button
+                type="button"
+                onClick={onReanalyze}
+                className="rounded-soft bg-accent px-4 py-2 text-sm font-bold text-navy transition hover:bg-accent-dark active:scale-[0.98]"
+              >
+                Re-analyze
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onEdit}
+                className="rounded-soft bg-navy px-4 py-2 text-sm font-bold text-white transition hover:bg-navy/85 active:scale-[0.98]"
+              >
+                Edit draft
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onDetails}
+              className="rounded-soft border border-navy/12 bg-white px-4 py-2 text-sm font-semibold text-navy transition hover:bg-mist active:scale-[0.98]"
+            >
+              Review highlights
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 interface AnalyzerSectionProps {
   accessToken?: string | null;
   isPro?: boolean;
+  quota?: QuotaInfo | null;
   onQuotaUpdate?: (quota: QuotaInfo) => void;
   onAuthRequired?: () => void;
   /** Called when the user clicks any "Upgrade" button — parent opens the checkout modal */
@@ -133,6 +285,10 @@ interface AnalyzerSectionProps {
   externalHistoryLoading?: boolean;
   /** Called after a successful analysis so the parent can refresh history */
   onAnalyzed?: () => void;
+  /** Current Pro AI credit state shown in the workspace usage strip */
+  proCredits?: ProCreditStatus | null;
+  /** Called after paid AI usage so the parent can refresh Pro credit state */
+  onProUsage?: () => void;
   /** When set, loads this text+rubric into the editor (from sidebar history click) */
   loadRequest?: { text: string; rubric: string | null; autoAnalyze?: boolean } | null;
   onLoadRequestConsumed?: () => void;
@@ -143,7 +299,7 @@ interface AnalyzerSectionProps {
   onSwitchToWorkspace?: (text: string, rubric: string | null) => void;
 }
 
-export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onAuthRequired, onUpgrade, workspace = false, externalHistory, externalHistoryLoading, onAnalyzed, loadRequest, onLoadRequestConsumed, onSwitchToWorkspace }: AnalyzerSectionProps) {
+export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQuotaUpdate, onAuthRequired, onUpgrade, workspace = false, externalHistory, externalHistoryLoading, onAnalyzed, proCredits, onProUsage, loadRequest, onLoadRequestConsumed, onSwitchToWorkspace }: AnalyzerSectionProps) {
   const { toast } = useToast();
   const [text, setText] = useState(() => workspace ? "" : SAMPLE_TEXT);
   const [rubric, setRubric] = useState("");
@@ -162,6 +318,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
 
   const wordCount = countWords(text);
   const readingTime = wordCount > 0 ? Math.max(1, Math.round(wordCount / 200)) : 0;
+  const showWorkspaceStarter = workspace && !text.trim() && !results && !loading;
 
   // ── Word limits ────────────────────────────────────────────────────────────
   const FREE_LIMIT = 500;
@@ -175,9 +332,13 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   const [grammarMatches, setGrammarMatches] = useState<GrammarMatch[]>([]);
   const [grammarLoading, setGrammarLoading] = useState(false);
   const grammarTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const quickFixCount = grammarMatches.filter((match) => firstGrammarReplacement(match)).length;
 
   // Keep a fresh ref to onAnalyze so Cmd+Enter always calls the latest closure
   const onAnalyzeRef = useRef<() => Promise<void>>(async () => {});
+  const resultSummaryRef = useRef<HTMLDivElement>(null);
+  const editorCardRef = useRef<HTMLDivElement>(null);
+  const resultDetailsRef = useRef<HTMLDivElement>(null);
 
   // Increment to trigger GrammarEditor focus (e.g. after loading from history)
   const [editorFocusKey, setEditorFocusKey] = useState(0);
@@ -189,6 +350,9 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     if (loadRequest.rubric) {
       setRubric(loadRequest.rubric);
       setShowRubric(true);
+    } else {
+      setRubric("");
+      setShowRubric(false);
     }
     setResults(null);
     setResultsStale(false);
@@ -246,7 +410,49 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
   // ── Apply a grammar/spelling fix inline ───────────────────────────────────
   function applyGrammarFix(match: GrammarMatch, replacement: string) {
     setText((prev) => prev.slice(0, match.offset) + replacement + prev.slice(match.offset + match.length));
-    setGrammarMatches((prev) => prev.filter((m) => m !== match));
+    setGrammarMatches((prev) => {
+      const replacedStart = match.offset;
+      const replacedEnd = match.offset + match.length;
+      const delta = replacement.length - match.length;
+
+      return prev.flatMap((current) => {
+        const currentStart = current.offset;
+        const currentEnd = current.offset + current.length;
+        const isAppliedMatch =
+          current === match ||
+          (current.offset === match.offset &&
+            current.length === match.length &&
+            current.rule_id === match.rule_id);
+
+        if (isAppliedMatch) return [];
+        if (currentStart >= replacedEnd) return [{ ...current, offset: current.offset + delta }];
+        if (currentEnd > replacedStart && currentStart < replacedEnd) return [];
+        return [current];
+      });
+    });
+    setResultsStale(true);
+    toast("Fix applied — re-analyze to update your score ✓", "success");
+  }
+
+  function applyAllGrammarFixes() {
+    const matchesWithFixes = grammarMatches.filter((match) => firstGrammarReplacement(match));
+    if (matchesWithFixes.length === 0) return;
+
+    const appliedKeys = new Set(matchesWithFixes.map((match) => `${match.offset}:${match.length}:${match.rule_id}`));
+    const nextText = [...matchesWithFixes]
+      .sort((a, b) => b.offset - a.offset)
+      .reduce((draft, match) => {
+        const replacement = firstGrammarReplacement(match);
+        if (!replacement) return draft;
+        return draft.slice(0, match.offset) + replacement + draft.slice(match.offset + match.length);
+      }, text);
+
+    setText(nextText);
+    setGrammarMatches((prev) =>
+      prev.filter((match) => !appliedKeys.has(`${match.offset}:${match.length}:${match.rule_id}`)),
+    );
+    setResultsStale(true);
+    toast(`${matchesWithFixes.length} quick fix${matchesWithFixes.length === 1 ? "" : "es"} applied ✓`, "success");
   }
 
   // ── Tone state (Pro) ───────────────────────────────────────────────────────
@@ -277,10 +483,12 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     try {
       const res = await proImprove(text, rubric || undefined, accessToken);
       setImproveResult(res.suggestions);
+      onProUsage?.();
     } catch (e) {
-      setProError(e instanceof Error ? e.message : "Something went wrong.");
+      if (e instanceof ApiError && e.status === 402) onProUsage?.();
+      setProError(proErrorMessage(e));
     } finally { setProLoading(false); }
-  }, [accessToken, text, rubric]);
+  }, [accessToken, onProUsage, text, rubric]);
 
   const runProHumanize = useCallback(async () => {
     if (!accessToken) return;
@@ -288,10 +496,12 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     try {
       const res = await proHumanize(text, accessToken, tone);
       setHumanizeResult(res);
+      onProUsage?.();
     } catch (e) {
-      setProError(e instanceof Error ? e.message : "Something went wrong.");
+      if (e instanceof ApiError && e.status === 402) onProUsage?.();
+      setProError(proErrorMessage(e));
     } finally { setProLoading(false); }
-  }, [accessToken, text, tone]);
+  }, [accessToken, onProUsage, text, tone]);
 
   const runProRubricRewrite = useCallback(async () => {
     if (!accessToken) return;
@@ -299,10 +509,12 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     try {
       const res = await proRubricRewrite(text, rubric, accessToken);
       setRubricRewriteResult(res);
+      onProUsage?.();
     } catch (e) {
-      setProError(e instanceof Error ? e.message : "Something went wrong.");
+      if (e instanceof ApiError && e.status === 402) onProUsage?.();
+      setProError(proErrorMessage(e));
     } finally { setProLoading(false); }
-  }, [accessToken, text, rubric]);
+  }, [accessToken, onProUsage, text, rubric]);
 
   /** Called from ResultsPanel rubric nudge button — scroll to Pro panel + switch tab */
   const handleRubricRewriteNudge = useCallback(() => {
@@ -373,6 +585,11 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
       setResults(response);
       setResultsStale(false);
       if (response.quota) onQuotaUpdate?.(response.quota);
+      if (workspace) {
+        setTimeout(() => {
+          resultSummaryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 80);
+      }
 
       // Toast + history refresh on successful save
       if (accessToken) {
@@ -399,6 +616,9 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
     if (rubricPreview) {
       setRubric(rubricPreview);
       setShowRubric(true);
+    } else {
+      setRubric("");
+      setShowRubric(false);
     }
     setResults(null);
     window.scrollTo({ top: document.getElementById("analyzer")?.offsetTop ?? 0, behavior: "smooth" });
@@ -412,6 +632,15 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
       // Fallback: shouldn't be reached, but just in case
       toast("Upgrade is not available right now.", "error");
     }
+  }
+
+  function scrollToEditor() {
+    editorCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setEditorFocusKey((k) => k + 1);
+  }
+
+  function scrollToResultDetails() {
+    resultDetailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   return (
@@ -492,11 +721,116 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
           </div>
         )}
 
+        {showWorkspaceStarter && (
+          <div className="mb-5 rounded-modal border border-navy/8 bg-white p-4 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.7)] sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-navy">Ready for a new check</p>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-charcoal/55">
+                  Paste a draft below, open History from the menu, or try the sample to see how feedback appears.
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditorFocusKey((k) => k + 1)}
+                  className="rounded-soft border border-navy/12 bg-white px-3 py-2 text-xs font-semibold text-navy transition hover:bg-mist"
+                >
+                  Paste draft
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setText(SAMPLE_TEXT);
+                    setResults(null);
+                    setResultsStale(false);
+                    setEditorFocusKey((k) => k + 1);
+                  }}
+                  className="btn-shine rounded-soft bg-accent px-3 py-2 text-xs font-bold text-navy transition hover:bg-accent-dark"
+                >
+                  Try sample
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {workspace && (
+          <div className="mb-4 rounded-[1.2rem] border border-navy/8 bg-white/88 px-4 py-3 shadow-[0_14px_45px_-40px_rgba(15,23,42,0.72)]">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-charcoal/35">Workspace</p>
+                <p className="mt-0.5 text-sm font-semibold text-navy">
+                  {isPro ? "Pro writing tools active" : "Free writing check"}
+                </p>
+              </div>
+              {isPro ? (
+                <div className="min-w-0 sm:min-w-[260px]">
+                  <div className="mb-1 flex items-center justify-between gap-3 text-xs">
+                    <span className="text-charcoal/50">Monthly AI credits</span>
+                    <span className="font-semibold text-navy">
+                      {proCredits?.ai_credits_remaining != null && proCredits?.ai_credits_monthly != null
+                        ? `${proCredits.ai_credits_remaining.toLocaleString()} / ${proCredits.ai_credits_monthly.toLocaleString()} left`
+                        : "Checking..."}
+                    </span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-mist">
+                    <div
+                      className="h-full rounded-full bg-emerald-500 transition-all"
+                      style={{
+                        width:
+                          proCredits?.ai_credits_remaining != null &&
+                          proCredits?.ai_credits_monthly != null &&
+                          proCredits.ai_credits_monthly > 0
+                            ? `${Math.min(100, Math.round((proCredits.ai_credits_remaining / proCredits.ai_credits_monthly) * 100))}%`
+                            : "0%",
+                      }}
+                    />
+                  </div>
+                  {formatCreditResetDate(proCredits?.ai_credits_period_end) && (
+                    <p className="mt-1 text-[11px] text-charcoal/40">
+                      Resets {formatCreditResetDate(proCredits?.ai_credits_period_end)}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2 text-xs text-charcoal/50">
+                  <span className="rounded-full bg-mist px-2.5 py-1 font-medium">500 words per check</span>
+                  {quota?.is_authenticated && (
+                    <span className="rounded-full bg-mist px-2.5 py-1 font-medium">
+                      {quota.remaining} / {quota.limit} analyses left today
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleUpgrade}
+                    className="rounded-full bg-accent px-3 py-1 font-bold text-navy transition hover:bg-accent-dark"
+                  >
+                    Upgrade for rewrites
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Single-column layout — keeps the flow clean, no sideways scrolling */}
         <div className="flex flex-col gap-5">
+          {workspace && (results || loading) && (
+            <div ref={resultSummaryRef}>
+              <WorkspaceResultSummary
+                results={results}
+                loading={loading}
+                resultsStale={resultsStale}
+                onEdit={scrollToEditor}
+                onDetails={scrollToResultDetails}
+                onReanalyze={onAnalyze}
+              />
+            </div>
+          )}
 
           {/* ── Editor card ─────────────────────────────────────────────────── */}
-          <div className={`rounded-[1.5rem] border border-navy/8 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.7)] transition-all duration-200 sm:p-6 ${
+          <div ref={editorCardRef} className={`rounded-[1.5rem] border border-navy/8 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.7)] transition-all duration-200 sm:p-6 ${
             results && resultsStale
               ? "ring-2 ring-amber-200/70"
               : ""
@@ -523,6 +857,15 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                     Click underlined text to fix
                   </span>
                 )}
+                {quickFixCount > 1 && (
+                  <button
+                    type="button"
+                    onClick={applyAllGrammarFixes}
+                    className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100"
+                  >
+                    Apply {quickFixCount} fixes
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => { setText(""); setGrammarMatches([]); setResults(null); setResultsStale(false); }}
@@ -541,7 +884,7 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
                 grammarLoading={grammarLoading}
                 onApplyFix={applyGrammarFix}
                 placeholder="Paste your writing here — or start typing…"
-                minHeight={workspace ? "480px" : "300px"}
+                minHeight={workspace ? results ? "360px" : "480px" : "300px"}
                 focusKey={editorFocusKey}
               />
             </div>
@@ -706,18 +1049,21 @@ export function AnalyzerSection({ accessToken, isPro = false, onQuotaUpdate, onA
 
           {/* ── Results panel ─────────────────────────────────────────────────── */}
           {(results || loading) && (
-            <ResultsPanel
-              results={results}
-              loading={loading}
-              isPro={isPro}
-              onRubricRewrite={handleRubricRewriteNudge}
-              text={text}
-              accessToken={accessToken}
-              onReplaceSentence={handleReplaceSentence}
-              quota={results?.quota ?? null}
-              onAuthRequired={onAuthRequired}
-              resultsStale={resultsStale}
-            />
+            <div ref={resultDetailsRef}>
+              <ResultsPanel
+                results={results}
+                loading={loading}
+                isPro={isPro}
+                onRubricRewrite={handleRubricRewriteNudge}
+                text={text}
+                accessToken={accessToken}
+                onReplaceSentence={handleReplaceSentence}
+                quota={results?.quota ?? null}
+                onAuthRequired={onAuthRequired}
+                resultsStale={resultsStale}
+                onProUsage={onProUsage}
+              />
+            </div>
           )}
 
           {/* ── Pro AI panel ─────────────────────────────────────────────── */}

@@ -43,6 +43,10 @@ function buildBackdropHtml(text: string, matches: GrammarMatch[]): string {
   return html;
 }
 
+function uniqueReplacements(replacements: string[]): string[] {
+  return Array.from(new Set(replacements.map((replacement) => replacement.trim()).filter(Boolean))).slice(0, 5);
+}
+
 export function GrammarEditor({
   value,
   onChange,
@@ -56,6 +60,8 @@ export function GrammarEditor({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const [activeMatch, setActiveMatch] = useState<GrammarMatch | null>(null);
+  const activeReplacements = activeMatch ? uniqueReplacements(activeMatch.replacements) : [];
+  const activeText = activeMatch ? value.slice(activeMatch.offset, activeMatch.offset + activeMatch.length) : "";
 
   // Focus the textarea when focusKey changes (e.g. after loading from history)
   useEffect(() => {
@@ -72,6 +78,17 @@ export function GrammarEditor({
     el.style.height = `${el.scrollHeight}px`;
   }, [value]);
 
+  useEffect(() => {
+    if (!activeMatch) return;
+    const stillPresent = grammarMatches.some(
+      (match) =>
+        match.offset === activeMatch.offset &&
+        match.length === activeMatch.length &&
+        match.rule_id === activeMatch.rule_id,
+    );
+    if (!stillPresent) setActiveMatch(null);
+  }, [activeMatch, grammarMatches]);
+
   // Sync backdrop scroll when user scrolls in textarea (rare with auto-grow but safe)
   function syncScroll() {
     if (backdropRef.current && textareaRef.current) {
@@ -83,7 +100,7 @@ export function GrammarEditor({
     const ta = textareaRef.current;
     if (!ta) return;
     const pos = ta.selectionStart;
-    const found = grammarMatches.find((m) => pos >= m.offset && pos <= m.offset + m.length);
+    const found = grammarMatches.find((m) => pos >= m.offset && pos < m.offset + m.length);
     setActiveMatch(found ?? null);
   }
 
@@ -128,6 +145,7 @@ export function GrammarEditor({
         onChange={handleChange}
         onClick={detectMatch}
         onKeyUp={detectMatch}
+        onMouseUp={detectMatch}
         onScroll={syncScroll}
         placeholder={placeholder}
         style={{ ...sharedStyle, background: "transparent", caretColor: "#1e293b", minHeight, color: "inherit", resize: "none", outline: "none" }}
@@ -135,20 +153,50 @@ export function GrammarEditor({
       />
       {/* Inline fix popover — appears below the textarea when cursor is on an error */}
       {activeMatch && (
-        <div className="flex items-center gap-2 border-t border-border-base bg-white px-3 py-2 text-xs rounded-b-input">
-          <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: activeMatch.match_type === "error" ? "#EF4444" : "#F59E0B" }} />
-          <span className="font-mono text-danger line-through opacity-60">{value.slice(activeMatch.offset, activeMatch.offset + activeMatch.length)}</span>
-          {activeMatch.replacements[0] && <>
-            <span className="text-charcoal/35">→</span>
-            <span className="font-mono font-semibold text-navy">{activeMatch.replacements[0]}</span>
-          </>}
-          <span className="flex-1 text-charcoal/50 truncate">{activeMatch.message}</span>
-          {activeMatch.replacements[0] && (
-            <button type="button" onClick={() => applyFix(activeMatch, activeMatch.replacements[0])} className="shrink-0 rounded-soft bg-emerald-500 px-3 py-1 font-bold text-white transition hover:bg-emerald-600 active:scale-95">
-              ✓ Fix
+        <div className="rounded-b-input border-t border-border-base bg-white px-3 py-3 text-xs shadow-[0_-8px_30px_-28px_rgba(15,23,42,0.75)]">
+          <div className="flex items-start gap-2">
+            <span
+              className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+              style={{ backgroundColor: activeMatch.match_type === "error" ? "#EF4444" : "#F59E0B" }}
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="font-mono text-danger line-through opacity-70">{activeText}</span>
+                <span className="rounded-full bg-mist px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-charcoal/45">
+                  {activeMatch.match_type === "error" ? "Grammar" : "Suggestion"}
+                </span>
+              </div>
+              <p className="mt-1 text-charcoal/60">{activeMatch.message}</p>
+
+              {activeReplacements.length > 0 ? (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-semibold text-charcoal/45">Replace with</span>
+                  {activeReplacements.map((replacement) => (
+                    <button
+                      key={replacement}
+                      type="button"
+                      onClick={() => applyFix(activeMatch, replacement)}
+                      className="rounded-soft border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-mono text-[12px] font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 active:scale-[0.98]"
+                    >
+                      {replacement}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 rounded-input bg-mist px-3 py-2 text-[11px] leading-5 text-charcoal/55">
+                  No automatic replacement for this one. Edit the underlined text directly.
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveMatch(null)}
+              aria-label="Close grammar suggestion"
+              className="shrink-0 text-base leading-none text-charcoal/30 hover:text-charcoal"
+            >
+              ×
             </button>
-          )}
-          <button type="button" onClick={() => setActiveMatch(null)} className="shrink-0 text-charcoal/30 hover:text-charcoal leading-none text-base">×</button>
+          </div>
         </div>
       )}
       {/* Grammar loading indicator */}

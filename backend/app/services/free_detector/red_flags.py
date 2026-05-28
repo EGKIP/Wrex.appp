@@ -1,4 +1,4 @@
-from app.schemas.free import FlaggedSentence
+from app.schemas.free import FlaggedSentence, SentenceGuidance
 from app.services.free_detector.feature_extractor import DocumentFeatures, SentenceFeatures
 
 # ── Thresholds ────────────────────────────────────────────────────────────────
@@ -83,6 +83,81 @@ def _build_reasons(feature: SentenceFeatures, risk: str) -> str:
     return f"{qualifier} AI-pattern signal — uniform phrasing structure."
 
 
+def _build_free_guidance(feature: SentenceFeatures) -> SentenceGuidance:
+    """Return deterministic free guidance without generating replacement prose."""
+    causes: list[str] = []
+    actions: list[str] = []
+
+    if feature.generic_transition_opener:
+        causes.append("Starts with a stock transition.")
+        actions.append(
+            "Replace the opener with a connector that names the specific relationship "
+            "between ideas."
+        )
+    elif feature.transition_phrase_hits > 1:
+        causes.append("Leans on transition phrases instead of sentence-level logic.")
+        actions.append(
+            "Cut one transition phrase and let the subject of the sentence carry "
+            "the connection."
+        )
+
+    if feature.has_hedging:
+        causes.append("Uses broad hedging or softening language.")
+        actions.append(
+            "Name the evidence, person, class detail, or source that supports the claim."
+        )
+
+    if feature.formulaic_phrase_count:
+        causes.append("Contains a formulaic phrase common in generic AI prose.")
+        actions.append(
+            "Swap the broad phrase for a concrete detail, example, or observation "
+            "from your own context."
+        )
+
+    if feature.has_passive_hint:
+        causes.append("Uses a passive-style construction.")
+        actions.append(
+            "Identify who is doing the action and make that actor the subject where it fits."
+        )
+
+    if feature.generic_word_ratio >= 0.16:
+        causes.append("Uses several broad words where specifics would help.")
+        actions.append(
+            "Replace words like important, various, or significant with precise nouns "
+            "or stakes."
+        )
+
+    if feature.repeated_word_ratio >= 0.15 or feature.repeated_phrase_ratio >= 0.12:
+        causes.append("Repeats wording or short phrase patterns.")
+        actions.append(
+            "Combine repeated ideas or choose one sharper term for the second mention."
+        )
+
+    if feature.uniform_structure_score >= 0.75:
+        causes.append("Matches the draft's sentence rhythm closely.")
+        actions.append(
+            "Vary the rhythm by splitting one idea short or adding a specific "
+            "follow-up clause."
+        )
+
+    if feature.uniqueness_score <= 0.55:
+        causes.append("Has low lexical variety.")
+        actions.append(
+            "Add one specific example, name, number, or sensory detail that only "
+            "belongs in this draft."
+        )
+
+    if not causes:
+        causes.append("The sentence has a polished but generic structure.")
+    if not actions:
+        actions.append(
+            "Add a concrete example or personal observation, then read it aloud "
+            "for natural rhythm."
+        )
+
+    return SentenceGuidance(causes=causes[:3], actions=actions[:3])
+
+
 def build_flagged_sentences(sentence_features: list[SentenceFeatures]) -> list[FlaggedSentence]:
     """Return up to _MAX_FLAGGED sentences tagged with a risk level and reason."""
     scored: list[tuple[float, SentenceFeatures]] = [
@@ -103,6 +178,7 @@ def build_flagged_sentences(sentence_features: list[SentenceFeatures]) -> list[F
                 score=round(min(score, 0.99), 2),
                 reason=_build_reasons(feature, risk_level),
                 risk_level=risk_level,
+                free_guidance=_build_free_guidance(feature),
             )
         )
 

@@ -11,6 +11,7 @@ const stripePublishableKey =
 const stripePromise = stripePublishableKey
   ? loadStripe(stripePublishableKey)
   : null;
+const stripeMode = stripePublishableKey.startsWith("pk_test_") ? "test" : "live";
 
 interface CheckoutModalProps {
   clientSecret: string;
@@ -37,9 +38,16 @@ export function CheckoutModal({ clientSecret, onClose }: CheckoutModalProps) {
             <p className="text-xs uppercase tracking-wider text-charcoal/45 font-semibold">
               Upgrade
             </p>
-            <h2 className="text-lg font-bold text-navy leading-tight">
-              Wrex Pro — $9/month
-            </h2>
+            <div className="mt-0.5 flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-bold text-navy leading-tight">
+                Wrex Pro — $9/month
+              </h2>
+              {stripeMode === "test" && (
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                  Test mode
+                </span>
+              )}
+            </div>
           </div>
           <button
             type="button"
@@ -82,6 +90,7 @@ export function CheckoutModal({ clientSecret, onClose }: CheckoutModalProps) {
         {/* Trust footer */}
         <div className="border-t border-border-base px-6 py-3 text-center text-xs text-charcoal/40">
           Payments processed securely by Stripe · Cancel anytime
+          {stripeMode === "test" && " · No live charge in this build"}
         </div>
       </div>
     </div>

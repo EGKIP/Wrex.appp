@@ -11,6 +11,8 @@ class SubmissionRecord(BaseModel):
     user_id: str
     text_preview: str          # first 200 chars of submission text
     rubric_preview: Optional[str] = None   # first 100 chars of rubric if provided
+    full_text: Optional[str] = None         # full submission text for newer rows
+    rubric: Optional[str] = None            # full rubric for newer rows
     score: int
     confidence: str
     rubric_score: Optional[int] = None     # rubric alignment score if rubric was used
@@ -21,4 +23,3 @@ class SubmissionRecord(BaseModel):
 class SubmissionList(BaseModel):
     submissions: list[SubmissionRecord]
     total: int
-

@@ -2,6 +2,7 @@ import { ExternalLink, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { createBillingPortalSession } from "../lib/api";
 import type { AuthState } from "../hooks/useAuth";
+import type { ProCreditStatus } from "../hooks/useProStatus";
 import type { QuotaInfo } from "../types";
 
 interface ProfileModalProps {
@@ -9,12 +10,24 @@ interface ProfileModalProps {
   onClose: () => void;
   auth: AuthState;
   isPro: boolean;
+  proCredits?: ProCreditStatus | null;
   quota: QuotaInfo | null;
   onUpgrade: () => void;
   accessToken: string | null;
 }
 
-export function ProfileModal({ open, onClose, auth, isPro, quota, onUpgrade, accessToken }: ProfileModalProps) {
+function formatResetDate(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
+export function ProfileModal({ open, onClose, auth, isPro, proCredits, quota, onUpgrade, accessToken }: ProfileModalProps) {
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState<string | null>(null);
 
@@ -33,6 +46,13 @@ export function ProfileModal({ open, onClose, auth, isPro, quota, onUpgrade, acc
   const limit = quota?.limit ?? 3;
   const remaining = quota?.remaining ?? limit;
   const pct = Math.min(100, Math.round((used / limit) * 100));
+  const monthlyCredits = proCredits?.ai_credits_monthly ?? null;
+  const remainingCredits = proCredits?.ai_credits_remaining ?? null;
+  const creditResetDate = formatResetDate(proCredits?.ai_credits_period_end);
+  const hasCreditBalance = monthlyCredits !== null && remainingCredits !== null;
+  const creditPct = hasCreditBalance && monthlyCredits > 0
+    ? Math.min(100, Math.round((remainingCredits / monthlyCredits) * 100))
+    : 0;
 
   function handleUpgrade() {
     onClose();
@@ -137,6 +157,26 @@ export function ProfileModal({ open, onClose, auth, isPro, quota, onUpgrade, acc
                 <p className="text-xs text-slate-400 mt-0.5">2,000 words · AI rewrites · Humanizer · monthly AI credits</p>
               </div>
             </div>
+
+            {hasCreditBalance && (
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
+                <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
+                  <span className="font-medium text-charcoal">Monthly AI credits</span>
+                  <span className="whitespace-nowrap font-semibold text-emerald-700">
+                    {remainingCredits.toLocaleString()} / {monthlyCredits.toLocaleString()} left
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-white">
+                  <div
+                    className="h-full rounded-full bg-emerald-500 transition-all"
+                    style={{ width: `${creditPct}%` }}
+                  />
+                </div>
+                {creditResetDate && (
+                  <p className="mt-1.5 text-xs text-slate-500">Resets {creditResetDate}</p>
+                )}
+              </div>
+            )}
 
             <button
               onClick={handleManagePlan}

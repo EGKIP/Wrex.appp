@@ -8,7 +8,7 @@ import {
   Wand2,
 } from "lucide-react";
 import type { AnalyzeResponse, CriterionResult, QuotaInfo } from "../types";
-import { proHumanize } from "../lib/api";
+import { ApiError, proHumanize } from "../lib/api";
 
 type ResultsPanelProps = {
   results: AnalyzeResponse | null;
@@ -25,6 +25,8 @@ type ResultsPanelProps = {
   onAuthRequired?: () => void;
   /** True when the editor text was changed after last analysis (accepted rewrite etc.) */
   resultsStale?: boolean;
+  /** Called after paid AI usage so the parent can refresh Pro credit state */
+  onProUsage?: () => void;
 };
 
 // ── Sentence splitter (mirrors backend preprocessor.py logic) ─────────────────
@@ -62,7 +64,17 @@ function splitSentences(text: string): string[] {
 
 // ── Sentence highlight section ────────────────────────────────────────────────
 
-type FlaggedMap = Map<number, { score: number; reason: string; risk_level: "high" | "medium" }>;
+type FreeGuidance = {
+  causes: string[];
+  actions: string[];
+};
+
+type FlaggedMap = Map<number, {
+  score: number;
+  reason: string;
+  risk_level: "high" | "medium";
+  free_guidance?: FreeGuidance | null;
+}>;
 
 type RewriteState = {
   idx: number;
@@ -70,18 +82,30 @@ type RewriteState = {
   summary: string;
 } | null;
 
+function proRewriteErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.status === 402) return "Monthly Pro AI credits are used up. Credits reset next period.";
+    if (error.status === 403) return "This rewrite needs Wrex Pro.";
+    if (error.status === 503) return "AI rewrites are not configured yet. Check the OpenAI key before testing.";
+    return error.message;
+  }
+  return "Couldn't generate a rewrite right now. Try again.";
+}
+
 function SentenceHighlighter({
   text,
   flagged,
   isPro,
   accessToken,
   onReplaceSentence,
+  onProUsage,
 }: {
   text: string;
   flagged: FlaggedMap;
   isPro?: boolean;
   accessToken?: string | null;
   onReplaceSentence?: (original: string, replacement: string) => void;
+  onProUsage?: () => void;
 }) {
   const sentences = splitSentences(text);
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
@@ -109,8 +133,10 @@ function SentenceHighlighter({
     try {
       const res = await proHumanize(sentence, accessToken);
       setRewrite({ idx, rewritten: res.rewritten, summary: res.changes_summary });
-    } catch {
-      setRewriteError("Couldn't generate a rewrite right now. Try again.");
+      onProUsage?.();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 402) onProUsage?.();
+      setRewriteError(proRewriteErrorMessage(error));
     } finally {
       setRewriting(false);
     }
@@ -211,7 +237,24 @@ function SentenceHighlighter({
                   )}
                   {!isPro ? (
                     <span className="mt-2 block rounded-input border border-border-base bg-mist px-3 py-2 text-xs leading-5 text-charcoal/60">
-                      Try adding a specific example, class detail, or sentence rhythm that sounds more like you.
+                      {flag.free_guidance ? (
+                        <span className="grid gap-2">
+                          {flag.free_guidance.causes.length > 0 && (
+                            <span className="block">
+                              <span className="font-semibold text-navy">Why it was flagged: </span>
+                              {flag.free_guidance.causes.join(" ")}
+                            </span>
+                          )}
+                          {flag.free_guidance.actions.length > 0 && (
+                            <span className="block">
+                              <span className="font-semibold text-navy">Manual next step: </span>
+                              {flag.free_guidance.actions.join(" ")}
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        "Try adding a specific example, class detail, or sentence rhythm that sounds more like you."
+                      )}
                     </span>
                   ) : rewriting ? (
                     <span className="flex items-center gap-2 rounded-input bg-mist px-4 py-3 text-xs text-charcoal/60">
@@ -389,7 +432,7 @@ function SkeletonPanel() {
   );
 }
 
-export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, text, accessToken, onReplaceSentence, quota, onAuthRequired, resultsStale = false }: ResultsPanelProps) {
+export function ResultsPanel({ results, loading = false, isPro = false, onRubricRewrite, text, accessToken, onReplaceSentence, quota, onAuthRequired, resultsStale = false, onProUsage }: ResultsPanelProps) {
   if (loading) return <SkeletonPanel />;
 
   if (!results) {
@@ -456,10 +499,18 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
   }
 
   // Build flagged-sentence map for the inline highlighter
+  type FlaggedSentenceWithGuidance = AnalyzeResponse["flagged_sentences"][number] & {
+    free_guidance?: FreeGuidance | null;
+  };
   const flaggedMap: FlaggedMap = new Map(
-    results.flagged_sentences.map((s) => [
+    (results.flagged_sentences as FlaggedSentenceWithGuidance[]).map((s) => [
       s.index,
-      { score: s.score, reason: s.reason, risk_level: s.risk_level },
+      {
+        score: s.score,
+        reason: s.reason,
+        risk_level: s.risk_level,
+        free_guidance: s.free_guidance,
+      },
     ])
   );
 
@@ -485,6 +536,7 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
           isPro={isPro}
           accessToken={accessToken}
           onReplaceSentence={onReplaceSentence}
+          onProUsage={onProUsage}
         />
       )}
 

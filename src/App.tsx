@@ -112,13 +112,17 @@ const LEGAL_PAGES = {
   },
 } as const;
 
+function normalizePathname(pathname: string) {
+  return pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+}
+
 function App() {
   const auth = useAuth();
   const { toast } = useToast();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<"signin" | "signup">("signin");
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
-  const { isPro, refresh: refreshProStatus } = useProStatus(auth.session?.access_token);
+  const { isPro, credits: proCredits, refresh: refreshProStatus } = useProStatus(auth.session?.access_token);
   const [checkoutClientSecret, setCheckoutClientSecret] = useState<string | null>(null);
   const [pathname, setPathname] = useState(() => window.location.pathname);
 
@@ -288,7 +292,8 @@ function App() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  const legalPage = LEGAL_PAGES[pathname as keyof typeof LEGAL_PAGES];
+  const legalPathname = normalizePathname(pathname);
+  const legalPage = LEGAL_PAGES[legalPathname as keyof typeof LEGAL_PAGES];
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-charcoal">
@@ -296,11 +301,14 @@ function App() {
         auth={auth}
         quota={quota}
         isPro={isPro}
+        proCredits={proCredits}
         mode={isWorkspace ? "workspace" : "landing"}
         onOpenAuth={openAuth}
         onUpgrade={handleUpgrade}
         onGoHome={() => setViewMode("landing")}
         onGoWorkspace={() => setViewMode("workspace")}
+        onOpenHistory={() => setHistoryOpen(true)}
+        historyCount={history.length}
         accessToken={auth.session?.access_token ?? null}
       />
 
@@ -327,6 +335,7 @@ function App() {
             <AnalyzerSection
               accessToken={auth.session?.access_token ?? null}
               isPro={isPro}
+              quota={quota}
               onQuotaUpdate={setQuota}
               onAuthRequired={() => openAuth("signup")}
               onUpgrade={handleUpgrade}
@@ -334,6 +343,8 @@ function App() {
               externalHistory={history}
               externalHistoryLoading={historyLoading}
               onAnalyzed={fetchHistory}
+              proCredits={proCredits}
+              onProUsage={refreshProStatus}
               loadRequest={workspaceLoadText}
               onLoadRequestConsumed={() => setWorkspaceLoadText(null)}
             />
@@ -349,9 +360,12 @@ function App() {
             <AnalyzerSection
               accessToken={auth.session?.access_token ?? null}
               isPro={isPro}
+              quota={quota}
               onQuotaUpdate={setQuota}
               onAuthRequired={() => openAuth("signup")}
               onUpgrade={handleUpgrade}
+              proCredits={proCredits}
+              onProUsage={refreshProStatus}
               onSwitchToWorkspace={isLoggedIn ? handleLandingAnalyze : undefined}
             />
             <FaqSection />
@@ -373,6 +387,7 @@ function App() {
         onClose={() => setProfileOpen(false)}
         auth={auth}
         isPro={isPro}
+        proCredits={proCredits}
         quota={quota}
         onUpgrade={handleUpgrade}
         accessToken={auth.session?.access_token ?? null}

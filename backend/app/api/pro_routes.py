@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import Optional
 
 import stripe
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel
 
 from app.core.auth import AuthUser, get_required_user
@@ -172,6 +172,7 @@ def create_billing_portal_session(
 @router.post("/webhook", status_code=status.HTTP_200_OK)
 async def stripe_webhook(
     request: Request,
+    background_tasks: BackgroundTasks,
     stripe_signature: str = Header(alias="stripe-signature", default=""),
 ) -> dict:
     """Stripe webhook — flip is_pro on the Supabase profile."""
@@ -197,7 +198,7 @@ async def stripe_webhook(
             if sub_id:
                 update_payload["stripe_subscription_id"] = sub_id
             sb.table("profiles").update(update_payload).eq("id", user_id).execute()
-            initialize_ai_credit_period(user_id)
+            background_tasks.add_task(initialize_ai_credit_period, user_id)
             logger.info("pro_activated", extra={"user_id": user_id, "subscription_id": sub_id})
 
     elif event_type == "customer.subscription.created":
@@ -218,7 +219,7 @@ async def stripe_webhook(
                 sb.table("profiles").update(
                     {"stripe_subscription_id": sub_id, "is_pro": True}
                 ).eq("stripe_customer_id", customer_id).execute()
-                initialize_ai_credit_period(str(profile.data["id"]))
+                background_tasks.add_task(initialize_ai_credit_period, str(profile.data["id"]))
                 logger.info("subscription_id_stored", extra={"subscription_id": sub_id, "customer_id": customer_id})
 
     elif event_type in ("customer.subscription.deleted", "customer.subscription.paused"):
