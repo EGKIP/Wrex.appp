@@ -1,6 +1,6 @@
 import { ExternalLink, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { createBillingPortalSession } from "../lib/api";
+import { ApiError, createBillingPortalSession } from "../lib/api";
 import type { AuthState } from "../hooks/useAuth";
 import type { ProCreditStatus } from "../hooks/useProStatus";
 import type { QuotaInfo } from "../types";
@@ -123,8 +123,12 @@ export function ProfileModal({ open, onClose, auth, isPro, proCredits, quota, on
     try {
       const { url } = await createBillingPortalSession(accessToken);
       window.location.href = url;
-    } catch {
-      setPortalError("Couldn't open billing portal. Try again or email support@wrex.app.");
+    } catch (err) {
+      // Surface the backend's specific message (e.g. "Billing account not found…")
+      const msg = err instanceof ApiError
+        ? err.message
+        : "Couldn't open billing portal. Try again or email support@wrex.app.";
+      setPortalError(msg);
     } finally {
       setPortalLoading(false);
     }

@@ -137,29 +137,22 @@ function App() {
   // window.location.hash to exchange the token. Stripping it before that runs
   // kills the session establishment entirely.
   const emailJustConfirmed = useRef(false);
+  // Set to true when ?checkout=success is detected — cleared once auth is ready
+  // and we've fired the sync+toast. Using a ref avoids re-render loops.
+  const pendingCheckoutSuccess = useRef(false);
 
-  // Handle URL params on load (Supabase auth callbacks + Stripe redirects)
+  // Detect URL params on mount only — DO NOT act on checkout here because
+  // auth.session is always null at this point (Supabase initialises async).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const hash = new URLSearchParams(window.location.hash.replace("#", "?"));
     const type = params.get("type") || hash.get("type");
     const pro = params.get("pro");
 
-    // Stripe embedded checkout result — redirected back to our app
     const checkout = params.get("checkout");
     if (checkout === "success") {
       window.history.replaceState(null, "", window.location.pathname);
-      // Sync directly from Stripe first (in case webhook is delayed), then refresh UI
-      setTimeout(async () => {
-        try {
-          const token = auth.session?.access_token;
-          if (token) await syncSubscription(token);
-        } catch {
-          // Non-fatal — refreshProStatus below will re-check the DB
-        }
-        toast("You're now a Pro member. Your monthly AI credits are active.", "success");
-        refreshProStatus();
-      }, 400);
+      pendingCheckoutSuccess.current = true; // handled once auth is ready below
     }
     // Legacy hosted checkout params (keep for safety)
     if (pro === "success") {
@@ -185,6 +178,23 @@ function App() {
     // PASSWORD_RECOVERY is handled automatically via useAuth's onAuthStateChange listener.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Process pending checkout success once auth has finished loading.
+  // This runs each time auth.loading or access_token changes, but the ref
+  // ensures we only fire the sync+toast once.
+  useEffect(() => {
+    if (!pendingCheckoutSuccess.current || auth.loading) return;
+    pendingCheckoutSuccess.current = false;
+    const token = auth.session?.access_token ?? null;
+    void (async () => {
+      if (token) {
+        try { await syncSubscription(token); } catch { /* non-fatal */ }
+      }
+      toast("You're now a Pro member. Your monthly AI credits are active.", "success");
+      refreshProStatus();
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.loading, auth.session?.access_token]);
 
   // Fire toasts on sign-in / sign-out transitions.
   // This is the single source of truth — it fires ONLY after Supabase has

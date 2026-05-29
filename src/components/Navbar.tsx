@@ -84,8 +84,8 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
   }, []);
 
   // Quota progress bar: pct of daily quota consumed (0-100)
-  const quotaPct = quota?.is_authenticated
-    ? Math.round((quota.used / quota.limit) * 100)
+  const quotaPct = quota?.is_authenticated && quota.limit > 0
+    ? Math.min(100, Math.round((quota.used / quota.limit) * 100))
     : null;
 
   return (

@@ -7,4 +7,6 @@ __pycache__/
 .env
 backend/.env
 backend/data/
+.DS_Store
+public/logo.svg.png
 
