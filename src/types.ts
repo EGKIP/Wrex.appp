@@ -40,8 +40,10 @@ export type RubricRewriteResponse = {
 
 export type ProStatusResponse = {
   is_pro: boolean;
+  ai_credits_used?: number | null;
   ai_credits_remaining?: number | null;
   ai_credits_monthly?: number | null;
+  ai_credits_period_start?: string | null;
   ai_credits_period_end?: string | null;
 };
 

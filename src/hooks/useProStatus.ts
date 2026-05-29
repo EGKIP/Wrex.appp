@@ -4,7 +4,11 @@ import type { ProStatusResponse } from "../types";
 
 export type ProCreditStatus = Pick<
   ProStatusResponse,
-  "ai_credits_remaining" | "ai_credits_monthly" | "ai_credits_period_end"
+  | "ai_credits_used"
+  | "ai_credits_remaining"
+  | "ai_credits_monthly"
+  | "ai_credits_period_start"
+  | "ai_credits_period_end"
 >;
 
 export interface ProStatus {
@@ -44,8 +48,10 @@ export function useProStatus(accessToken: string | null | undefined): ProStatus 
         setCredits(
           status.is_pro
             ? {
+                ai_credits_used: status.ai_credits_used,
                 ai_credits_remaining: status.ai_credits_remaining,
                 ai_credits_monthly: status.ai_credits_monthly,
+                ai_credits_period_start: status.ai_credits_period_start,
                 ai_credits_period_end: status.ai_credits_period_end,
               }
             : null,

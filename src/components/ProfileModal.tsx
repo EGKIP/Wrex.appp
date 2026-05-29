@@ -18,13 +18,52 @@ interface ProfileModalProps {
 
 function formatResetDate(value: string | null | undefined): string | null {
   if (!value) return null;
-  const date = new Date(value);
+  const dateOnlyMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const date = dateOnlyMatch
+    ? new Date(
+        Number(dateOnlyMatch[1]),
+        Number(dateOnlyMatch[2]) - 1,
+        Number(dateOnlyMatch[3]),
+      )
+    : new Date(value);
   if (Number.isNaN(date.getTime())) return null;
   return new Intl.DateTimeFormat(undefined, {
     month: "short",
     day: "numeric",
-    year: "numeric",
   }).format(date);
+}
+
+function formatCreditResetDate(
+  periodStart: string | null | undefined,
+  periodEnd: string | null | undefined,
+): string | null {
+  if (periodStart) {
+    const dateOnlyMatch = periodStart.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const startDate = dateOnlyMatch
+      ? new Date(
+          Number(dateOnlyMatch[1]),
+          Number(dateOnlyMatch[2]) - 1,
+          Number(dateOnlyMatch[3]),
+        )
+      : new Date(periodStart);
+    if (!Number.isNaN(startDate.getTime())) {
+      startDate.setDate(startDate.getDate() + 30);
+      return new Intl.DateTimeFormat(undefined, {
+        month: "short",
+        day: "numeric",
+      }).format(startDate);
+    }
+  }
+  return formatResetDate(periodEnd);
+}
+
+function finiteNumber(value: number | null | undefined): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function clampPercent(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(100, Math.round(value)));
 }
 
 export function ProfileModal({ open, onClose, auth, isPro, proCredits, quota, onUpgrade, accessToken }: ProfileModalProps) {
@@ -42,17 +81,35 @@ export function ProfileModal({ open, onClose, auth, isPro, proCredits, quota, on
   const displayName = parts[0]
     ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
     : local;
-  const used = quota?.used ?? 0;
-  const limit = quota?.limit ?? 3;
-  const remaining = quota?.remaining ?? limit;
-  const pct = Math.min(100, Math.round((used / limit) * 100));
-  const monthlyCredits = proCredits?.ai_credits_monthly ?? null;
-  const remainingCredits = proCredits?.ai_credits_remaining ?? null;
-  const creditResetDate = formatResetDate(proCredits?.ai_credits_period_end);
-  const hasCreditBalance = monthlyCredits !== null && remainingCredits !== null;
-  const creditPct = hasCreditBalance && monthlyCredits > 0
-    ? Math.min(100, Math.round((remainingCredits / monthlyCredits) * 100))
+  const used = finiteNumber(quota?.used) ?? 0;
+  const limit = finiteNumber(quota?.limit) ?? 3;
+  const remaining = finiteNumber(quota?.remaining) ?? limit;
+  const pct = limit > 0 ? clampPercent((used / limit) * 100) : 0;
+  const monthlyCredits = finiteNumber(proCredits?.ai_credits_monthly);
+  const remainingCredits = finiteNumber(proCredits?.ai_credits_remaining);
+  const reportedUsedCredits = finiteNumber(proCredits?.ai_credits_used);
+  const creditResetDate = formatCreditResetDate(
+    proCredits?.ai_credits_period_start,
+    proCredits?.ai_credits_period_end,
+  );
+  const derivedUsedCredits = monthlyCredits !== null && remainingCredits !== null
+    ? Math.max(0, monthlyCredits - remainingCredits)
+    : null;
+  const usedCredits = reportedUsedCredits ?? derivedUsedCredits;
+  const hasCreditLimit = monthlyCredits !== null && monthlyCredits > 0;
+  const displayUsedCredits = monthlyCredits !== null && monthlyCredits > 0 && usedCredits !== null
+    ? Math.min(monthlyCredits, Math.max(0, usedCredits))
+    : null;
+  const remainingCreditCount = monthlyCredits !== null && displayUsedCredits !== null
+    ? monthlyCredits - displayUsedCredits
+    : null;
+  const creditPct = monthlyCredits !== null && monthlyCredits > 0 && displayUsedCredits !== null
+    ? clampPercent((displayUsedCredits / monthlyCredits) * 100)
     : 0;
+  const creditSummary = monthlyCredits !== null && monthlyCredits > 0 && displayUsedCredits !== null
+    ? `${displayUsedCredits.toLocaleString()} / ${monthlyCredits.toLocaleString()} credits`
+    : "Credits active";
+  const creditMeta = creditResetDate ? `${creditSummary} · Resets ${creditResetDate}` : creditSummary;
 
   function handleUpgrade() {
     onClose();
@@ -136,7 +193,7 @@ export function ProfileModal({ open, onClose, auth, isPro, proCredits, quota, on
         {!isPro && (
           <div className="border-b border-slate-100 px-6 py-4">
             <p className="mb-3 text-sm text-slate-500">
-              Upgrade to <strong className="text-charcoal">Pro</strong> for longer checks, AI rewrites, rubric tools, and monthly AI credits.
+              Upgrade to <strong className="text-charcoal">Pro</strong> to unlock the AI rewrite, Humanizer, and rubric tools with monthly credits included.
             </p>
             <button
               onClick={handleUpgrade}
@@ -154,29 +211,28 @@ export function ProfileModal({ open, onClose, auth, isPro, proCredits, quota, on
               <Sparkles className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold text-charcoal">Wrex Pro · $9 / month</p>
-                <p className="text-xs text-slate-400 mt-0.5">2,000 words · AI rewrites · Humanizer · monthly AI credits</p>
+                <p className="text-xs text-slate-400 mt-0.5">2,000 words · AI rewrites · Humanizer · rubric tools</p>
               </div>
             </div>
 
-            {hasCreditBalance && (
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
-                <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
-                  <span className="font-medium text-charcoal">Monthly AI credits</span>
-                  <span className="whitespace-nowrap font-semibold text-emerald-700">
-                    {remainingCredits.toLocaleString()} / {monthlyCredits.toLocaleString()} left
-                  </span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-white">
-                  <div
-                    className="h-full rounded-full bg-emerald-500 transition-all"
-                    style={{ width: `${creditPct}%` }}
-                  />
-                </div>
-                {creditResetDate && (
-                  <p className="mt-1.5 text-xs text-slate-500">Resets {creditResetDate}</p>
-                )}
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
+              <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
+                <span className="font-medium text-charcoal">Monthly AI credits</span>
+                <span className="whitespace-nowrap font-semibold text-emerald-700">
+                  {remainingCreditCount !== null ? `${remainingCreditCount.toLocaleString()} left` : "Active"}
+                </span>
               </div>
-            )}
+              <p className="mb-2 text-xs font-medium text-slate-600">{creditMeta}</p>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-white">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all"
+                  style={{ width: `${creditPct}%` }}
+                />
+              </div>
+              {!hasCreditLimit && (
+                <p className="mt-1.5 text-xs text-slate-500">We couldn't load the exact balance, but your Pro AI tools are available.</p>
+              )}
+            </div>
 
             <button
               onClick={handleManagePlan}

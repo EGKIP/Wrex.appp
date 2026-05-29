@@ -68,7 +68,7 @@ const CACHED_SAMPLE_RESULT: AnalyzeResponse = {
   ],
   pro_prompt: {
     title: "Improve this writing with Pro",
-    message: "Get deeper rewrite suggestions, gap detection, and humanizing support with Pro.",
+    message: "Get voice-focused rewrites, sentence notes, and rubric-aware polish with Pro.",
     cta_label: "Explore Pro",
   },
   rubric_result: null,
@@ -139,7 +139,7 @@ function proErrorMessage(error: unknown): string {
       return "You've used your monthly Pro AI credits. Your credits reset next period, and we can add top-up credits next.";
     }
     if (error.status === 403) {
-      return "This tool is included with Wrex Pro.";
+      return "Unlock Pro to shape the draft in your voice, refine sentences, and align it to the assignment.";
     }
     if (error.status === 503) {
       return "AI writing tools are not configured yet. Check the OpenAI key before testing Pro rewrites.";
@@ -761,7 +761,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-wide text-charcoal/35">Workspace</p>
                 <p className="mt-0.5 text-sm font-semibold text-navy">
-                  {isPro ? "Pro writing tools active" : "Free writing check"}
+                  {isPro ? "Pro writing tools active" : "Free voice check"}
                 </p>
               </div>
               {isPro ? (
@@ -806,7 +806,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                     onClick={handleUpgrade}
                     className="rounded-full bg-accent px-3 py-1 font-bold text-navy transition hover:bg-accent-dark"
                   >
-                    Upgrade for rewrites
+                    Upgrade for voice tools
                   </button>
                 </div>
               )}
@@ -977,7 +977,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                   className="flex items-center gap-2 rounded-input border border-dashed border-charcoal/15 bg-mist px-3 py-2 text-xs text-charcoal/40 transition hover:border-accent/40 hover:text-charcoal/60"
                 >
                   <Crown className="h-3.5 w-3.5 text-accent-dark" />
-                  Add rubric &amp; check criteria — <span className="font-semibold text-accent-dark">Pro feature</span>
+                  Add assignment brief &amp; tune the draft — <span className="font-semibold text-accent-dark">Pro voice tool</span>
                 </button>
               ) : null}
             </div>
@@ -987,9 +987,8 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
               <div className="mt-4 flex items-center gap-3 rounded-input border border-amber-300 bg-amber-50 px-4 py-3">
                 <Crown className="h-4 w-4 shrink-0 text-amber-600" />
                 <span className="flex-1 text-xs text-amber-800">
-                  <strong>{wordCount - FREE_LIMIT} words over the free limit.</strong>{" "}
-                  Pro gives you 2,000 words.{" "}
-                  <button type="button" onClick={handleUpgrade} className="font-bold underline hover:no-underline">Upgrade — $9/mo</button>
+                  <strong>Free plan: 500 words. Upgrade to Pro for 2,000-word analyses.</strong>{" "}
+                  <button type="button" onClick={handleUpgrade} className="font-bold underline hover:no-underline">Upgrade</button>
                   {" or "}
                   <button type="button" onClick={() => setText(text.trim().split(/\s+/).slice(0, FREE_LIMIT).join(" "))} className="underline hover:no-underline">trim to {FREE_LIMIT} words</button>
                 </span>
@@ -1008,7 +1007,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 type="button"
                 onClick={onAnalyze}
                 disabled={loading || text.trim().length < 10 || wordLimitExceeded}
-                title={wordLimitExceeded ? `${isPro ? "Pro" : "Free"} limit: ${wordLimit} words` : undefined}
+                title={wordLimitExceeded ? isPro ? `Pro limit: ${wordLimit} words` : "Free plan: 500 words. Upgrade to Pro for 2,000-word analyses." : undefined}
                 className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-8 py-3 text-base font-bold text-navy shadow-button transition hover:-translate-y-0.5 hover:shadow-button-hover active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {loading ? (
@@ -1125,10 +1124,10 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 {/* Feature preview grid */}
                 <div className="grid grid-cols-2 gap-px bg-accent/15">
                   {[
-                    { icon: <Sparkles className="h-4 w-4 text-accent-dark" />, label: "Make it yours", sub: "Rewrite any sentence in your voice" },
-                    { icon: <FileText className="h-4 w-4 text-accent-dark" />, label: "Voice transform", sub: "Natural, Academic, Speech & more" },
-                    { icon: <Crown className="h-4 w-4 text-accent-dark" />, label: "Tone templates", sub: "5 distinct writing voices" },
-                    { icon: <Users className="h-4 w-4 text-accent-dark" />, label: "Rubric alignment", sub: "Rewrite to hit every criterion" },
+                    { icon: <Sparkles className="h-4 w-4 text-accent-dark" />, label: "Your voice, sharper", sub: "Rewrite sentences without flattening your style" },
+                    { icon: <FileText className="h-4 w-4 text-accent-dark" />, label: "Longer analysis", sub: "Work through drafts up to 2,000 words" },
+                    { icon: <Crown className="h-4 w-4 text-accent-dark" />, label: "Tone direction", sub: "Natural, academic, speech, and more" },
+                    { icon: <Users className="h-4 w-4 text-accent-dark" />, label: "Assignment fit", sub: "Shape the rewrite around every criterion" },
                   ].map(({ icon, label, sub }) => (
                     <div key={label} className="flex items-start gap-2.5 bg-white/60 px-3.5 py-3">
                       <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/15">{icon}</div>
@@ -1142,7 +1141,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 {/* CTA footer */}
                 <div className="flex items-center justify-between px-4 py-3.5">
                   <p className="text-xs text-charcoal/55">
-                    From <span className="font-bold text-navy">$9 / month</span> · cancel anytime
+                    Pro unlocks voice-first rewrites from <span className="font-bold text-navy">$9 / month</span>
                   </p>
                   <button
                     type="button"
