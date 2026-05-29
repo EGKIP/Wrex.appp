@@ -20,7 +20,12 @@ from pydantic import BaseModel
 
 from app.core.auth import AuthUser, get_required_user
 from app.core.config import settings
-from app.core.credits import debit_ai_credits, ensure_ai_credits_available, initialize_ai_credit_period
+from app.core.credits import (
+    current_credit_period,
+    debit_ai_credits,
+    ensure_ai_credits_available,
+    initialize_ai_credit_period,
+)
 from app.core.logging import get_logger
 from app.schemas.pro import (
     HumanizeRequest,
@@ -66,8 +71,10 @@ class BillingPortalResponse(BaseModel):
 
 class ProStatusResponse(BaseModel):
     is_pro: bool
+    ai_credits_used: Optional[int] = None
     ai_credits_remaining: Optional[int] = None
     ai_credits_monthly: Optional[int] = None
+    ai_credits_period_start: Optional[str] = None
     ai_credits_period_end: Optional[str] = None
 
 
@@ -164,7 +171,7 @@ def create_billing_portal_session(
 
     profile = (
         sb.table("profiles")
-        .select("stripe_customer_id")
+        .select("stripe_customer_id, stripe_subscription_id")
         .eq("id", user.id)
         .maybe_single()
         .execute()
@@ -176,7 +183,7 @@ def create_billing_portal_session(
     if not stripe_customer_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No billing account found. Please contact support@wrex.app.",
+            detail="No billing account found. Upgrade to Pro first, then you can manage billing here.",
         )
 
     try:
@@ -185,6 +192,27 @@ def create_billing_portal_session(
                 "customer": stripe_customer_id,
                 "return_url": settings.frontend_url,
             }
+        )
+    except stripe.InvalidRequestError as exc:
+        if "No such customer" in str(exc):
+            logger.warning(
+                "stripe_portal_stale_customer_id",
+                extra={"user_id": user.id, "old_customer_id": stripe_customer_id},
+            )
+            sb.table("profiles").update(
+                {"stripe_customer_id": None, "stripe_subscription_id": None}
+            ).eq("id", user.id).execute()
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=(
+                    "Billing account not found. Please start checkout again to upgrade "
+                    "before opening the billing portal."
+                ),
+            )
+        logger.error("stripe_portal_error", extra={"user_id": user.id, "error": str(exc)})
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Payment provider error: {exc.user_message or str(exc)}",
         )
     except stripe.StripeError as exc:
         logger.error("stripe_portal_error", extra={"user_id": user.id, "error": str(exc)})
@@ -294,15 +322,22 @@ def get_pro_status(
     except HTTPException as exc:
         if exc.status_code != status.HTTP_402_PAYMENT_REQUIRED:
             raise
+        period = current_credit_period()
         return ProStatusResponse(
             is_pro=True,
+            ai_credits_used=settings.pro_monthly_ai_credits,
             ai_credits_remaining=0,
             ai_credits_monthly=settings.pro_monthly_ai_credits,
+            ai_credits_period_start=period.starts_on.isoformat(),
+            ai_credits_period_end=period.ends_on.isoformat(),
         )
+    used_credits = max(0, balance.monthly_credits - balance.remaining_credits)
     return ProStatusResponse(
         is_pro=True,
+        ai_credits_used=used_credits,
         ai_credits_remaining=balance.remaining_credits,
         ai_credits_monthly=balance.monthly_credits,
+        ai_credits_period_start=balance.period_start.isoformat(),
         ai_credits_period_end=balance.period_end.isoformat(),
     )
 
@@ -346,8 +381,16 @@ def sync_subscription(
                 "stripe_subscription_id": sub.id,
             }).eq("id", user.id).execute()
             logger.info("subscription_synced", extra={"user_id": user.id, "subscription_id": sub.id})
-            initialize_ai_credit_period(user.id)
-            return ProStatusResponse(is_pro=True)
+            balance = initialize_ai_credit_period(user.id)
+            used_credits = max(0, balance.monthly_credits - balance.remaining_credits)
+            return ProStatusResponse(
+                is_pro=True,
+                ai_credits_used=used_credits,
+                ai_credits_remaining=balance.remaining_credits,
+                ai_credits_monthly=balance.monthly_credits,
+                ai_credits_period_start=balance.period_start.isoformat(),
+                ai_credits_period_end=balance.period_end.isoformat(),
+            )
     except stripe.StripeError as exc:
         logger.error("stripe_sync_error", extra={"user_id": user.id, "error": str(exc)})
 

@@ -8,10 +8,19 @@ import { X } from "lucide-react";
 
 const stripePublishableKey =
   import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY?.trim() ?? "";
-const stripePromise = stripePublishableKey
+const hasStripePublishableKey = stripePublishableKey.length > 0;
+const hasValidStripePublishableKey =
+  stripePublishableKey.startsWith("pk_live_") ||
+  stripePublishableKey.startsWith("pk_test_");
+const stripePromise = hasValidStripePublishableKey
   ? loadStripe(stripePublishableKey)
   : null;
 const stripeMode = stripePublishableKey.startsWith("pk_test_") ? "test" : "live";
+const stripeConfigIssue = !hasStripePublishableKey
+  ? "missing"
+  : !hasValidStripePublishableKey
+    ? "invalid"
+    : null;
 
 interface CheckoutModalProps {
   clientSecret: string;
@@ -71,11 +80,15 @@ export function CheckoutModal({ clientSecret, onClose }: CheckoutModalProps) {
           ) : (
             <div className="px-4 py-8 text-center">
               <p className="text-sm font-semibold text-navy">
-                Checkout is not configured in this environment.
+                Stripe checkout key is {stripeConfigIssue === "invalid" ? "invalid" : "missing"} in this build.
               </p>
               <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-charcoal/60">
-                Add a Stripe publishable key to enable upgrades locally.
+                Wrex expects <span className="font-mono text-xs text-charcoal">VITE_STRIPE_PUBLISHABLE_KEY</span>{" "}
+                to be available at build time. Confirm the Vercel environment variable is set, then redeploy the frontend.
               </p>
+              <div className="mx-auto mt-4 max-w-sm rounded-input border border-amber-200 bg-amber-50 px-3 py-2 text-left text-xs leading-5 text-amber-800">
+                Current build status: {stripeConfigIssue === "invalid" ? "publishable key does not start with pk_live_ or pk_test_" : "publishable key was not bundled"}
+              </div>
               <button
                 type="button"
                 onClick={onClose}
