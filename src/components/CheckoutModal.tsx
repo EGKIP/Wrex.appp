@@ -6,12 +6,14 @@ import {
 } from "@stripe/react-stripe-js";
 import { X } from "lucide-react";
 
-const stripePublishableKey =
-  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY?.trim() ?? "";
+const stripePublishableKey = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "")
+  .trim()
+  .replace(/^["']|["']$/g, "");
 const hasStripePublishableKey = stripePublishableKey.length > 0;
 const hasValidStripePublishableKey =
   stripePublishableKey.startsWith("pk_live_") ||
   stripePublishableKey.startsWith("pk_test_");
+const stripeKeyPrefix = stripePublishableKey.slice(0, 3);
 const stripePromise = hasValidStripePublishableKey
   ? loadStripe(stripePublishableKey)
   : null;
@@ -21,6 +23,12 @@ const stripeConfigIssue = !hasStripePublishableKey
   : !hasValidStripePublishableKey
     ? "invalid"
     : null;
+const invalidStripeKeyMessage =
+  stripeKeyPrefix === "sk_"
+    ? "It looks like you pasted the Secret key. Use the Publishable key (`pk_live_...`) from Stripe → Developers → API Keys."
+    : stripeKeyPrefix === "rk_"
+      ? "This looks like a restricted key. Use the standard Publishable key (`pk_live_...`)."
+      : "publishable key does not start with pk_live_ or pk_test_";
 
 interface CheckoutModalProps {
   clientSecret: string;
@@ -87,7 +95,7 @@ export function CheckoutModal({ clientSecret, onClose }: CheckoutModalProps) {
                 to be available at build time. Confirm the Vercel environment variable is set, then redeploy the frontend.
               </p>
               <div className="mx-auto mt-4 max-w-sm rounded-input border border-amber-200 bg-amber-50 px-3 py-2 text-left text-xs leading-5 text-amber-800">
-                Current build status: {stripeConfigIssue === "invalid" ? "publishable key does not start with pk_live_ or pk_test_" : "publishable key was not bundled"}
+                Current build status: {stripeConfigIssue === "invalid" ? invalidStripeKeyMessage : "publishable key was not bundled"}
               </div>
               <button
                 type="button"
