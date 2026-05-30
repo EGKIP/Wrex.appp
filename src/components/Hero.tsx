@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
-import { EyeOff, GraduationCap, ShieldCheck } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { CheckCircle2, EyeOff, GraduationCap, ShieldCheck } from "lucide-react";
 
 interface HeroProps {
   onTryFree?: () => void;
@@ -11,7 +12,25 @@ const TRUST = [
   { Icon: GraduationCap, label: "Built for students" },
 ];
 
-function AppMockup() {
+const SHOWCASE = [
+  {
+    label: "Score",
+    title: "Authenticity score",
+    caption: "See the first result immediately: score, confidence, and the sentences that need your touch.",
+  },
+  {
+    label: "Fixes",
+    title: "Inline writing fixes",
+    caption: "Accept small grammar suggestions without leaving the draft or losing your flow.",
+  },
+  {
+    label: "History",
+    title: "Saved progress",
+    caption: "Every logged-in analysis becomes a useful trail of scores, drafts, and assignment context.",
+  },
+];
+
+function BrowserFrame({ children, label }: { children: ReactNode; label: string }) {
   return (
     <div className="select-none overflow-hidden rounded-xl border border-charcoal/10 shadow-float">
       <div className="flex items-center gap-3 bg-[#1e293b] px-3 py-2.5">
@@ -22,12 +41,19 @@ function AppMockup() {
         </div>
         <div className="flex flex-1 justify-center">
           <div className="rounded bg-[#0f172a]/60 px-3 py-1 text-[10px] text-slate-400">
-            wrex.app
+            {label}
           </div>
         </div>
         <div className="w-14" />
       </div>
+      {children}
+    </div>
+  );
+}
 
+function ScorePreview() {
+  return (
+    <BrowserFrame label="wrex.app / analysis">
       <div className="flex items-center gap-2 border-b border-[#e2e8f0] bg-white px-3 py-2">
         <span className="text-[10px] font-bold text-[#0f172a]">Wrex</span>
         <span className="text-[10px] text-[#cbd5e1]">/</span>
@@ -96,6 +122,150 @@ function AppMockup() {
             </div>
           </div>
         </div>
+      </div>
+    </BrowserFrame>
+  );
+}
+
+function FixPreview() {
+  return (
+    <BrowserFrame label="wrex.app / editor">
+      <div className="bg-[#f8fafc] p-4">
+        <div className="rounded-lg border border-[#e2e8f0] bg-white p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-[9px] font-semibold uppercase tracking-widest text-[#94a3b8]">Your writing</span>
+            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[8px] font-bold text-emerald-600">2 fixes ready</span>
+          </div>
+          <p className="text-[10.5px] leading-[1.8] text-[#334155]">
+            My argument is stronger when I explain the moment I changed my mind.
+            I <span className="border-b-2 border-red-400">recieve</span>d feedback,
+            revised the claim, and added an example from my own experience.
+          </p>
+          <div className="mt-4 rounded-lg border border-[#dbeafe] bg-[#eff6ff] p-2.5">
+            <div className="flex items-start gap-2">
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[9px] font-bold text-[#0f172a]">Spelling suggestion</p>
+                <p className="mt-1 text-[9px] text-[#475569]">
+                  Replace <span className="font-mono line-through">recieve</span> with{" "}
+                  <span className="font-mono font-bold">receive</span>.
+                </p>
+              </div>
+              <span className="rounded bg-emerald-500 px-2 py-1 text-[8px] font-bold text-white">Apply</span>
+            </div>
+          </div>
+          <div className="mt-3 flex gap-1.5">
+            <span className="h-1.5 flex-1 rounded-full bg-emerald-400" />
+            <span className="h-1.5 flex-1 rounded-full bg-amber-300" />
+            <span className="h-1.5 flex-1 rounded-full bg-slate-200" />
+          </div>
+        </div>
+      </div>
+    </BrowserFrame>
+  );
+}
+
+function HistoryPreview() {
+  const rows = [
+    { score: 28, text: "Narrative reflection draft", meta: "312 words", tone: "bg-emerald-100 text-emerald-700" },
+    { score: 46, text: "Technology essay revision", meta: "487 words", tone: "bg-amber-100 text-amber-700" },
+    { score: 18, text: "Scholarship paragraph", meta: "196 words", tone: "bg-emerald-100 text-emerald-700" },
+  ];
+
+  return (
+    <BrowserFrame label="wrex.app / history">
+      <div className="bg-white">
+        <div className="border-b border-[#e2e8f0] px-4 py-3">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-[#94a3b8]">Saved work</p>
+          <div className="mt-2 grid grid-cols-3 gap-1.5">
+            <div className="rounded-lg bg-[#f8fafc] px-2 py-1.5 text-center">
+              <p className="text-[11px] font-extrabold text-[#0f172a]">31%</p>
+              <p className="text-[7px] text-[#64748b]">avg score</p>
+            </div>
+            <div className="rounded-lg bg-[#f8fafc] px-2 py-1.5 text-center">
+              <p className="text-[11px] font-extrabold text-[#0f172a]">12</p>
+              <p className="text-[7px] text-[#64748b]">checks</p>
+            </div>
+            <div className="rounded-lg bg-[#fef3c7] px-2 py-1.5 text-center">
+              <p className="text-[11px] font-extrabold text-[#0f172a]">Pro</p>
+              <p className="text-[7px] text-[#92400e]">voice tools</p>
+            </div>
+          </div>
+        </div>
+        <div className="divide-y divide-[#e2e8f0]">
+          {rows.map((row) => (
+            <div key={row.text} className="flex items-center gap-2.5 px-4 py-3">
+              <span className={`rounded-md px-2 py-1 text-[9px] font-bold ${row.tone}`}>{row.score}%</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[10px] font-semibold text-[#334155]">{row.text}</p>
+                <p className="text-[8px] text-[#94a3b8]">{row.meta} · saved today</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </BrowserFrame>
+  );
+}
+
+function EvidenceShowcase() {
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setActive((current) => (current + 1) % SHOWCASE.length);
+    }, 4200);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const previews = [<ScorePreview />, <FixPreview />, <HistoryPreview />];
+
+  return (
+    <div className="relative">
+      <div className="absolute -inset-4 rounded-[2rem] bg-accent/10 blur-2xl" />
+      <div className="relative overflow-hidden rounded-[1.65rem] border border-navy/8 bg-white/80 p-3 shadow-[0_26px_80px_-52px_rgba(15,23,42,0.85)]">
+        <div className="relative min-h-[330px] sm:min-h-[360px]">
+          {previews.map((preview, index) => {
+            const isActive = index === active;
+            return (
+              <div
+                key={SHOWCASE[index].label}
+                className={`absolute inset-0 transition-all duration-700 ease-out ${
+                  isActive
+                    ? "translate-x-0 scale-100 opacity-100"
+                    : index < active
+                      ? "-translate-x-8 scale-[0.97] opacity-0"
+                      : "translate-x-8 scale-[0.97] opacity-0"
+                }`}
+                aria-hidden={!isActive}
+              >
+                {preview}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          {SHOWCASE.map((item, index) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => setActive(index)}
+              className={`rounded-xl border px-3 py-2 text-left transition active:scale-[0.98] ${
+                active === index
+                  ? "border-accent bg-accent/12 text-navy"
+                  : "border-navy/8 bg-white text-charcoal/55 hover:border-accent/45 hover:bg-accent/5"
+              }`}
+            >
+              <span className="text-[10px] font-bold uppercase tracking-wide">{item.label}</span>
+              <span className="mt-0.5 block text-xs font-bold">{item.title}</span>
+            </button>
+          ))}
+        </div>
+
+        <p className="mt-3 min-h-[40px] px-1 text-sm leading-6 text-charcoal/62">
+          {SHOWCASE[active].caption}
+        </p>
       </div>
     </div>
   );
@@ -175,7 +345,7 @@ export function Hero({ onTryFree }: HeroProps) {
 
           <div ref={rightRef} className="scroll-reveal" data-delay="1">
             <div className="animate-float-smooth will-change-transform">
-              <AppMockup />
+              <EvidenceShowcase />
             </div>
           </div>
         </div>
