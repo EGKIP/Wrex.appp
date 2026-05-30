@@ -110,163 +110,81 @@ function ScorePreview() {
   );
 }
 
-function FixPreview() {
+function EvidenceCard({
+  title,
+  eyebrow,
+  children,
+  className = "",
+}: {
+  title: string;
+  eyebrow: string;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <BrowserFrame label="wrex.app / editor">
-      <div className="bg-[#f8fafc] p-4">
-        <div className="rounded-lg border border-[#e2e8f0] bg-white p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <span className="text-[9px] font-semibold uppercase tracking-widest text-[#94a3b8]">Your writing</span>
-            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[8px] font-bold text-emerald-600">2 fixes ready</span>
-          </div>
-          <p className="text-[10.5px] leading-[1.8] text-[#334155]">
-            My argument is stronger when I explain the moment I changed my mind.
-            I <span className="border-b-2 border-red-400">recieve</span>d feedback,
-            revised the claim, and added an example from my own experience.
-          </p>
-          <div className="mt-4 rounded-lg border border-[#dbeafe] bg-[#eff6ff] p-2.5">
-            <div className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-              <div className="min-w-0 flex-1">
-                <p className="text-[9px] font-bold text-[#0f172a]">Spelling suggestion</p>
-                <p className="mt-1 text-[9px] text-[#475569]">
-                  Replace <span className="font-mono line-through">recieve</span> with{" "}
-                  <span className="font-mono font-bold">receive</span>.
-                </p>
-              </div>
-              <span className="rounded bg-emerald-500 px-2 py-1 text-[8px] font-bold text-white">Apply</span>
-            </div>
-          </div>
-          <div className="mt-3 flex gap-1.5">
-            <span className="h-1.5 flex-1 rounded-full bg-emerald-400" />
-            <span className="h-1.5 flex-1 rounded-full bg-amber-300" />
-            <span className="h-1.5 flex-1 rounded-full bg-slate-200" />
-          </div>
-        </div>
-      </div>
-    </BrowserFrame>
+    <div className={`rounded-2xl border border-navy/8 bg-white/95 p-4 shadow-[0_20px_54px_-38px_rgba(15,23,42,0.72)] ${className}`}>
+      <p className="text-[10px] font-bold uppercase tracking-wide text-accent-dark">{eyebrow}</p>
+      <p className="mt-1 text-sm font-bold text-navy">{title}</p>
+      <div className="mt-3">{children}</div>
+    </div>
   );
 }
 
-function HistoryPreview() {
-  const rows = [
-    { score: 28, text: "Narrative reflection draft", meta: "312 words", tone: "bg-emerald-100 text-emerald-700" },
-    { score: 46, text: "Technology essay revision", meta: "487 words", tone: "bg-amber-100 text-amber-700" },
-    { score: 18, text: "Scholarship paragraph", meta: "196 words", tone: "bg-emerald-100 text-emerald-700" },
-  ];
-
+function VisualStack() {
   return (
-    <BrowserFrame label="wrex.app / history">
-      <div className="bg-white">
-        <div className="border-b border-[#e2e8f0] px-4 py-3">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-[#94a3b8]">Saved work</p>
-          <div className="mt-2 grid grid-cols-3 gap-1.5">
-            <div className="rounded-lg bg-[#f8fafc] px-2 py-1.5 text-center">
-              <p className="text-[11px] font-extrabold text-[#0f172a]">31%</p>
-              <p className="text-[7px] text-[#64748b]">avg score</p>
-            </div>
-            <div className="rounded-lg bg-[#f8fafc] px-2 py-1.5 text-center">
-              <p className="text-[11px] font-extrabold text-[#0f172a]">12</p>
-              <p className="text-[7px] text-[#64748b]">checks</p>
-            </div>
-            <div className="rounded-lg bg-[#fef3c7] px-2 py-1.5 text-center">
-              <p className="text-[11px] font-extrabold text-[#0f172a]">Pro</p>
-              <p className="text-[7px] text-[#92400e]">voice tools</p>
-            </div>
-          </div>
-        </div>
-        <div className="divide-y divide-[#e2e8f0]">
-          {rows.map((row) => (
-            <div key={row.text} className="flex items-center gap-2.5 px-4 py-3">
-              <span className={`rounded-md px-2 py-1 text-[9px] font-bold ${row.tone}`}>{row.score}%</span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[10px] font-semibold text-[#334155]">{row.text}</p>
-                <p className="text-[8px] text-[#94a3b8]">{row.meta} · saved today</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </BrowserFrame>
-  );
-}
-
-const BENTO_LABELS = [
-  { label: "Score", desc: "Authenticity score at a glance" },
-  { label: "Fixes", desc: "Grammar fixed inline, no copy-paste" },
-  { label: "History", desc: "Every draft saved and tracked" },
-];
-
-function BentoShowcase() {
-  return (
-    <div className="relative">
-      {/* Soft ambient glow */}
+    <div className="relative mx-auto max-w-[650px] lg:max-w-none">
       <div
-        className="pointer-events-none absolute -inset-6 rounded-[3rem] opacity-70"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 60% at 50% 40%, rgba(251,191,36,0.13), transparent)",
-        }}
+        className="pointer-events-none absolute -inset-8 rounded-[3rem] opacity-70 blur-2xl"
+        style={{ background: "radial-gradient(ellipse at 50% 45%, rgba(251,191,36,0.16), transparent 68%)" }}
       />
 
-      <div className="relative rounded-[1.5rem] border border-navy/8 bg-white/80 p-3 shadow-[0_24px_64px_-20px_rgba(15,23,42,0.22)]">
-        {/* ── Bento grid ──────────────────────────────────────────────────────
-            Desktop: ScorePreview spans full left column (row-span-2).
-                     FixPreview sits top-right, HistoryPreview bottom-right.
-            Mobile:  All three stack vertically in one column.            */}
-        <div className="grid grid-cols-1 gap-2.5 md:grid-cols-[1.1fr_0.9fr] md:grid-rows-2">
-
-          {/* Score — left, spans both rows on md+ */}
-          <div
-            className="md:row-span-2 will-change-transform"
-            style={{
-              animation: "floatSmooth 6s cubic-bezier(0.45,0.05,0.55,0.95) infinite",
-              animationDelay: "0s",
-            }}
-          >
+      <div className="relative">
+        <div className="relative z-10 rounded-[1.65rem] border border-navy/8 bg-white/80 p-3 shadow-[0_28px_80px_-50px_rgba(15,23,42,0.9)]">
+          <div className="overflow-hidden rounded-xl">
             <ScorePreview />
           </div>
-
-          {/* Fixes — top right */}
-          <div
-            className="will-change-transform"
-            style={{
-              animation: "floatSmooth 7s cubic-bezier(0.45,0.05,0.55,0.95) infinite",
-              animationDelay: "1.1s",
-            }}
-          >
-            <FixPreview />
-          </div>
-
-          {/* History — bottom right */}
-          <div
-            className="will-change-transform"
-            style={{
-              animation: "floatSmooth 6.5s cubic-bezier(0.45,0.05,0.55,0.95) infinite",
-              animationDelay: "2.2s",
-            }}
-          >
-            <HistoryPreview />
-          </div>
         </div>
 
-        {/* ── Label strip ──────────────────────────────────────────────────── */}
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          {BENTO_LABELS.map(({ label, desc }) => (
-            <div
-              key={label}
-              className="rounded-xl border border-navy/6 bg-white px-2.5 py-2"
-            >
-              <span className="block text-[10px] font-bold uppercase tracking-wide text-accent">
-                {label}
-              </span>
-              <span className="mt-0.5 block text-[11px] leading-snug text-charcoal/55">
-                {desc}
-              </span>
+        <EvidenceCard
+          eyebrow="Inline fix"
+          title="Accept a correction in place"
+          className="relative z-20 mt-4 sm:absolute sm:-bottom-10 sm:-left-8 sm:mt-0 sm:w-64"
+        >
+          <div className="flex items-start gap-2 rounded-xl bg-emerald-50 px-3 py-2.5">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+            <div className="min-w-0">
+              <p className="text-xs leading-5 text-charcoal/65">
+                <span className="font-mono line-through text-charcoal/40">recieve</span>{" "}
+                <span className="text-charcoal/35">to</span>{" "}
+                <span className="font-mono font-bold text-navy">receive</span>
+              </p>
+              <p className="mt-1 text-[11px] text-emerald-700">One-click grammar cleanup</p>
             </div>
-          ))}
-        </div>
+          </div>
+        </EvidenceCard>
+
+        <EvidenceCard
+          eyebrow="Saved trail"
+          title="History without the clutter"
+          className="relative z-20 mt-3 sm:absolute sm:-right-6 sm:-top-7 sm:mt-0 sm:w-56"
+        >
+          <div className="space-y-2">
+            {[
+              { score: "28%", label: "Narrative draft", color: "bg-emerald-100 text-emerald-700" },
+              { score: "46%", label: "Essay revision", color: "bg-amber-100 text-amber-700" },
+            ].map((item) => (
+              <div key={item.label} className="flex items-center gap-2">
+                <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${item.color}`}>{item.score}</span>
+                <span className="truncate text-xs text-charcoal/62">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </EvidenceCard>
       </div>
+
+      <p className="relative mt-14 max-w-md text-sm leading-6 text-charcoal/58 sm:ml-auto sm:mt-12">
+        A simple workspace view: score first, fixes next, history nearby when you need it.
+      </p>
     </div>
   );
 }
@@ -344,7 +262,7 @@ export function Hero({ onTryFree }: HeroProps) {
           </div>
 
           <div ref={rightRef} className="scroll-reveal" data-delay="1">
-            <BentoShowcase />
+            <VisualStack />
           </div>
         </div>
       </div>
