@@ -127,7 +127,7 @@ function App() {
   const [pathname, setPathname] = useState(() => window.location.pathname);
 
   // Workspace sidebar state
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(() => window.innerWidth >= 768);
   const [profileOpen, setProfileOpen] = useState(false);
   const [history, setHistory] = useState<SubmissionRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
