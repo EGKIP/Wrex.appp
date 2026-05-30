@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { CheckCircle2, EyeOff, GraduationCap, ShieldCheck } from "lucide-react";
 
@@ -12,23 +12,6 @@ const TRUST = [
   { Icon: GraduationCap, label: "Built for students" },
 ];
 
-const SHOWCASE = [
-  {
-    label: "Score",
-    title: "Authenticity score",
-    caption: "See the first result immediately: score, confidence, and the sentences that need your touch.",
-  },
-  {
-    label: "Fixes",
-    title: "Inline writing fixes",
-    caption: "Accept small grammar suggestions without leaving the draft or losing your flow.",
-  },
-  {
-    label: "History",
-    title: "Saved progress",
-    caption: "Every logged-in analysis becomes a useful trail of scores, drafts, and assignment context.",
-  },
-];
 
 function BrowserFrame({ children, label }: { children: ReactNode; label: string }) {
   return (
@@ -208,64 +191,81 @@ function HistoryPreview() {
   );
 }
 
-function EvidenceShowcase() {
-  const [active, setActive] = useState(0);
+const BENTO_LABELS = [
+  { label: "Score", desc: "Authenticity score at a glance" },
+  { label: "Fixes", desc: "Grammar fixed inline, no copy-paste" },
+  { label: "History", desc: "Every draft saved and tracked" },
+];
 
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      setActive((current) => (current + 1) % SHOWCASE.length);
-    }, 4200);
-    return () => window.clearInterval(interval);
-  }, []);
-
-  const previews = [<ScorePreview />, <FixPreview />, <HistoryPreview />];
-
+function BentoShowcase() {
   return (
     <div className="relative">
-      <div className="absolute -inset-4 rounded-[2rem] bg-accent/10 blur-2xl" />
-      <div className="relative overflow-hidden rounded-[1.65rem] border border-navy/8 bg-white/80 p-3 shadow-[0_26px_80px_-52px_rgba(15,23,42,0.85)]">
-        <div className="relative min-h-[330px] sm:min-h-[360px]">
-          {previews.map((preview, index) => {
-            const isActive = index === active;
-            return (
-              <div
-                key={SHOWCASE[index].label}
-                className={`absolute inset-0 transition-all duration-700 ease-out ${
-                  isActive
-                    ? "translate-x-0 scale-100 opacity-100"
-                    : index < active
-                      ? "-translate-x-8 scale-[0.97] opacity-0"
-                      : "translate-x-8 scale-[0.97] opacity-0"
-                }`}
-                aria-hidden={!isActive}
-              >
-                {preview}
-              </div>
-            );
-          })}
+      {/* Soft ambient glow */}
+      <div
+        className="pointer-events-none absolute -inset-6 rounded-[3rem] opacity-70"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 60% at 50% 40%, rgba(251,191,36,0.13), transparent)",
+        }}
+      />
+
+      <div className="relative rounded-[1.5rem] border border-navy/8 bg-white/80 p-3 shadow-[0_24px_64px_-20px_rgba(15,23,42,0.22)]">
+        {/* ── Bento grid ──────────────────────────────────────────────────────
+            Desktop: ScorePreview spans full left column (row-span-2).
+                     FixPreview sits top-right, HistoryPreview bottom-right.
+            Mobile:  All three stack vertically in one column.            */}
+        <div className="grid grid-cols-1 gap-2.5 md:grid-cols-[1.1fr_0.9fr] md:grid-rows-2">
+
+          {/* Score — left, spans both rows on md+ */}
+          <div
+            className="md:row-span-2 will-change-transform"
+            style={{
+              animation: "floatSmooth 6s cubic-bezier(0.45,0.05,0.55,0.95) infinite",
+              animationDelay: "0s",
+            }}
+          >
+            <ScorePreview />
+          </div>
+
+          {/* Fixes — top right */}
+          <div
+            className="will-change-transform"
+            style={{
+              animation: "floatSmooth 7s cubic-bezier(0.45,0.05,0.55,0.95) infinite",
+              animationDelay: "1.1s",
+            }}
+          >
+            <FixPreview />
+          </div>
+
+          {/* History — bottom right */}
+          <div
+            className="will-change-transform"
+            style={{
+              animation: "floatSmooth 6.5s cubic-bezier(0.45,0.05,0.55,0.95) infinite",
+              animationDelay: "2.2s",
+            }}
+          >
+            <HistoryPreview />
+          </div>
         </div>
 
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
-          {SHOWCASE.map((item, index) => (
-            <button
-              key={item.label}
-              type="button"
-              onClick={() => setActive(index)}
-              className={`rounded-xl border px-3 py-2 text-left transition active:scale-[0.98] ${
-                active === index
-                  ? "border-accent bg-accent/12 text-navy"
-                  : "border-navy/8 bg-white text-charcoal/55 hover:border-accent/45 hover:bg-accent/5"
-              }`}
+        {/* ── Label strip ──────────────────────────────────────────────────── */}
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {BENTO_LABELS.map(({ label, desc }) => (
+            <div
+              key={label}
+              className="rounded-xl border border-navy/6 bg-white px-2.5 py-2"
             >
-              <span className="text-[10px] font-bold uppercase tracking-wide">{item.label}</span>
-              <span className="mt-0.5 block text-xs font-bold">{item.title}</span>
-            </button>
+              <span className="block text-[10px] font-bold uppercase tracking-wide text-accent">
+                {label}
+              </span>
+              <span className="mt-0.5 block text-[11px] leading-snug text-charcoal/55">
+                {desc}
+              </span>
+            </div>
           ))}
         </div>
-
-        <p className="mt-3 min-h-[40px] px-1 text-sm leading-6 text-charcoal/62">
-          {SHOWCASE[active].caption}
-        </p>
       </div>
     </div>
   );
@@ -344,9 +344,7 @@ export function Hero({ onTryFree }: HeroProps) {
           </div>
 
           <div ref={rightRef} className="scroll-reveal" data-delay="1">
-            <div className="animate-float-smooth will-change-transform">
-              <EvidenceShowcase />
-            </div>
+            <BentoShowcase />
           </div>
         </div>
       </div>
