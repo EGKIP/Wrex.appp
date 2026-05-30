@@ -19,7 +19,9 @@ STOP_WORDS: frozenset[str] = frozenset(
     were be been being have has had do does did will would could should may
     might shall can this that these those it its your the you your their
     our we they he she i my his her its all any each every both more most
-    also such no not than then when where who which what how much many""".split()
+    also such no not than then when where who which what how much many
+    use using make sure ensure include show demonstrate write provide cover
+    must need needs required should be must be well good clear""".split()
 )
 
 # ── Lightweight suffix stemmer (no external deps) ────────────────────────────
@@ -62,6 +64,10 @@ _SYNONYMS: dict[str, frozenset[str]] = {
     "definit": frozenset({"mean", "concept", "term", "notion", "explain", "describ"}),
     "perspect": frozenset({"viewpoint", "standpoint", "approach", "lens", "angle", "point"}),
     "reflect": frozenset({"consider", "contempl", "ponder", "think", "examin", "introspect"}),
+    "explain": frozenset({"clarif", "elabor", "describ", "detail", "interpret", "expound"}),
+    "identif": frozenset({"recogniz", "pinpoint", "determin", "specif", "highlight", "spot"}),
+    "appl": frozenset({"implement", "utilis", "employ", "incorpor", "integrat", "demonstrat"}),
+    "evaluat": frozenset({"assess", "measur", "judg", "apprais", "critic", "review", "analyz"}),
 }
 
 # Build a reverse lookup: stem → canonical group stem
@@ -187,12 +193,18 @@ def match_rubric(draft: str, rubric: str) -> RubricMatchResult:
 
     overall = int(round(sum(r.score for r in results) / len(results) * 100))
 
+    def _n(n: int, noun: str) -> str:
+        return f"{n} {noun}" if n != 1 else f"1 {noun[:-1] if noun.endswith('s') else noun}"
+
     if overall >= 70:
         summary = f"Strong alignment. You've covered {strong} of {len(results)} criteria well."
     elif overall >= 40:
-        summary = f"Partial alignment. {partial} criteria need more depth and {missing} are missing."
+        summary = (
+            f"Partial alignment. {_n(partial, 'criteria')} need more depth"
+            f"{(' and ' + _n(missing, 'criteria') + ' not addressed') if missing else ''}."
+        )
     else:
-        summary = f"Weak alignment. {missing} of {len(results)} criteria are not addressed in the draft."
+        summary = f"Weak alignment. {_n(missing, 'criteria')} not addressed in the draft."
 
     return RubricMatchResult(
         overall_score=overall,

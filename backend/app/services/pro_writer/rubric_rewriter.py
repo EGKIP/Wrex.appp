@@ -4,7 +4,11 @@ Rubric rewriter service — calls GPT-4o mini to rewrite text aligned to a rubri
 from __future__ import annotations
 
 import json
+import re
+import urllib.error
 import urllib.request
+
+from fastapi import HTTPException, status
 
 from app.core.credits import OpenAITokenUsage
 from app.core.config import settings
@@ -15,6 +19,13 @@ logger = get_logger(__name__)
 
 _OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 _TIMEOUT = 30
+
+
+def _strip_code_fences(text: str) -> str:
+    """Remove ```json ... ``` wrappers GPT sometimes adds despite instructions."""
+    stripped = re.sub(r"^```[a-z]*\s*", "", text.strip(), flags=re.IGNORECASE)
+    stripped = re.sub(r"\s*```$", "", stripped.strip())
+    return stripped.strip()
 
 
 def _chat(messages: list[dict]) -> tuple[str, OpenAITokenUsage]:
@@ -34,8 +45,16 @@ def _chat(messages: list[dict]) -> tuple[str, OpenAITokenUsage]:
             "Authorization": f"Bearer {settings.openai_api_key}",
         },
     )
-    with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        body_text = exc.read().decode(errors="replace")
+        logger.error("openai_http_error", extra={"status": exc.code, "body": body_text[:300]})
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"AI service error ({exc.code}). Please try again shortly.",
+        ) from exc
 
     usage: OpenAITokenUsage = {
         "prompt_tokens": int(data.get("usage", {}).get("prompt_tokens", 0)),
@@ -70,17 +89,29 @@ def rewrite_for_rubric(text: str, rubric: str) -> tuple[RubricRewriteResponse, O
 
     try:
         raw, usage = _chat([{"role": "system", "content": system}, {"role": "user", "content": user}])
-        data: dict = json.loads(raw)
+        try:
+            data: dict = json.loads(_strip_code_fences(raw))
+        except json.JSONDecodeError:
+            logger.error("rubric_rewrite_json_parse_error", extra={"raw_preview": raw[:200]})
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="AI returned an unexpected response. Please try again.",
+            )
         criteria = data.get("criteria_addressed", [])
         if not isinstance(criteria, list):
             criteria = []
         return (
             RubricRewriteResponse(
-                rewritten=str(data.get("rewritten", "")),
+                rewritten=str(data.get("rewritten", "") or raw),
                 criteria_addressed=[str(c) for c in criteria],
             ),
             usage,
         )
+    except HTTPException:
+        raise
     except Exception as exc:
         logger.error("rubric_rewrite_error", extra={"error": str(exc)})
-        raise
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="AI writing service is unavailable. Please try again shortly.",
+        ) from exc

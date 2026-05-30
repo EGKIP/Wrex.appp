@@ -4,8 +4,12 @@ Writing improvement service — calls GPT-4o mini to suggest sentence rewrites.
 from __future__ import annotations
 
 import json
+import re
+import urllib.error
 import urllib.request
 from typing import Optional
+
+from fastapi import HTTPException, status
 
 from app.core.credits import OpenAITokenUsage
 from app.core.config import settings
@@ -16,6 +20,13 @@ logger = get_logger(__name__)
 
 _OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 _TIMEOUT = 30
+
+
+def _strip_code_fences(text: str) -> str:
+    """Remove ```json ... ``` or ``` ... ``` wrappers GPT sometimes adds despite instructions."""
+    stripped = re.sub(r"^```[a-z]*\s*", "", text.strip(), flags=re.IGNORECASE)
+    stripped = re.sub(r"\s*```$", "", stripped.strip())
+    return stripped.strip()
 
 
 def _chat(messages: list[dict]) -> tuple[str, OpenAITokenUsage]:
@@ -35,8 +46,16 @@ def _chat(messages: list[dict]) -> tuple[str, OpenAITokenUsage]:
             "Authorization": f"Bearer {settings.openai_api_key}",
         },
     )
-    with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        body_text = exc.read().decode(errors="replace")
+        logger.error("openai_http_error", extra={"status": exc.code, "body": body_text[:300]})
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"AI service error ({exc.code}). Please try again shortly.",
+        ) from exc
 
     usage: OpenAITokenUsage = {
         "prompt_tokens": int(data.get("usage", {}).get("prompt_tokens", 0)),
@@ -77,7 +96,16 @@ def get_improve_suggestions(
 
     try:
         raw, usage = _chat([{"role": "system", "content": system}, {"role": "user", "content": user}])
-        items: list[dict] = json.loads(raw)
+        try:
+            items: list[dict] = json.loads(_strip_code_fences(raw))
+        except json.JSONDecodeError:
+            logger.error("improve_json_parse_error", extra={"raw_preview": raw[:200]})
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="AI returned an unexpected response. Please try again.",
+            )
+        if not isinstance(items, list):
+            items = []
         return (
             [
                 ImproveSuggestion(
@@ -87,9 +115,15 @@ def get_improve_suggestions(
                 )
                 for i in items
                 if isinstance(i, dict)
+                and i.get("sentence") and i.get("rewrite")
             ],
             usage,
         )
+    except HTTPException:
+        raise
     except Exception as exc:
         logger.error("improve_error", extra={"error": str(exc)})
-        raise
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="AI writing service is unavailable. Please try again shortly.",
+        ) from exc
