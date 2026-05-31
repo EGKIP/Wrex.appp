@@ -13,6 +13,12 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload   # → http://localhost:8000
 ```
 
+Smoke tests:
+```bash
+pip install -r requirements-dev.txt
+python3 -m pytest
+```
+
 Create `backend/.env`:
 ```
 WREX_SUPABASE_URL=
@@ -54,7 +60,7 @@ WREX_AI_CREDIT_METERING_ENABLED=true
 | Method | Path | Auth | Notes |
 |---|---|---|---|
 | GET | `/health` | none | Uptime check |
-| POST | `/analyze` | optional | AI-pattern score + rubric. Free: 500 words, Pro: 2,000 words |
+| POST | `/analyze` | optional | Authenticity score + rubric. Free: 500 words, Pro: 2,000 words |
 | POST | `/grammar-check` | none | LanguageTool pass |
 | GET | `/history` | JWT | User analysis history |
 | POST | `/pro/improve` | Pro JWT | GPT-4o mini sentence suggestions |

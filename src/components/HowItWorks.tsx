@@ -10,7 +10,7 @@ const STEPS = [
   {
     num: "02",
     title: "Wrex reads it",
-    body: "Sentence by sentence: voice patterns, vocabulary, consistency. Wrex pinpoints which parts sound AI-generated and why.",
+    body: "Sentence by sentence: voice patterns, vocabulary, and consistency. Wrex pinpoints which parts feel generic or off-voice.",
     detail: "Takes about 3 seconds",
   },
   {

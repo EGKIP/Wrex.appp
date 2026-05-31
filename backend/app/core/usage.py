@@ -1,5 +1,9 @@
 """
-Usage quota tracking and enforcement.
+Legacy usage quota tracking and enforcement.
+
+The current product keeps authenticity checks free and enforces word limits
+instead of daily analysis quotas. This module is retained for a future quota
+toggle, but it is not wired into `/analyze` today.
 
 Strategy:
   - Anonymous (no JWT): 1 analysis/day tracked by IP in SQLite anonymous_usage table.
@@ -135,7 +139,7 @@ def check_quota(
     Call from route handlers. Pass the result of get_optional_user as `user`.
     Returns QuotaInfo for inclusion in the response.
 
-    Pro users skip the free daily quota immediately — no DB hit.
+    Pro users skip the free quota immediately — no DB hit.
     Anonymous IP is resolved from X-Forwarded-For so Render's load-balancer
     proxy does not collapse all anonymous users onto a single IP.
     """

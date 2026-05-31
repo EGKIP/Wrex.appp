@@ -23,7 +23,7 @@ TRANSITION_PHRASES = {
     "in today's world", "in today's society",
 }
 
-# Hedging / softening phrases typical of AI-generated writing
+# Hedging / softening phrases that can make writing feel generic
 HEDGING_PHRASES = {
     "it is important to", "it should be noted", "it can be argued",
     "it is worth noting", "it is clear that", "it is evident that",

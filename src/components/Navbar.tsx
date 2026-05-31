@@ -83,7 +83,7 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
     return () => observers.forEach((o) => o?.disconnect());
   }, []);
 
-  // Quota progress bar: pct of daily quota consumed (0-100)
+  // Optional usage progress bar for environments that return quota metadata.
   const quotaPct = quota?.is_authenticated && quota.limit > 0
     ? Math.min(100, Math.round((quota.used / quota.limit) * 100))
     : null;
@@ -248,7 +248,7 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
                     </div>
                   </button>
                   {quota && !isPro && (
-                    <span className="text-xs text-charcoal/40">{quota.remaining}/{quota.limit} analyses left today</span>
+                    <span className="text-xs text-charcoal/40">{quota.remaining}/{quota.limit} checks left today</span>
                   )}
                   {isPro && (
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent"><Sparkles className="h-3 w-3" />Pro member</span>

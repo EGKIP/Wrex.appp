@@ -339,7 +339,7 @@ function aiLikelihoodLabel(score: number) {
   return "Low voice-signal risk";
 }
 
-/** Compact dual-score header: AI Risk + optional Rubric Match side-by-side */
+/** Compact dual-score header: authenticity + optional Rubric Match side-by-side */
 function DualScoreCard({ results }: { results: AnalyzeResponse }) {
   const ai = results.score;
   const rubric = results.rubric_result ?? null;
@@ -492,7 +492,7 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
 
         {/* Subtle footer */}
         <p className="mt-5 text-center text-[11px] text-charcoal/35">
-          AI score + grammar free forever — no account required.
+          Authenticity score + grammar free forever — no account required.
         </p>
       </aside>
     );
@@ -525,7 +525,7 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
         </section>
       )}
 
-      {/* ── Dual score header (AI Risk + optional Rubric Match) ── */}
+      {/* ── Dual score header (Authenticity + optional Rubric Match) ── */}
       <DualScoreCard results={results} />
 
       {/* ── Sentence-level highlights — always shown after analysis ── */}
@@ -599,7 +599,7 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
         <section className="surface-panel flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] p-4">
           <div>
             <p className="text-sm font-semibold text-navy">
-              {quota.remaining} of {quota.limit} free analyses left today
+              {quota.remaining} of {quota.limit} free checks left today
             </p>
             <p className="mt-1 text-xs text-charcoal/55">
               Create an account to save results and keep your writing history.

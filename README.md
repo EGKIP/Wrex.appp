@@ -45,6 +45,12 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload   
 ```
 
+For backend smoke tests:
+```bash
+pip install -r requirements-dev.txt
+python3 -m pytest
+```
+
 `backend/.env`:
 ```
 WREX_SUPABASE_URL=
@@ -68,7 +74,7 @@ stripe listen --forward-to localhost:8000/pro/webhook
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/health` | none | Uptime check |
-| POST | `/analyze` | optional | AI score + rubric (Free: 500w, Pro: 2,000w) |
+| POST | `/analyze` | optional | Authenticity score + rubric (Free: 500w, Pro: 2,000w) |
 | POST | `/grammar-check` | none | LanguageTool pass |
 | GET | `/history` | JWT | Past analyses |
 | POST | `/pro/improve` | Pro | Sentence rewrites |
@@ -112,7 +118,7 @@ src/
   App.tsx                   Root — landing / workspace routing
   components/               All UI components
   hooks/useAuth.ts          Supabase auth state
-  hooks/useQuota.ts         Daily quota
+  hooks/useProStatus.ts     Pro subscription + credit state
   lib/api.ts                Typed API client
   types.ts                  Shared interfaces
 

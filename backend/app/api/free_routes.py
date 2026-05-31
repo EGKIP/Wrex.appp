@@ -58,7 +58,7 @@ def analyze_text(
     payload: AnalyzeRequest,
     user: Optional[AuthUser] = Depends(get_optional_user),
 ) -> AnalyzeResponse:
-    # ── AI scoring is free for everyone — no daily quota enforced ─────────────
+    # ── Authenticity scoring is free for everyone — word limits still apply ───
     # Word limits still apply: 500 words (free) / 2,000 words (Pro).
     word_count = _count_words(payload.text)
     is_pro = getattr(user, "is_pro", False) if user else False

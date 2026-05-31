@@ -22,11 +22,11 @@ def build_red_flags(features: DocumentFeatures) -> list[str]:
     if features.repeated_phrase_ratio >= 0.10:
         flags.append("Repeated short phrases create a template-like pattern.")
     if features.hedging_phrase_count >= 2:
-        flags.append("Hedging/softening language detected (AI hallmark).")
+        flags.append("Hedging/softening language may weaken the writer's voice.")
     if features.opener_diversity <= 0.50:
         flags.append("Many sentences share the same opening word.")
     if features.formulaic_phrase_count >= 2:
-        flags.append("Formulaic AI-style phrases appear repeatedly.")
+        flags.append("Formulaic phrases appear repeatedly.")
     if features.sentence_burstiness <= 0.28 and features.sentence_count >= 4:
         flags.append("Sentence rhythm has low burstiness/variation.")
     if features.passive_sentence_count >= 2:
@@ -38,7 +38,7 @@ def build_red_flags(features: DocumentFeatures) -> list[str]:
 
 
 def _sentence_score(feature: SentenceFeatures) -> float:
-    """Compute a composite AI-risk score for a single sentence (0–1)."""
+    """Compute a composite voice-pattern score for a single sentence (0–1)."""
     return (
         feature.repeated_word_ratio * 0.28
         + (0.28 if feature.generic_transition_opener else 0.0)
@@ -79,8 +79,8 @@ def _build_reasons(feature: SentenceFeatures, risk: str) -> str:
 
     qualifier = "High" if risk == "high" else "Moderate"
     if parts:
-        return f"{qualifier} AI-pattern signal — {', '.join(parts)}."
-    return f"{qualifier} AI-pattern signal — uniform phrasing structure."
+        return f"{qualifier} voice-pattern signal — {', '.join(parts)}."
+    return f"{qualifier} voice-pattern signal — uniform phrasing structure."
 
 
 def _build_free_guidance(feature: SentenceFeatures) -> SentenceGuidance:
@@ -108,7 +108,7 @@ def _build_free_guidance(feature: SentenceFeatures) -> SentenceGuidance:
         )
 
     if feature.formulaic_phrase_count:
-        causes.append("Contains a formulaic phrase common in generic AI prose.")
+        causes.append("Contains a formulaic phrase common in generic prose.")
         actions.append(
             "Swap the broad phrase for a concrete detail, example, or observation "
             "from your own context."

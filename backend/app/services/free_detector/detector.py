@@ -118,11 +118,11 @@ def build_tips(score: int, features: DocumentFeatures | None = None) -> list[str
     )
     if flagged_count >= 3:
         tips.append(
-            f"{flagged_count} sentences showed high AI-pattern signals. "
+            f"{flagged_count} sentences showed high generic-pattern signals. "
             "Rewrite them in your own voice — add personal observations, concrete details, or examples."
         )
 
-    # High score with few other tips → add a general humanising tip
+    # High score with few other tips → add a general voice-strengthening tip
     if score >= 50 and len(tips) < 2:
         tips.append(
             "Add a specific personal anecdote, data point, or example to anchor your argument "
