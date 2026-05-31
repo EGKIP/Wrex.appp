@@ -236,7 +236,7 @@ export function Hero({ onTryFree }: HeroProps) {
 
             <p className="mt-7 max-w-[460px] text-[1.0625rem] leading-relaxed text-charcoal/70">
               Paste your draft. Wrex shows your authenticity score, flags sentences
-              that sound AI-generated, and fixes grammar inline before you submit.
+              that feel generic or inconsistent, and fixes grammar inline before you submit.
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-4">

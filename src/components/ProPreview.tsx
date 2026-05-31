@@ -7,7 +7,7 @@ interface ProPreviewProps {
 }
 
 const FREE_FEATURES = [
-  "AI-pattern score (0–100)",
+  "Authenticity score (0–100)",
   "Sentence-level flags & reasons",
   "Rubric alignment check",
   "Writing improvement tips",

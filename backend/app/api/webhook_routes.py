@@ -48,7 +48,7 @@ def _welcome_html(email: str) -> str:
       <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#0f172a">Free forever, no account needed to start:</p>
       <ul style="margin:0 0 24px;padding-left:20px;font-size:14px;line-height:1.9;color:#334155">
         <li>Authenticity score — see how much your writing sounds like you</li>
-        <li>Sentence-level flags — pinpoints exactly what reads as AI-generated</li>
+        <li>Sentence-level flags — pinpoints generic or off-voice passages</li>
         <li>Grammar and spelling — one-click fixes, inline</li>
       </ul>
       <a href="https://wrex.app/#analyzer"
@@ -143,4 +143,3 @@ async def user_signup_hook(
         logger.error("welcome_email_error", extra={"to": email, "error": str(exc)})
 
     return Response(status_code=204)
-

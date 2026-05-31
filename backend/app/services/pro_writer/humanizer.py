@@ -76,7 +76,7 @@ def _chat(messages: list[dict]) -> tuple[str, OpenAITokenUsage]:
 
 _TONE_PROMPTS: dict[str, str] = {
     "natural": (
-        "You are a writing editor who specialises in making AI-generated text sound natural "
+        "You are a writing editor who specialises in making generic text sound natural "
         "and human-written. Preserve the meaning but vary sentence structure, reduce repetition, "
         "and use more conversational transitions."
     ),

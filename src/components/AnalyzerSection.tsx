@@ -52,14 +52,14 @@ const CACHED_SAMPLE_RESULT: AnalyzeResponse = {
       index: 2,
       text: "However, it is also important to think carefully about how writing can remain personal, specific, and grounded in real understanding.",
       score: 0.35,
-      reason: "Moderate AI-pattern signal — generic transition opener.",
+      reason: "Moderate voice-pattern signal — generic transition opener.",
       risk_level: "medium",
     },
     {
       index: 1,
       text: "Moreover, it offers convenience and efficiency in many different contexts.",
       score: 0.34,
-      reason: "Moderate AI-pattern signal — generic transition opener.",
+      reason: "Moderate voice-pattern signal — generic transition opener.",
       risk_level: "medium",
     },
   ],
@@ -798,7 +798,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                   <span className="rounded-full bg-mist px-2.5 py-1 font-medium">500 words per check</span>
                   {quota?.is_authenticated && (
                     <span className="rounded-full bg-mist px-2.5 py-1 font-medium">
-                      {quota.remaining} / {quota.limit} analyses left today
+                      {quota.remaining} / {quota.limit} checks left today
                     </span>
                   )}
                   <button

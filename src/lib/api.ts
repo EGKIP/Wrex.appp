@@ -12,7 +12,7 @@ import type {
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 
-/** Typed error that carries the HTTP status code for UI branching (e.g. 429 quota wall). */
+/** Typed error that carries the HTTP status code for UI branching. */
 export class ApiError extends Error {
   constructor(
     public readonly status: number,

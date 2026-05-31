@@ -7,7 +7,7 @@ const FAQS = [
   },
   {
     q: "How does Wrex analyze my writing?",
-    a: "Wrex reads your draft sentence by sentence — checking vocabulary variety, phrase repetition, sentence rhythm, and transition patterns. It pinpoints the exact sentences that sound AI-generated and explains why, so you know what to rewrite. Your text is processed securely and never shared with third parties.",
+    a: "Wrex reads your draft sentence by sentence — checking vocabulary variety, phrase repetition, sentence rhythm, and transition patterns. It pinpoints the exact sentences that feel generic or inconsistent with your voice, so you know what to rewrite. Your text is processed securely and never shared with third parties.",
   },
   {
     q: "What is rubric alignment?",
