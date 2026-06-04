@@ -23,6 +23,37 @@ export class ApiError extends Error {
   }
 }
 
+function buildNetworkErrorMessage(): string {
+  if (!import.meta.env.PROD) {
+    return "Wrex can't reach the local API right now. Start the backend server and try again.";
+  }
+
+  if (/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/i.test(API_BASE_URL)) {
+    return "This build points to a local API URL. Confirm VITE_API_BASE_URL in Vercel, then redeploy the frontend.";
+  }
+
+  return "Wrex can't reach the server right now. Check your connection and try again in a moment.";
+}
+
+async function fetchWithApiErrors(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    const message =
+      error instanceof DOMException && error.name === "AbortError"
+        ? "The request took too long. Try again."
+        : buildNetworkErrorMessage();
+    throw new ApiError(503, message);
+  }
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as
@@ -49,7 +80,7 @@ export async function analyzeText(
     headers["Authorization"] = `Bearer ${accessToken}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}/analyze`, {
+  const response = await fetchWithApiErrors(`${API_BASE_URL}/analyze`, {
     method: "POST",
     headers,
     body: JSON.stringify({ text, rubric: rubric ?? null }),
@@ -59,7 +90,7 @@ export async function analyzeText(
 }
 
 export async function joinWaitlist(email: string): Promise<WaitlistResponse> {
-  const response = await fetch(`${API_BASE_URL}/waitlist`, {
+  const response = await fetchWithApiErrors(`${API_BASE_URL}/waitlist`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -71,7 +102,7 @@ export async function joinWaitlist(email: string): Promise<WaitlistResponse> {
 }
 
 export async function getHistory(accessToken: string): Promise<SubmissionList> {
-  const response = await fetch(`${API_BASE_URL}/history`, {
+  const response = await fetchWithApiErrors(`${API_BASE_URL}/history`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -83,7 +114,7 @@ export async function deleteHistoryItem(
   id: string,
   accessToken: string,
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/history/${id}`, {
+  const response = await fetchWithApiErrors(`${API_BASE_URL}/history/${id}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -93,7 +124,7 @@ export async function deleteHistoryItem(
 }
 
 export async function getProStatus(accessToken: string): Promise<ProStatusResponse> {
-  const response = await fetch(`${API_BASE_URL}/pro/status`, {
+  const response = await fetchWithApiErrors(`${API_BASE_URL}/pro/status`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   return handleResponse<ProStatusResponse>(response);
@@ -101,7 +132,7 @@ export async function getProStatus(accessToken: string): Promise<ProStatusRespon
 
 /** Call after checkout completes — syncs is_pro directly from Stripe in case webhook was delayed. */
 export async function syncSubscription(accessToken: string): Promise<ProStatusResponse> {
-  const response = await fetch(`${API_BASE_URL}/pro/sync-subscription`, {
+  const response = await fetchWithApiErrors(`${API_BASE_URL}/pro/sync-subscription`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -112,7 +143,7 @@ export async function syncSubscription(accessToken: string): Promise<ProStatusRe
 }
 
 export async function createCheckoutSession(accessToken: string): Promise<{ client_secret: string }> {
-  const response = await fetch(`${API_BASE_URL}/pro/checkout`, {
+  const response = await fetchWithApiErrors(`${API_BASE_URL}/pro/checkout`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -123,7 +154,7 @@ export async function createCheckoutSession(accessToken: string): Promise<{ clie
 }
 
 export async function createBillingPortalSession(accessToken: string): Promise<{ url: string }> {
-  const response = await fetch(`${API_BASE_URL}/pro/billing-portal`, {
+  const response = await fetchWithApiErrors(`${API_BASE_URL}/pro/billing-portal`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -137,7 +168,7 @@ export async function checkGrammar(
   text: string,
   language = "en-US",
 ): Promise<GrammarCheckResponse> {
-  const response = await fetch(`${API_BASE_URL}/grammar-check`, {
+  const response = await fetchWithApiErrors(`${API_BASE_URL}/grammar-check`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text, language }),
@@ -150,7 +181,7 @@ export async function proImprove(
   rubric: string | undefined,
   accessToken: string,
 ): Promise<ImproveResponse> {
-  const response = await fetch(`${API_BASE_URL}/pro/improve`, {
+  const response = await fetchWithApiErrors(`${API_BASE_URL}/pro/improve`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -166,7 +197,7 @@ export async function proHumanize(
   accessToken: string,
   tone: string = "natural",
 ): Promise<HumanizeResponse> {
-  const response = await fetch(`${API_BASE_URL}/pro/humanize`, {
+  const response = await fetchWithApiErrors(`${API_BASE_URL}/pro/humanize`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -182,7 +213,7 @@ export async function proRubricRewrite(
   rubric: string,
   accessToken: string,
 ): Promise<RubricRewriteResponse> {
-  const response = await fetch(`${API_BASE_URL}/pro/rubric-rewrite`, {
+  const response = await fetchWithApiErrors(`${API_BASE_URL}/pro/rubric-rewrite`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
