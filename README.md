@@ -29,6 +29,11 @@ npm install
 npm run dev       
 ```
 
+Quick smoke check from the repo root:
+```bash
+npm run test:smoke
+```
+
 `.env.local`:
 ```
 VITE_SUPABASE_URL=
