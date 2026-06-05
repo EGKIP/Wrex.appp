@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { HelpCircle, History, LayoutDashboard, Sparkles } from "lucide-react";
 import type { AuthState } from "../hooks/useAuth";
 import type { ProCreditStatus } from "../hooks/useProStatus";
 import type { QuotaInfo } from "../types";
 import { Brand } from "./Brand";
-import { ProfileModal } from "./ProfileModal";
+
+const ProfileModal = lazy(async () => {
+  const module = await import("./ProfileModal");
+  return { default: module.ProfileModal };
+});
 
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
@@ -310,16 +314,18 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
       </div>
     </header>
 
-    <ProfileModal
-      open={profileOpen}
-      onClose={() => setProfileOpen(false)}
-      auth={auth}
-      isPro={isPro}
-      proCredits={proCredits}
-      quota={quota}
-      onUpgrade={onUpgrade ?? (() => {})}
-      accessToken={accessToken}
-    />
+    <Suspense fallback={null}>
+      <ProfileModal
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        auth={auth}
+        isPro={isPro}
+        proCredits={proCredits}
+        quota={quota}
+        onUpgrade={onUpgrade ?? (() => {})}
+        accessToken={accessToken}
+      />
+    </Suspense>
     </>
   );
 }

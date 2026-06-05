@@ -1,15 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { AnalyzerSection } from "./components/AnalyzerSection";
-import { AuthModal } from "./components/AuthModal";
-import { CheckoutModal } from "./components/CheckoutModal";
 import { FaqSection } from "./components/FaqSection";
 import { Footer } from "./components/Footer";
 import { FreeVsPaid } from "./components/FreeVsPaid";
 import { Hero } from "./components/Hero";
 import { HowItWorks } from "./components/HowItWorks";
-import { LegalPage } from "./components/LegalPage";
 import { Navbar } from "./components/Navbar";
-import { ProfileModal } from "./components/ProfileModal";
 import { Toaster } from "./components/Toaster";
 import { WorkspaceSidebar } from "./components/WorkspaceSidebar";
 import { useToast } from "./context/toast";
@@ -18,6 +14,23 @@ import { useProStatus } from "./hooks/useProStatus";
 import { createCheckoutSession, getHistory, syncSubscription } from "./lib/api";
 import type { QuotaInfo, SubmissionRecord } from "./types";
 import type { User } from "@supabase/supabase-js";
+
+const AuthModal = lazy(async () => {
+  const module = await import("./components/AuthModal");
+  return { default: module.AuthModal };
+});
+const CheckoutModal = lazy(async () => {
+  const module = await import("./components/CheckoutModal");
+  return { default: module.CheckoutModal };
+});
+const LegalPage = lazy(async () => {
+  const module = await import("./components/LegalPage");
+  return { default: module.LegalPage };
+});
+const ProfileModal = lazy(async () => {
+  const module = await import("./components/ProfileModal");
+  return { default: module.ProfileModal };
+});
 
 const LEGAL_PAGES = {
   "/privacy": {
@@ -324,7 +337,9 @@ function App() {
 
       {legalPage ? (
         <>
-          <LegalPage {...legalPage} />
+          <Suspense fallback={null}>
+            <LegalPage {...legalPage} />
+          </Suspense>
           <Footer />
         </>
       ) : isWorkspace ? (
@@ -384,30 +399,36 @@ function App() {
         </>
       )}
 
-      <AuthModal
-        open={authModalOpen}
-        onClose={handleAuthModalClose}
-        auth={auth}
-        defaultTab={authModalTab}
-        isRecovery={auth.isRecovery}
-      />
+      <Suspense fallback={null}>
+        <AuthModal
+          open={authModalOpen}
+          onClose={handleAuthModalClose}
+          auth={auth}
+          defaultTab={authModalTab}
+          isRecovery={auth.isRecovery}
+        />
+      </Suspense>
 
-      <ProfileModal
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
-        auth={auth}
-        isPro={isPro}
-        proCredits={proCredits}
-        quota={quota}
-        onUpgrade={handleUpgrade}
-        accessToken={auth.session?.access_token ?? null}
-      />
+      <Suspense fallback={null}>
+        <ProfileModal
+          open={profileOpen}
+          onClose={() => setProfileOpen(false)}
+          auth={auth}
+          isPro={isPro}
+          proCredits={proCredits}
+          quota={quota}
+          onUpgrade={handleUpgrade}
+          accessToken={auth.session?.access_token ?? null}
+        />
+      </Suspense>
 
       {checkoutClientSecret && (
-        <CheckoutModal
-          clientSecret={checkoutClientSecret}
-          onClose={() => setCheckoutClientSecret(null)}
-        />
+        <Suspense fallback={null}>
+          <CheckoutModal
+            clientSecret={checkoutClientSecret}
+            onClose={() => setCheckoutClientSecret(null)}
+          />
+        </Suspense>
       )}
 
       <Toaster />
