@@ -36,7 +36,7 @@ Stripe webhook (local):
 stripe listen --forward-to localhost:8000/pro/webhook
 ```
 
-The frontend Vite app should use `VITE_API_BASE_URL=http://localhost:8000` locally. In production, Vercel serves the frontend and rewrites app routes to `index.html`; API requests should point at the Render backend, for example `VITE_API_BASE_URL=https://wrex-appp.onrender.com`.
+The frontend Vite app should use `VITE_API_BASE_URL=http://localhost:8000` locally. In production, Vercel serves the frontend and rewrites app routes to `index.html`; API requests should point at the current Render backend service URL, for example `VITE_API_BASE_URL=https://<current-render-service>.onrender.com`.
 
 Production backend env vars:
 ```

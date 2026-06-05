@@ -95,11 +95,13 @@ stripe listen --forward-to localhost:8000/pro/webhook
 
 **Vercel frontend**
 ```
-VITE_API_BASE_URL=https://wrex-appp.onrender.com
+VITE_API_BASE_URL=https://<current-render-service>.onrender.com
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 VITE_STRIPE_PUBLISHABLE_KEY=
 ```
+
+Use the current Render service URL for the active backend. Avoid copying stale hostnames into Vercel env vars without first confirming they resolve.
 
 **Render backend**
 ```

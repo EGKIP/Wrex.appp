@@ -30,6 +30,9 @@ create table if not exists public.ai_credit_events (
   created_at timestamptz not null default now()
 );
 
+create index if not exists ai_credit_events_user_id_idx
+  on public.ai_credit_events (user_id);
+
 alter table public.ai_credit_periods enable row level security;
 alter table public.ai_credit_events enable row level security;
 
@@ -37,17 +40,18 @@ drop policy if exists "Users can read own AI credit periods" on public.ai_credit
 create policy "Users can read own AI credit periods"
   on public.ai_credit_periods
   for select
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 drop policy if exists "Users can read own AI credit events" on public.ai_credit_events;
 create policy "Users can read own AI credit events"
   on public.ai_credit_events
   for select
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 create or replace function public.set_ai_credit_period_updated_at()
 returns trigger
 language plpgsql
+set search_path = public
 as $$
 begin
   new.updated_at = now();
@@ -186,5 +190,11 @@ begin
 end;
 $$;
 
+revoke execute on function public.wrex_get_or_create_ai_credit_balance(uuid, date, date, integer) from public;
+revoke execute on function public.wrex_get_or_create_ai_credit_balance(uuid, date, date, integer) from anon;
+revoke execute on function public.wrex_get_or_create_ai_credit_balance(uuid, date, date, integer) from authenticated;
+revoke execute on function public.wrex_debit_ai_credits(uuid, text, text, text, integer, integer, integer, integer, date, date, integer) from public;
+revoke execute on function public.wrex_debit_ai_credits(uuid, text, text, text, integer, integer, integer, integer, date, date, integer) from anon;
+revoke execute on function public.wrex_debit_ai_credits(uuid, text, text, text, integer, integer, integer, integer, date, date, integer) from authenticated;
 grant execute on function public.wrex_get_or_create_ai_credit_balance(uuid, date, date, integer) to service_role;
 grant execute on function public.wrex_debit_ai_credits(uuid, text, text, text, integer, integer, integer, integer, date, date, integer) to service_role;
