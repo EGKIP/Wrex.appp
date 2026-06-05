@@ -101,7 +101,9 @@ VITE_SUPABASE_ANON_KEY=
 VITE_STRIPE_PUBLISHABLE_KEY=
 ```
 
-Use the current Render service URL for the active backend. Avoid copying stale hostnames into Vercel env vars without first confirming they resolve.
+Use the current Render service URL for the active backend. Avoid copying stale hostnames into Vercel env vars without first confirming they resolve and return `{"status":"ok"}` from `/health`.
+
+If the configured Render hostname stops resolving, update `VITE_API_BASE_URL` only after you have confirmed the replacement URL from Render and re-run a lightweight smoke pass (`npm run test:smoke` locally plus a production `/health` check).
 
 **Render backend**
 ```

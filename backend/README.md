@@ -38,6 +38,8 @@ stripe listen --forward-to localhost:8000/pro/webhook
 
 The frontend Vite app should use `VITE_API_BASE_URL=http://localhost:8000` locally. In production, Vercel serves the frontend and rewrites app routes to `index.html`; API requests should point at the current Render backend service URL, for example `VITE_API_BASE_URL=https://<current-render-service>.onrender.com`.
 
+Before updating the production frontend env var, confirm the candidate Render hostname resolves and that `GET /health` returns `{"status":"ok"}`. This avoids shipping a stale backend hostname into Vercel.
+
 Production backend env vars:
 ```
 WREX_ENVIRONMENT=production
@@ -98,3 +100,5 @@ Supabase metering is expected to provide:
 - RLS policies allowing users to read their own credit periods/events, while backend writes use the service-role key.
 
 Apply [backend/docs/supabase_ai_credits.sql](backend/docs/supabase_ai_credits.sql) in Supabase before enforcing production metering. If the RPCs are missing or Supabase is temporarily unavailable, the backend logs a warning and fails open for active Pro users; only a successful balance check with zero remaining credits returns HTTP 402.
+
+For the June 5, 2026 advisor follow-up, review and apply [backend/docs/supabase_hardening_2026_06.sql](backend/docs/supabase_hardening_2026_06.sql). It hardens `SECURITY DEFINER` function execution, pins function `search_path`, and rewrites RLS policies to use `(select auth.uid())` so Supabase stops re-evaluating auth helpers per row.
