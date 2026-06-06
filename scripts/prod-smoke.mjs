@@ -87,6 +87,18 @@ async function main() {
     failures.push(`Backend health returned unexpected payload: ${JSON.stringify(health)}`);
   }
 
+  if (health && typeof health.app !== "string") {
+    failures.push("Backend health response is missing app metadata.");
+  }
+
+  if (health && typeof health.version !== "string") {
+    failures.push("Backend health response is missing version metadata.");
+  }
+
+  if (health && typeof health.timestamp_utc !== "string") {
+    failures.push("Backend health response is missing timestamp metadata.");
+  }
+
   const analyzePayload = {
     text: "This quick smoke test checks that Wrex can analyze a short authentic sample without using paid features.",
   };

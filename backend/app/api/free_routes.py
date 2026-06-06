@@ -1,9 +1,11 @@
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from app.core.auth import AuthUser, get_optional_user
+from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.sanitizer import sanitize
 from app.schemas.free import AnalyzeRequest, AnalyzeResponse
@@ -14,9 +16,25 @@ router = APIRouter(tags=["free"])
 logger = get_logger(__name__)
 
 
+class HealthResponse(BaseModel):
+    status: str
+    app: str
+    environment: str
+    version: str
+    docs_enabled: bool
+    timestamp_utc: str
+
+
 @router.get("/health")
-def healthcheck() -> dict[str, str]:
-    return {"status": "ok"}
+def healthcheck() -> HealthResponse:
+    return HealthResponse(
+        status="ok",
+        app=settings.app_name,
+        environment=settings.environment,
+        version="0.1.0",
+        docs_enabled=settings.docs_enabled,
+        timestamp_utc=datetime.now(timezone.utc).isoformat(),
+    )
 
 
 def _save_submission(user_id: str, payload: AnalyzeRequest, result: AnalyzeResponse) -> None:
