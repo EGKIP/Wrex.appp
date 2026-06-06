@@ -36,6 +36,7 @@ npm run test:smoke
 
 Production smoke check from the repo root:
 ```bash
+WREX_API_BASE_URL=https://<current-render-service>.onrender.com \
 npm run test:prod-smoke
 ```
 
@@ -106,7 +107,7 @@ VITE_SUPABASE_ANON_KEY=
 VITE_STRIPE_PUBLISHABLE_KEY=
 ```
 
-Use the current Render service URL for the active backend. Avoid copying stale hostnames into Vercel env vars without first confirming they resolve.
+Use the current Render service URL for the active backend. Avoid copying stale hostnames into Vercel env vars or smoke-test commands without first confirming they resolve.
 
 **Render backend**
 ```

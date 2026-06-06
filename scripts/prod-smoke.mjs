@@ -1,7 +1,16 @@
 const FRONTEND_URL = process.env.WREX_FRONTEND_URL ?? "https://wrex.app";
-const API_BASE_URL =
-  process.env.WREX_API_BASE_URL ?? "https://wrex-appp.onrender.com";
+const API_BASE_URL = process.env.WREX_API_BASE_URL;
 const REQUEST_TIMEOUT_MS = 15_000;
+
+function requireApiBaseUrl() {
+  if (API_BASE_URL) {
+    return API_BASE_URL.replace(/\/+$/, "");
+  }
+
+  throw new Error(
+    "Set WREX_API_BASE_URL to the current Render backend URL before running production smoke checks.",
+  );
+}
 
 function withTimeout(url, init = {}) {
   const controller = new AbortController();
@@ -62,6 +71,14 @@ async function expectText(url, label) {
 
 async function main() {
   const failures = [];
+  const resolvedApiBaseUrl = (() => {
+    try {
+      return requireApiBaseUrl();
+    } catch (error) {
+      failures.push(formatError(error));
+      return null;
+    }
+  })();
 
   const frontendHtml = await expectText(FRONTEND_URL, "Frontend").catch(
     (error) => {
@@ -74,14 +91,16 @@ async function main() {
     failures.push("Frontend HTML is missing the app root container.");
   }
 
-  const health = await expectJson(
-    `${API_BASE_URL}/health`,
-    undefined,
-    "Backend health",
-  ).catch((error) => {
-    failures.push(error.message);
-    return null;
-  });
+  const health = resolvedApiBaseUrl
+    ? await expectJson(
+        `${resolvedApiBaseUrl}/health`,
+        undefined,
+        "Backend health",
+      ).catch((error) => {
+        failures.push(error.message);
+        return null;
+      })
+    : null;
 
   if (health && health.status !== "ok") {
     failures.push(`Backend health returned unexpected payload: ${JSON.stringify(health)}`);
@@ -103,18 +122,20 @@ async function main() {
     text: "This quick smoke test checks that Wrex can analyze a short authentic sample without using paid features.",
   };
 
-  const analyze = await expectJson(
-    `${API_BASE_URL}/analyze`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(analyzePayload),
-    },
-    "Analyze smoke test",
-  ).catch((error) => {
-    failures.push(error.message);
-    return null;
-  });
+  const analyze = resolvedApiBaseUrl
+    ? await expectJson(
+        `${resolvedApiBaseUrl}/analyze`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(analyzePayload),
+        },
+        "Analyze smoke test",
+      ).catch((error) => {
+        failures.push(error.message);
+        return null;
+      })
+    : null;
 
   if (analyze) {
     if (typeof analyze.score !== "number") {
@@ -136,7 +157,7 @@ async function main() {
 
   console.log("Production smoke passed.");
   console.log(`- Frontend: ${FRONTEND_URL}`);
-  console.log(`- Backend: ${API_BASE_URL}`);
+  console.log(`- Backend: ${resolvedApiBaseUrl}`);
   console.log(`- Analyze score: ${analyze.score}`);
   console.log(`- Analyze words: ${analyze.stats.word_count}`);
 }

@@ -19,6 +19,12 @@ pip install -r requirements-dev.txt
 python3 -m pytest
 ```
 
+Production smoke from the repo root:
+```bash
+WREX_API_BASE_URL=https://<current-render-service>.onrender.com \
+npm run test:prod-smoke
+```
+
 Create `backend/.env`:
 ```
 WREX_SUPABASE_URL=
@@ -36,7 +42,7 @@ Stripe webhook (local):
 stripe listen --forward-to localhost:8000/pro/webhook
 ```
 
-The frontend Vite app should use `VITE_API_BASE_URL=http://localhost:8000` locally. In production, Vercel serves the frontend and rewrites app routes to `index.html`; API requests should point at the current Render backend service URL, for example `VITE_API_BASE_URL=https://<current-render-service>.onrender.com`.
+The frontend Vite app should use `VITE_API_BASE_URL=http://localhost:8000` locally. In production, Vercel serves the frontend and rewrites app routes to `index.html`; API requests and production smoke checks should point at the current Render backend service URL, for example `VITE_API_BASE_URL=https://<current-render-service>.onrender.com`.
 
 Production backend env vars:
 ```
