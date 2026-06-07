@@ -87,7 +87,7 @@ async function main() {
     },
   );
 
-  if (frontendHtml && !frontendHtml.includes("<div id=\"root\"></div>")) {
+  if (frontendHtml && !frontendHtml.includes('<div id="root"></div>')) {
     failures.push("Frontend HTML is missing the app root container.");
   }
 
@@ -103,7 +103,9 @@ async function main() {
     : null;
 
   if (health && health.status !== "ok") {
-    failures.push(`Backend health returned unexpected payload: ${JSON.stringify(health)}`);
+    failures.push(
+      `Backend health returned unexpected payload: ${JSON.stringify(health)}`,
+    );
   }
 
   if (health && typeof health.app !== "string") {
