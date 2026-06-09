@@ -40,6 +40,8 @@ WREX_API_BASE_URL=https://<current-render-service>.onrender.com \
 npm run test:prod-smoke
 ```
 
+Do not use `https://wrex.app/health` for backend verification. The Vercel frontend rewrites that path to the SPA shell; the backend health check lives on the current Render service URL.
+
 `.env.local`:
 ```
 VITE_SUPABASE_URL=

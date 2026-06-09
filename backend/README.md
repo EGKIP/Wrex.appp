@@ -25,6 +25,8 @@ WREX_API_BASE_URL=https://<current-render-service>.onrender.com \
 npm run test:prod-smoke
 ```
 
+Do not use `https://wrex.app/health` for backend verification. The Vercel frontend rewrites that path to `index.html`; the backend health endpoint is served by the current Render URL.
+
 Create `backend/.env`:
 ```
 WREX_SUPABASE_URL=
@@ -42,7 +44,7 @@ Stripe webhook (local):
 stripe listen --forward-to localhost:8000/pro/webhook
 ```
 
-The frontend Vite app should use `VITE_API_BASE_URL=http://localhost:8000` locally. In production, Vercel serves the frontend and rewrites app routes to `index.html`; API requests and production smoke checks should point at the current Render backend service URL, for example `VITE_API_BASE_URL=https://<current-render-service>.onrender.com`.
+The frontend Vite app should use `VITE_API_BASE_URL=http://localhost:8000` locally. In production, Vercel serves the frontend and rewrites app routes to `index.html`; API requests should point at the current Render backend service URL via `VITE_API_BASE_URL`, and production smoke checks should pass that same host via `WREX_API_BASE_URL=https://<current-render-service>.onrender.com`.
 
 Production backend env vars:
 ```
