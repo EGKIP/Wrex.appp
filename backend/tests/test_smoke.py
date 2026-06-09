@@ -18,7 +18,13 @@ def test_healthcheck() -> None:
     response = client.get("/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["app"] == "Wrex.app"
+    assert payload["environment"] == "development"
+    assert payload["version"] == "0.1.0"
+    assert payload["docs_enabled"] is True
+    assert payload["timestamp_utc"].endswith("+00:00")
 
 
 def test_analyze_returns_authenticity_result() -> None:

@@ -34,6 +34,14 @@ Quick smoke check from the repo root:
 npm run test:smoke
 ```
 
+Production smoke check from the repo root:
+```bash
+WREX_API_BASE_URL=https://<current-render-service>.onrender.com \
+npm run test:prod-smoke
+```
+
+Do not use `https://wrex.app/health` for backend verification. The Vercel frontend rewrites that path to the SPA shell; the backend health check lives on the current Render service URL.
+
 `.env.local`:
 ```
 VITE_SUPABASE_URL=
@@ -95,11 +103,13 @@ stripe listen --forward-to localhost:8000/pro/webhook
 
 **Vercel frontend**
 ```
-VITE_API_BASE_URL=https://wrex-appp.onrender.com
+VITE_API_BASE_URL=https://<current-render-service>.onrender.com
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 VITE_STRIPE_PUBLISHABLE_KEY=
 ```
+
+Use the current Render service URL for the active backend. Avoid copying stale hostnames into Vercel env vars or smoke-test commands without first confirming they resolve.
 
 **Render backend**
 ```

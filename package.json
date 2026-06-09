@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test:backend:smoke": "cd backend && python3 -m pytest tests/test_smoke.py",
-    "test:smoke": "npm run build && npm run test:backend:smoke"
+    "test:smoke": "npm run build && npm run test:backend:smoke",
+    "test:prod-smoke": "node scripts/prod-smoke.mjs"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^6.1.0",
