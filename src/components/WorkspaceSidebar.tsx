@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { MouseEvent } from "react";
-import { ChevronLeft, HelpCircle, History, Home, Search, Settings, Trash2, X } from "lucide-react";
+import { ArrowLeft, ClockCounterClockwise, Gear, Headset, House, MagnifyingGlass, Trash, X } from "phosphor-react";
 import { deleteHistoryItem } from "../lib/api";
 import { useToast } from "../context/toast";
 import type { SubmissionRecord } from "../types";
@@ -95,12 +95,12 @@ export function WorkspaceSidebar({
 
   const historyContent = (
     <>
-      <div className="flex items-center justify-between border-b border-charcoal/10 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-charcoal/10 px-4 py-4">
         <div>
-          <p className="text-sm font-semibold text-navy">
+          <p className="font-heading text-xl text-navy">
             History
             {!historyLoading && submissions.length > 0 && (
-              <span className="ml-2 rounded-full bg-accent/20 px-2 py-0.5 text-xs font-bold text-navy">
+              <span className="ml-2 rounded-full bg-accent/20 px-2 py-1 text-xs font-bold text-navy align-middle">
                 {submissions.length}
               </span>
             )}
@@ -110,25 +110,25 @@ export function WorkspaceSidebar({
         <button
           type="button"
           onClick={onHistoryToggle}
-          className="rounded-lg p-1.5 text-charcoal/40 transition hover:bg-mist hover:text-charcoal"
+          className="rounded-full p-2 text-charcoal/40 transition hover:bg-mist hover:text-charcoal"
           aria-label="Collapse history"
         >
-          <X className="h-4 w-4 sm:hidden" />
-          <ChevronLeft className="hidden h-4 w-4 sm:block" />
+          <X className="h-4 w-4 sm:hidden" weight="bold" />
+          <ArrowLeft className="hidden h-4 w-4 sm:block" weight="bold" />
         </button>
       </div>
 
       {!historyLoading && submissions.length > 0 && (
         <div className="grid grid-cols-3 gap-2 border-b border-charcoal/8 px-3 py-3">
-          <div className="rounded-xl bg-mist px-2 py-2 text-center">
+          <div className="ambient-panel rounded-[1rem] px-2 py-2 text-center">
             <p className="text-sm font-extrabold text-navy">{averageScore}%</p>
             <p className="text-[10px] uppercase tracking-wide text-charcoal/40">Average</p>
           </div>
-          <div className="rounded-xl bg-mist px-2 py-2 text-center">
+          <div className="ambient-panel rounded-[1rem] px-2 py-2 text-center">
             <p className="text-sm font-extrabold text-navy">{bestScore}%</p>
             <p className="text-[10px] uppercase tracking-wide text-charcoal/40">Best</p>
           </div>
-          <div className="rounded-xl bg-accent/15 px-2 py-2 text-center">
+          <div className="rounded-[1rem] bg-accent/15 px-2 py-2 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]">
             <p className="text-sm font-extrabold text-navy">{submissions.length}</p>
             <p className="text-[10px] uppercase tracking-wide text-charcoal/45">Saved</p>
           </div>
@@ -136,8 +136,8 @@ export function WorkspaceSidebar({
       )}
 
       <div className="border-b border-charcoal/8 px-3 py-3">
-        <label className="flex items-center gap-2 rounded-lg border border-charcoal/10 bg-mist/60 px-2.5 py-2 text-charcoal/45 focus-within:border-accent/60 focus-within:bg-white">
-          <Search className="h-3.5 w-3.5 shrink-0" />
+        <label className="editor-dock flex items-center gap-2 rounded-[1rem] px-2.5 py-2 text-charcoal/45 focus-within:border-accent/60 focus-within:bg-white">
+          <MagnifyingGlass className="h-3.5 w-3.5 shrink-0" weight="bold" />
           <input
             type="search"
             value={query}
@@ -159,14 +159,14 @@ export function WorkspaceSidebar({
         )}
         {!historyLoading && submissions.length === 0 && (
           <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
-            <History className="h-8 w-8 text-charcoal/20" />
+            <ClockCounterClockwise className="h-8 w-8 text-charcoal/20" weight="duotone" />
             <p className="text-sm text-charcoal/45">No submissions yet.</p>
             <p className="text-xs leading-5 text-charcoal/35">Run an analysis and this panel will become your writing trail.</p>
           </div>
         )}
         {!historyLoading && submissions.length > 0 && filteredSubmissions.length === 0 && (
           <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
-            <Search className="h-8 w-8 text-charcoal/20" />
+            <MagnifyingGlass className="h-8 w-8 text-charcoal/20" weight="duotone" />
             <p className="text-sm text-charcoal/40">No matching submissions.</p>
           </div>
         )}
@@ -179,7 +179,7 @@ export function WorkspaceSidebar({
                   onSelectHistory(getSubmissionText(s), getSubmissionRubric(s));
                   if (window.innerWidth < 640) onHistoryToggle();
                 }}
-                className="group flex cursor-pointer items-start gap-3 px-4 py-3.5 transition-colors hover:bg-mist"
+                className="group flex cursor-pointer items-start gap-3 px-4 py-3.5 transition-colors hover:bg-white/60"
               >
                 <span className={`mt-0.5 shrink-0 rounded-md px-2 py-0.5 text-xs font-bold tabular-nums ${scoreBadgeClass(s.score)}`}>
                   {s.score}
@@ -200,10 +200,10 @@ export function WorkspaceSidebar({
                 </div>
                 <button
                   onClick={(e) => handleDelete(s.id, e)}
-                  className="shrink-0 rounded p-1 text-charcoal/20 opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+                  className="shrink-0 rounded-full p-1.5 text-charcoal/20 opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
                   title="Delete"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash className="h-3.5 w-3.5" weight="bold" />
                 </button>
               </li>
             ))}
@@ -215,29 +215,29 @@ export function WorkspaceSidebar({
 
   return (
     <>
-      <aside className="hidden w-16 shrink-0 flex-col items-center border-r border-charcoal/8 bg-white px-2 py-3 sm:flex">
+      <aside className="hidden w-16 shrink-0 flex-col items-center border-r border-charcoal/8 bg-white/72 px-2 py-3 backdrop-blur sm:flex">
         <div className="flex flex-col items-center gap-1">
           {onGoHome && (
             <button
               type="button"
               onClick={onGoHome}
               title="Back to home"
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-charcoal/40 transition-colors hover:bg-mist hover:text-navy"
+              className="flex h-10 w-10 items-center justify-center rounded-[1rem] text-charcoal/40 transition-colors hover:bg-mist hover:text-navy"
             >
-              <Home className="h-5 w-5" />
+              <House className="h-5 w-5" weight="duotone" />
             </button>
           )}
           <button
             type="button"
             onClick={onHistoryToggle}
             title={historyOpen ? "Collapse history" : "Open history"}
-            className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+            className={`flex h-10 w-10 items-center justify-center rounded-[1rem] transition-colors ${
               historyOpen
                 ? "bg-navy text-white"
                 : "text-charcoal/50 hover:bg-mist hover:text-navy"
             }`}
           >
-            {historyOpen ? <ChevronLeft className="h-5 w-5" /> : <History className="h-5 w-5" />}
+            {historyOpen ? <ArrowLeft className="h-5 w-5" weight="bold" /> : <ClockCounterClockwise className="h-5 w-5" weight="duotone" />}
           </button>
         </div>
 
@@ -254,7 +254,7 @@ export function WorkspaceSidebar({
                 type="button"
                 onClick={() => onSelectHistory(getSubmissionText(submission), getSubmissionRubric(submission))}
                 title={`${submission.score}% · ${submission.text_preview}`}
-                className={`flex h-8 w-8 items-center justify-center rounded-lg text-[10px] font-extrabold tabular-nums transition hover:scale-105 ${scoreBadgeClass(submission.score)}`}
+                className={`flex h-8 w-8 items-center justify-center rounded-[0.85rem] text-[10px] font-extrabold tabular-nums transition hover:scale-105 ${scoreBadgeClass(submission.score)}`}
               >
                 {submission.score}
               </button>
@@ -270,23 +270,23 @@ export function WorkspaceSidebar({
           <a
             href="mailto:support@wrex.app"
             title="Support"
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-charcoal/40 transition-colors hover:bg-mist hover:text-navy"
+            className="flex h-10 w-10 items-center justify-center rounded-[1rem] text-charcoal/40 transition-colors hover:bg-mist hover:text-navy"
           >
-            <HelpCircle className="h-5 w-5" />
+            <Headset className="h-5 w-5" weight="duotone" />
           </a>
           <button
             type="button"
             onClick={onSettingsOpen}
             title="Settings & account"
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-charcoal/50 transition-colors hover:bg-mist hover:text-navy"
+            className="flex h-10 w-10 items-center justify-center rounded-[1rem] text-charcoal/50 transition-colors hover:bg-mist hover:text-navy"
           >
-            <Settings className="h-5 w-5" />
+            <Gear className="h-5 w-5" weight="duotone" />
           </button>
         </div>
       </aside>
 
       <aside
-        className={`hidden shrink-0 overflow-hidden border-r border-charcoal/10 bg-white transition-[width] duration-300 ease-out sm:flex sm:flex-col ${
+        className={`hidden shrink-0 overflow-hidden border-r border-charcoal/10 bg-white/78 backdrop-blur transition-[width] duration-300 ease-out sm:flex sm:flex-col ${
           historyOpen ? "w-80" : "w-0"
         }`}
         aria-hidden={!historyOpen}
@@ -295,7 +295,7 @@ export function WorkspaceSidebar({
       </aside>
 
       <div
-        className={`fixed inset-y-0 left-0 z-30 flex w-[min(22rem,calc(100vw-2rem))] flex-col border-r border-charcoal/10 bg-white shadow-2xl transition-transform duration-200 ease-out will-change-transform sm:hidden ${
+        className={`fixed inset-y-0 left-0 z-30 flex w-[min(22rem,calc(100vw-2rem))] flex-col border-r border-charcoal/10 bg-white/96 shadow-2xl backdrop-blur transition-transform duration-200 ease-out will-change-transform sm:hidden ${
           historyOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ top: "56px" }}

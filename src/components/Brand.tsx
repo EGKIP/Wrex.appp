@@ -7,18 +7,19 @@ type BrandProps = {
 export function Brand({ logoSrc = "/logo.svg", onClick }: BrandProps) {
   const inner = (
     <>
-      {/* Logo mark — the highlight-W icon */}
-      <div className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg">
+      <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-[1rem] border border-white/70 bg-white/85 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.65)]">
         <img
           src={logoSrc}
           alt="Wrex logo"
           className="h-full w-full object-contain"
         />
       </div>
-      {/* Wordmark — "Wrex" bold + ".app" lighter */}
-      <p className="text-[14px] font-bold tracking-tight text-navy leading-none">
-        Wrex<span className="font-normal text-charcoal/40 text-[12px]">.app</span>
-      </p>
+      <div className="leading-none">
+        <p className="font-heading text-[1.15rem] text-navy">Wrex</p>
+        <p className="mt-1 text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-charcoal/42">
+          writing workspace
+        </p>
+      </div>
     </>
   );
 
@@ -27,7 +28,7 @@ export function Brand({ logoSrc = "/logo.svg", onClick }: BrandProps) {
       <button
         type="button"
         onClick={onClick}
-        className="flex items-center gap-2 rounded-lg px-1 py-0.5 transition-opacity hover:opacity-75"
+        className="flex items-center gap-3 rounded-xl px-1 py-0.5 transition duration-300 hover:-translate-y-0.5 hover:opacity-95"
         title="Go to home"
       >
         {inner}
@@ -35,5 +36,5 @@ export function Brand({ logoSrc = "/logo.svg", onClick }: BrandProps) {
     );
   }
 
-  return <div className="flex items-center gap-2">{inner}</div>;
+  return <div className="flex items-center gap-3">{inner}</div>;
 }

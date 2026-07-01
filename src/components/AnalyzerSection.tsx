@@ -648,15 +648,15 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
       id="analyzer"
       className={
         workspace
-          ? "flex-1 overflow-y-auto bg-mist flex flex-col"
-          : "bg-[#f8fafc] px-6 py-16 lg:px-10 lg:py-20"
+          ? "flex flex-1 flex-col overflow-y-auto workspace-shell"
+          : "px-6 py-16 lg:px-10 lg:py-20"
       }
     >
       {/* ── Workspace sticky toolbar ──────────────────────────────────────── */}
       {workspace && (
-        <div className="sticky top-0 z-20 flex shrink-0 items-center gap-2 border-b border-charcoal/8 bg-white px-4 py-2.5 lg:px-8">
+        <div className="sticky top-0 z-20 flex shrink-0 items-center gap-2 border-b border-charcoal/8 bg-[rgba(255,252,246,0.82)] px-4 py-3 backdrop-blur lg:px-8">
           {/* Doc label */}
-          <span className="text-[13px] font-semibold text-navy">Document</span>
+          <span className="font-heading text-[1.1rem] text-navy">Document</span>
 
           {/* Grammar status badges */}
           {grammarLoading && (
@@ -708,7 +708,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
         </div>
       )}
 
-      <div className={`mx-auto w-full ${workspace ? "max-w-5xl flex-1 px-4 py-6 lg:px-8 lg:py-8" : "max-w-3xl"}`}>
+      <div className={`mx-auto w-full ${workspace ? "relative z-10 max-w-6xl flex-1 px-4 py-6 lg:px-8 lg:py-8" : "max-w-3xl"}`}>
         {!workspace && (
           <div className="mb-7">
             <h2 className="text-balance text-[2rem] font-bold tracking-tight text-navy lg:text-[2.75rem]">
@@ -722,10 +722,10 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
         )}
 
         {showWorkspaceStarter && (
-          <div className="mb-5 rounded-modal border border-navy/8 bg-white p-4 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.7)] sm:p-5">
+          <div className="ambient-panel mb-5 rounded-[1.8rem] p-4 sm:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-semibold text-navy">Ready for a new check</p>
+                <p className="font-heading text-2xl text-navy">Ready for a new check</p>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-charcoal/55">
                   Paste a draft below, open History from the menu, or try the sample to see how feedback appears.
                 </p>
@@ -734,7 +734,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 <button
                   type="button"
                   onClick={() => setEditorFocusKey((k) => k + 1)}
-                  className="rounded-soft border border-navy/12 bg-white px-3 py-2 text-xs font-semibold text-navy transition hover:bg-mist"
+                  className="workspace-chip rounded-full px-3 py-2 text-xs font-semibold text-navy transition hover:bg-mist"
                 >
                   Paste draft
                 </button>
@@ -746,7 +746,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                     setResultsStale(false);
                     setEditorFocusKey((k) => k + 1);
                   }}
-                  className="btn-shine rounded-soft bg-accent px-3 py-2 text-xs font-bold text-navy transition hover:bg-accent-dark"
+                  className="btn-shine rounded-full bg-accent px-3 py-2 text-xs font-bold text-navy transition hover:bg-accent-dark"
                 >
                   Try sample
                 </button>
@@ -756,11 +756,11 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
         )}
 
         {workspace && (
-          <div className="mb-4 rounded-[1.2rem] border border-navy/8 bg-white/88 px-4 py-3 shadow-[0_14px_45px_-40px_rgba(15,23,42,0.72)]">
+          <div className="ambient-panel mb-4 rounded-[1.5rem] px-4 py-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wide text-charcoal/35">Workspace</p>
-                <p className="mt-0.5 text-sm font-semibold text-navy">
+                <p className="text-[11px] font-bold uppercase tracking-[0.26em] text-charcoal/35">Workspace</p>
+                <p className="mt-1 font-heading text-2xl text-navy">
                   {isPro ? "Pro writing tools active" : "Free voice check"}
                 </p>
               </div>
@@ -795,9 +795,9 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center gap-2 text-xs text-charcoal/50">
-                  <span className="rounded-full bg-mist px-2.5 py-1 font-medium">500 words per check</span>
+                  <span className="workspace-chip rounded-full px-2.5 py-1 font-medium">500 words per check</span>
                   {quota?.is_authenticated && (
-                    <span className="rounded-full bg-mist px-2.5 py-1 font-medium">
+                    <span className="workspace-chip rounded-full px-2.5 py-1 font-medium">
                       {quota.remaining} / {quota.limit} checks left today
                     </span>
                   )}
@@ -830,7 +830,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
           )}
 
           {/* ── Editor card ─────────────────────────────────────────────────── */}
-          <div ref={editorCardRef} className={`rounded-[1.5rem] border border-navy/8 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.7)] transition-all duration-200 sm:p-6 ${
+          <div ref={editorCardRef} className={`editor-dock rounded-[1.9rem] p-5 transition-all duration-200 sm:p-6 ${
             results && resultsStale
               ? "ring-2 ring-amber-200/70"
               : ""
@@ -838,7 +838,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
             {/* Header row */}
             <div className="mb-1 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-navy">Your writing</p>
+                <p className="font-heading text-2xl text-navy">Your writing</p>
                 {results && resultsStale && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
                     <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
@@ -928,13 +928,13 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                     <button
                       type="button"
                       onClick={() => setShowRubric(true)}
-                      className="flex items-center gap-2 rounded-input border border-dashed border-accent/40 bg-accent/4 px-3 py-2 text-xs text-charcoal/60 transition hover:border-accent hover:text-navy"
-                    >
+                    className="flex items-center gap-2 rounded-[1rem] border border-dashed border-accent/40 bg-accent/4 px-3 py-2 text-xs text-charcoal/60 transition hover:border-accent hover:text-navy"
+                  >
                       <FileText className="h-3.5 w-3.5 text-accent" />
                       + Add rubric / assignment brief
                     </button>
                   ) : (
-                    <div className="rounded-input border border-accent/30 bg-accent/5 p-3">
+                    <div className="rounded-[1rem] border border-accent/30 bg-accent/5 p-3">
                       <div className="mb-2 flex items-center justify-between">
                         <span className="flex items-center gap-1.5 text-xs font-semibold text-navy">
                           <FileText className="h-3.5 w-3.5 text-accent" />Rubric / assignment brief
@@ -958,7 +958,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                         onChange={(e) => setRubric(e.target.value)}
                         placeholder={"1. Discuss the causes of the French Revolution\n2. Analyze the social impact\n3. Evaluate economic factors"}
                         rows={4}
-                        className="w-full rounded-input border border-border-base bg-white px-3 py-2.5 text-sm leading-6 text-charcoal outline-none transition placeholder:text-charcoal/30 focus:border-accent focus:ring-[3px] focus:ring-accent/15"
+                        className="w-full rounded-[1rem] border border-border-base bg-white px-3 py-2.5 text-sm leading-6 text-charcoal outline-none transition placeholder:text-charcoal/30 focus:border-accent focus:ring-[3px] focus:ring-accent/15"
                       />
                       <div className="mt-2 flex items-center justify-between">
                         <p className="text-[11px] text-charcoal/45">One criterion per line. Wrex checks each one after analysis.</p>
@@ -974,7 +974,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 <button
                   type="button"
                   onClick={handleUpgrade}
-                  className="flex items-center gap-2 rounded-input border border-dashed border-charcoal/15 bg-mist px-3 py-2 text-xs text-charcoal/40 transition hover:border-accent/40 hover:text-charcoal/60"
+                  className="flex items-center gap-2 rounded-[1rem] border border-dashed border-charcoal/15 bg-mist px-3 py-2 text-xs text-charcoal/40 transition hover:border-accent/40 hover:text-charcoal/60"
                 >
                   <Crown className="h-3.5 w-3.5 text-accent-dark" />
                   Add assignment brief &amp; tune the draft — <span className="font-semibold text-accent-dark">Pro voice tool</span>
@@ -1008,7 +1008,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 onClick={onAnalyze}
                 disabled={loading || text.trim().length < 10 || wordLimitExceeded}
                 title={wordLimitExceeded ? isPro ? `Pro limit: ${wordLimit} words` : "Free plan: 500 words. Upgrade to Pro for 2,000-word analyses." : undefined}
-                className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-8 py-3 text-base font-bold text-navy shadow-button transition hover:-translate-y-0.5 hover:shadow-button-hover active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                className="btn-shine flex items-center gap-2 rounded-full bg-gradient-to-br from-accent to-accent-dark px-8 py-3 text-base font-bold text-navy shadow-button transition hover:-translate-y-0.5 hover:shadow-button-hover active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {loading ? (
                   <>
@@ -1067,7 +1067,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
 
           {/* ── Pro AI panel ─────────────────────────────────────────────── */}
           {results && workspace && (
-          <div ref={proPanelRef} className="rounded-modal border border-border-base bg-white p-5 shadow-soft sm:p-6">
+          <div ref={proPanelRef} className="editor-dock rounded-[1.9rem] p-5 sm:p-6">
             {/* Header row — tappable on mobile to collapse/expand */}
             <div
               className="flex cursor-pointer items-center justify-between lg:cursor-default"

@@ -319,7 +319,13 @@ function App() {
   const legalPage = LEGAL_PAGES[legalPathname as keyof typeof LEGAL_PAGES];
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-charcoal">
+    <div className="flex min-h-screen flex-col text-charcoal">
+      <a
+        href="#analyzer"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-navy focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+      >
+        Skip to main editor
+      </a>
       <Navbar
         auth={auth}
         quota={quota}
@@ -344,7 +350,7 @@ function App() {
         </>
       ) : isWorkspace ? (
         /* ── Authenticated workspace ──────────────────────────────────────────── */
-        <main className="flex flex-1 overflow-hidden animate-fade-in">
+        <main className="workspace-shell flex flex-1 overflow-hidden animate-fade-in">
           <WorkspaceSidebar
             historyOpen={historyOpen}
             onHistoryToggle={() => setHistoryOpen((v) => !v)}
@@ -378,7 +384,7 @@ function App() {
       ) : (
         /* ── Marketing landing page ───────────────────────────────────────────── */
         <>
-          <main>
+          <main className="relative">
             <Hero onTryFree={isLoggedIn ? () => setViewMode("workspace") : () => openAuth("signup")} />
             <HowItWorks />
             <FreeVsPaid onUpgrade={handleUpgrade} />
