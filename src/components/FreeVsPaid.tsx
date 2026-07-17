@@ -34,7 +34,7 @@ function FeatureList({ items }: { items: string[] }) {
 
 export function FreeVsPaid({ onUpgrade }: FreeVsPaidProps) {
   return (
-    <section id="pricing" className="bg-[#fbfbf8] px-6 py-18 lg:px-10 lg:py-24">
+    <section id="pricing" className="bg-[#fbfbf8] px-6 py-16 lg:px-10 lg:py-24">
       <div className="mx-auto max-w-6xl">
         <Reveal className="mb-10 max-w-2xl">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.26em] text-accent-dark">

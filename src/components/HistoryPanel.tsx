@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { deleteHistoryItem } from "../lib/api";
 import { useToast } from "../context/toast";
+import { scoreBadgeClass } from "../lib/score";
+import { Spinner } from "./ui/Spinner";
 import type { SubmissionRecord } from "../types";
 
 // ─── Sparkline ──────────────────────────────────────────────────────────────
@@ -56,12 +58,6 @@ interface HistoryPanelProps {
   loading?: boolean;
   onSelect: (text_preview: string, rubric_preview: string | null) => void;
   onRefresh: () => void;
-}
-
-function scoreBadgeClass(score: number): string {
-  if (score >= 70) return "bg-red-100 text-red-700";
-  if (score >= 40) return "bg-amber-100 text-amber-700";
-  return "bg-emerald-100 text-emerald-700";
 }
 
 function formatDate(iso: string): string {
@@ -144,10 +140,7 @@ export function HistoryPanel({
           )}
         </span>
         {loading ? (
-          <svg className="h-3.5 w-3.5 animate-spin text-charcoal/40" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-          </svg>
+          <Spinner className="h-3.5 w-3.5 text-charcoal/40" />
         ) : (
           <span className="text-charcoal/40 text-xs">{open ? "▲ hide" : "▼ show"}</span>
         )}
