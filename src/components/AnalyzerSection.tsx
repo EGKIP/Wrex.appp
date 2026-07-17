@@ -676,15 +676,16 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
             <span className="text-[11px] text-charcoal/40">{wordCount} words</span>
           )}
 
-          {/* Re-analyze CTA — appears only when text has changed since last score */}
-          {results && resultsStale && !loading && (
+          {/* Primary action — always visible so users never scroll to find it */}
+          {!loading && wordCount > 0 && (
             <button
               type="button"
               onClick={onAnalyze}
-              disabled={loading || wordLimitExceeded}
+              disabled={text.trim().length < 10 || wordLimitExceeded}
+              title={wordLimitExceeded ? `Word limit: ${wordLimit}` : "⌘+Enter"}
               className="inline-flex items-center gap-1.5 rounded-soft bg-accent px-3 py-1.5 text-[11px] font-bold text-navy transition hover:bg-accent-dark active:scale-[0.97] disabled:opacity-50"
             >
-              ↑ Re-analyze
+              {results && resultsStale ? "↑ Re-analyze" : "Analyze"}
             </button>
           )}
           {loading && (
