@@ -4,6 +4,7 @@ import type { AuthState } from "../hooks/useAuth";
 import type { ProCreditStatus } from "../hooks/useProStatus";
 import type { QuotaInfo } from "../types";
 import { Brand } from "./Brand";
+import { Entrance } from "./Motion";
 
 const ProfileModal = lazy(async () => {
   const module = await import("./ProfileModal");
@@ -112,11 +113,12 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
         </div>
       )}
       <div className="mx-auto max-w-7xl">
-        <div className="glass-nav flex items-center justify-between px-4 py-3.5 md:px-5">
-          <Brand onClick={isWorkspace ? onGoHome : undefined} />
+        <Entrance y={-22}>
+          <div className="glass-nav flex items-center justify-between px-4 py-3.5 md:px-5">
+            <Brand onClick={isWorkspace ? onGoHome : undefined} />
 
-          {/* Desktop nav */}
-          <nav className="hidden items-center gap-3 text-sm md:flex">
+            {/* Desktop nav */}
+            <nav className="hidden items-center gap-3 text-sm md:flex">
             {/* Landing nav links — hidden in workspace mode */}
             {!isWorkspace && NAV_LINKS.map(({ label, href }) => (
               <a
@@ -204,22 +206,23 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
                 </button>
               </>
             )}
-          </nav>
+            </nav>
 
-          {/* Mobile hamburger */}
-          <button
-            type="button"
-            onClick={() => setMenuOpen((o) => !o)}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-border-base bg-white/70 text-navy md:hidden"
-            aria-label="Toggle menu"
-          >
-            {menuOpen ? (
-              <X className="h-[18px] w-[18px]" weight="bold" />
-            ) : (
-              <List className="h-[18px] w-[18px]" weight="bold" />
-            )}
-          </button>
-        </div>
+            {/* Mobile hamburger */}
+            <button
+              type="button"
+              onClick={() => setMenuOpen((o) => !o)}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-border-base bg-white/70 text-navy transition duration-300 hover:-translate-y-0.5 md:hidden"
+              aria-label="Toggle menu"
+            >
+              {menuOpen ? (
+                <X className="h-[18px] w-[18px]" weight="bold" />
+              ) : (
+                <List className="h-[18px] w-[18px]" weight="bold" />
+              )}
+            </button>
+          </div>
+        </Entrance>
 
         {/* Mobile drawer — drops under the pill */}
         {menuOpen && (

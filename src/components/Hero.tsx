@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { CheckCircle, LockKey, Student, WaveSine } from "phosphor-react";
-import { FloatCard, Reveal } from "./Motion";
+import { Entrance, FloatCard, Reveal } from "./Motion";
 
 interface HeroProps {
   onTryFree?: () => void;
@@ -146,41 +146,43 @@ function VisualStack() {
           </div>
         </FloatCard>
 
-        <EvidenceCard
-          eyebrow="Inline fix"
-          title="Accept a correction in place"
-          className="relative z-20 mt-4 sm:absolute sm:-bottom-10 sm:-left-8 sm:mt-0 sm:w-64"
-        >
-          <div className="flex items-start gap-2 rounded-xl bg-emerald-50 px-3 py-2.5">
-            <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" weight="fill" />
-            <div className="min-w-0">
-              <p className="text-xs leading-5 text-charcoal/65">
-                <span className="font-mono line-through text-charcoal/40">recieve</span>{" "}
-                <span className="text-charcoal/35">to</span>{" "}
-                <span className="font-mono font-bold text-navy">receive</span>
-              </p>
-              <p className="mt-1 text-[11px] text-emerald-700">One-click grammar cleanup</p>
-            </div>
-          </div>
-        </EvidenceCard>
-
-        <EvidenceCard
-          eyebrow="Saved trail"
-          title="History without the clutter"
-          className="relative z-20 mt-3 sm:absolute sm:-right-6 sm:-top-7 sm:mt-0 sm:w-56"
-        >
-          <div className="space-y-2">
-            {[
-              { score: "28%", label: "Narrative draft", color: "bg-emerald-100 text-emerald-700" },
-              { score: "46%", label: "Essay revision", color: "bg-amber-100 text-amber-700" },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center gap-2">
-                <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${item.color}`}>{item.score}</span>
-                <span className="truncate text-xs text-charcoal/62">{item.label}</span>
+        <Entrance delay={0.2} x={-28} className="relative z-20 mt-4 sm:absolute sm:-bottom-10 sm:-left-8 sm:mt-0 sm:w-64">
+          <EvidenceCard
+            eyebrow="Inline fix"
+            title="Accept a correction in place"
+          >
+            <div className="flex items-start gap-2 rounded-xl bg-emerald-50 px-3 py-2.5">
+              <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" weight="fill" />
+              <div className="min-w-0">
+                <p className="text-xs leading-5 text-charcoal/65">
+                  <span className="font-mono line-through text-charcoal/40">recieve</span>{" "}
+                  <span className="text-charcoal/35">to</span>{" "}
+                  <span className="font-mono font-bold text-navy">receive</span>
+                </p>
+                <p className="mt-1 text-[11px] text-emerald-700">One-click grammar cleanup</p>
               </div>
-            ))}
-          </div>
-        </EvidenceCard>
+            </div>
+          </EvidenceCard>
+        </Entrance>
+
+        <Entrance delay={0.34} x={28} y={-12} className="relative z-20 mt-3 sm:absolute sm:-right-6 sm:-top-7 sm:mt-0 sm:w-56">
+          <EvidenceCard
+            eyebrow="Saved trail"
+            title="History without the clutter"
+          >
+            <div className="space-y-2">
+              {[
+                { score: "28%", label: "Narrative draft", color: "bg-emerald-100 text-emerald-700" },
+                { score: "46%", label: "Essay revision", color: "bg-amber-100 text-amber-700" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center gap-2">
+                  <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${item.color}`}>{item.score}</span>
+                  <span className="truncate text-xs text-charcoal/62">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </EvidenceCard>
+        </Entrance>
       </div>
 
       <p className="relative mt-14 max-w-md text-sm leading-6 text-charcoal/58 sm:ml-auto sm:mt-12">

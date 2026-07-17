@@ -21,6 +21,7 @@ import type {
 } from "../types";
 import type { ProCreditStatus } from "../hooks/useProStatus";
 import { HistoryPanel } from "./HistoryPanel";
+import { Entrance } from "./Motion";
 import { ResultsPanel } from "./ResultsPanel";
 import { GrammarEditor } from "./GrammarEditor";
 
@@ -722,6 +723,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
         )}
 
         {showWorkspaceStarter && (
+          <Entrance y={26}>
           <div className="ambient-panel mb-5 rounded-[1.8rem] p-4 sm:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -753,9 +755,11 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
               </div>
             </div>
           </div>
+          </Entrance>
         )}
 
         {workspace && (
+          <Entrance delay={0.08} y={20}>
           <div className="ambient-panel mb-4 rounded-[1.5rem] px-4 py-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -812,11 +816,13 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
               )}
             </div>
           </div>
+          </Entrance>
         )}
 
         {/* Single-column layout — keeps the flow clean, no sideways scrolling */}
         <div className="flex flex-col gap-5">
           {workspace && (results || loading) && (
+            <Entrance delay={0.12} y={22}>
             <div ref={resultSummaryRef}>
               <WorkspaceResultSummary
                 results={results}
@@ -827,9 +833,11 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 onReanalyze={onAnalyze}
               />
             </div>
+            </Entrance>
           )}
 
           {/* ── Editor card ─────────────────────────────────────────────────── */}
+          <Entrance delay={0.16} y={24}>
           <div ref={editorCardRef} className={`editor-dock rounded-[1.9rem] p-5 transition-all duration-200 sm:p-6 ${
             results && resultsStale
               ? "ring-2 ring-amber-200/70"
@@ -1029,9 +1037,11 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
               </p>
             </div>
           </div>{/* end editor card */}
+          </Entrance>
 
           {/* ── Editing mode banner ──────────────────────────────────────────── */}
           {results && resultsStale && (
+            <Entrance delay={0.08} y={18}>
             <div className="flex items-center gap-3 rounded-input border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               <Sparkles className="h-4 w-4 shrink-0" />
               <span className="flex-1">You've made changes. Re-analyze to see your updated score.</span>
@@ -1044,10 +1054,12 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 <RefreshCw className="h-3 w-3" /> Re-analyze
               </button>
             </div>
+            </Entrance>
           )}
 
           {/* ── Results panel ─────────────────────────────────────────────────── */}
           {(results || loading) && (
+            <Entrance delay={0.18} y={26}>
             <div ref={resultDetailsRef}>
               <ResultsPanel
                 results={results}
@@ -1063,10 +1075,12 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 onProUsage={onProUsage}
               />
             </div>
+            </Entrance>
           )}
 
           {/* ── Pro AI panel ─────────────────────────────────────────────── */}
           {results && workspace && (
+          <Entrance delay={0.24} y={28}>
           <div ref={proPanelRef} className="editor-dock rounded-[1.9rem] p-5 sm:p-6">
             {/* Header row — tappable on mobile to collapse/expand */}
             <div
@@ -1385,6 +1399,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
               </div>
             ))}
           </div>
+          </Entrance>
         )}
 
           {/* ── History panel — landing page only ───────────────────────── */}
