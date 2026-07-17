@@ -449,7 +449,7 @@ export function ResultsPanel({ results, loading = false, isPro = false, onRubric
               Your analysis will appear here
             </h3>
             <p className="mt-1 text-sm text-charcoal/55">
-              Paste your writing on the left, then click <span className="font-semibold text-navy">Analyze my text</span>.
+              Paste your writing above, then click <span className="font-semibold text-navy">Analyze</span>.
             </p>
           </div>
         </div>

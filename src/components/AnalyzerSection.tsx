@@ -1023,8 +1023,9 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
           </div>{/* end editor card */}
           </Entrance>
 
-          {/* ── Editing mode banner ──────────────────────────────────────────── */}
-          {results && resultsStale && (
+          {/* ── Editing mode banner — landing only; the workspace already has
+                 the toolbar CTA and summary-card chip for staleness ─────────── */}
+          {!workspace && results && resultsStale && (
             <Entrance delay={0.08} y={18}>
             <div className="flex items-center gap-3 rounded-input border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               <Sparkles className="h-4 w-4 shrink-0" />
@@ -1083,22 +1084,21 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                     onClick={(e) => e.stopPropagation()}
                   >
                     {(["improve", "humanize", "rubric-rewrite"] as const).map((tab) => {
-                      const labels: Record<string, { short: string; full: string }> = {
-                            improve: { short: "Im", full: "Improve" },
-                        humanize: { short: "~", full: "Humanize" },
-                        "rubric-rewrite": { short: "✎", full: "Rewrite" },
+                      const labels: Record<string, string> = {
+                        improve: "Improve",
+                        humanize: "Humanize",
+                        "rubric-rewrite": "Rewrite",
                       };
                       return (
                         <button
                           key={tab}
                           type="button"
                           onClick={() => switchProTab(tab)}
-                          className={`px-3 py-1.5 font-medium transition first:rounded-l-input last:rounded-r-input sm:px-4 ${
+                          className={`px-2.5 py-1.5 text-xs font-medium transition first:rounded-l-input last:rounded-r-input sm:px-4 sm:text-sm ${
                             proTab === tab ? "bg-navy text-white" : "text-charcoal/60 hover:bg-mist"
                           }`}
                         >
-                          <span className="sm:hidden">{labels[tab].short}</span>
-                          <span className="hidden sm:inline">{labels[tab].full}</span>
+                          {labels[tab]}
                         </button>
                       );
                     })}

@@ -65,6 +65,14 @@ export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAut
   const [active, setActive] = useState("");
   const isWorkspace = mode === "workspace";
 
+  // Escape closes the mobile drawer
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
   useEffect(() => {
     const sections = ["how-it-works", "pricing", "analyzer", "faq"];
     const observers = sections.map((id) => {
@@ -218,7 +226,7 @@ export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAut
 
         {/* Mobile drawer — drops under the pill */}
         {menuOpen && (
-          <div className="mt-2 rounded-[1.6rem] border border-border-base bg-white/95 px-6 pb-6 pt-4 shadow-glass backdrop-blur-sm md:hidden">
+          <div className="mt-2 animate-fade-in rounded-[1.6rem] border border-border-base bg-white/95 px-6 pb-6 pt-4 shadow-glass backdrop-blur-sm md:hidden">
             <nav className="flex flex-col gap-4 text-sm">
               {!isWorkspace && NAV_LINKS.map(({ label, href }) => (
                 <a
