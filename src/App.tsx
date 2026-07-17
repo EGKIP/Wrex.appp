@@ -330,15 +330,13 @@ function App() {
         auth={auth}
         quota={quota}
         isPro={isPro}
-        proCredits={proCredits}
         mode={isWorkspace ? "workspace" : "landing"}
         onOpenAuth={openAuth}
-        onUpgrade={handleUpgrade}
+        onOpenProfile={() => setProfileOpen(true)}
         onGoHome={() => setViewMode("landing")}
         onGoWorkspace={() => setViewMode("workspace")}
         onOpenHistory={() => setHistoryOpen(true)}
         historyCount={history.length}
-        accessToken={auth.session?.access_token ?? null}
       />
 
       {legalPage ? (

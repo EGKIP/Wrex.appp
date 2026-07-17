@@ -24,6 +24,8 @@ import { HistoryPanel } from "./HistoryPanel";
 import { Entrance } from "./Motion";
 import { ResultsPanel } from "./ResultsPanel";
 import { GrammarEditor } from "./GrammarEditor";
+import { Spinner } from "./ui/Spinner";
+import { scoreColor, workspaceScoreLabel } from "../lib/score";
 
 const SAMPLE_TEXT = `In today's academic environment, technology has become an increasingly important part of how students learn and communicate. Moreover, it offers convenience and efficiency in many different contexts. However, it is also important to think carefully about how writing can remain personal, specific, and grounded in real understanding.`;
 
@@ -150,18 +152,6 @@ function proErrorMessage(error: unknown): string {
   return "Something went wrong.";
 }
 
-function workspaceScoreColor(score: number) {
-  if (score >= 70) return "#EF4444";
-  if (score >= 40) return "#F59E0B";
-  return "#10B981";
-}
-
-function workspaceScoreLabel(score: number) {
-  if (score >= 70) return "Needs a voice pass";
-  if (score >= 40) return "Some parts need your touch";
-  return "Reads naturally";
-}
-
 function WorkspaceResultSummary({
   results,
   loading,
@@ -193,7 +183,7 @@ function WorkspaceResultSummary({
 
   if (!results) return null;
 
-  const scoreColor = workspaceScoreColor(results.score);
+  const summaryColor = scoreColor(results.score);
   const flaggedCount = results.flagged_sentences.length;
   const rubric = results.rubric_result;
 
@@ -203,10 +193,10 @@ function WorkspaceResultSummary({
         <div className="border-b border-border-base bg-mist/55 p-5 lg:border-b-0 lg:border-r sm:p-6">
           <p className="text-xs font-bold uppercase tracking-wide text-charcoal/35">Latest analysis</p>
           <div className="mt-3 flex items-end gap-1 leading-none">
-            <span className="font-stat text-[4.1rem] font-bold tracking-tight" style={{ color: scoreColor }}>
+            <span className="font-stat text-[4.1rem] font-bold tracking-tight" style={{ color: summaryColor }}>
               {results.score}
             </span>
-            <span className="mb-3 text-xl font-bold" style={{ color: scoreColor }}>%</span>
+            <span className="mb-3 text-xl font-bold" style={{ color: summaryColor }}>%</span>
           </div>
           <p className="mt-2 text-base font-bold text-navy">{workspaceScoreLabel(results.score)}</p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -699,10 +689,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
           )}
           {loading && (
             <span className="inline-flex items-center gap-1.5 text-[11px] text-accent font-medium animate-pulse">
-              <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-              </svg>
+              <Spinner className="h-3 w-3" />
               Analyzing…
             </span>
           )}
@@ -1020,10 +1007,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
               >
                 {loading ? (
                   <>
-                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                    </svg>
+                    <Spinner className="h-4 w-4" />
                     Analyzing…
                   </>
                 ) : (
@@ -1182,7 +1166,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                         className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2.5 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-40"
                       >
                         {proLoading ? (
-                          <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Analyzing…</>
+                          <><Spinner className="h-3.5 w-3.5" />Analyzing…</>
                         ) : <span className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5" />Get improvement suggestions</span>}
                       </button>
                     )}
@@ -1267,7 +1251,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                         className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2.5 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-40"
                       >
                         {proLoading ? (
-                          <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Rewriting…</>
+                          <><Spinner className="h-3.5 w-3.5" />Rewriting…</>
                         ) : (
                           <span className="flex items-center gap-2">
                             <Users className="h-3.5 w-3.5" />
@@ -1342,7 +1326,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                             className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2.5 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-40"
                           >
                             {proLoading ? (
-                              <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Rewriting…</>
+                              <><Spinner className="h-3.5 w-3.5" />Rewriting…</>
                             ) : <span className="flex items-center gap-2"><FileText className="h-3.5 w-3.5" />Rewrite to rubric</span>}
                           </button>
                         )}

@@ -3,6 +3,8 @@ import type { MouseEvent } from "react";
 import { ArrowLeft, ClockCounterClockwise, Gear, Headset, House, MagnifyingGlass, Trash, X } from "phosphor-react";
 import { deleteHistoryItem } from "../lib/api";
 import { useToast } from "../context/toast";
+import { scoreBadgeClass } from "../lib/score";
+import { Spinner } from "./ui/Spinner";
 import type { SubmissionRecord } from "../types";
 
 interface WorkspaceSidebarProps {
@@ -15,12 +17,6 @@ interface WorkspaceSidebarProps {
   accessToken: string;
   onSelectHistory: (text: string, rubric: string | null) => void;
   onRefreshHistory: () => void;
-}
-
-function scoreBadgeClass(score: number): string {
-  if (score >= 70) return "bg-red-100 text-red-700";
-  if (score >= 40) return "bg-amber-100 text-amber-700";
-  return "bg-emerald-100 text-emerald-700";
 }
 
 function formatDate(iso: string): string {
@@ -150,11 +146,8 @@ export function WorkspaceSidebar({
 
       <div className="flex-1 overflow-y-auto">
         {historyLoading && (
-          <div className="flex items-center justify-center py-12">
-            <svg className="h-5 w-5 animate-spin text-charcoal/30" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-            </svg>
+          <div className="flex items-center justify-center py-12 text-charcoal/30">
+            <Spinner className="h-5 w-5" />
           </div>
         )}
         {!historyLoading && submissions.length === 0 && (

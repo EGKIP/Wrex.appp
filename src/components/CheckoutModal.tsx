@@ -5,6 +5,7 @@ import {
   EmbeddedCheckoutProvider,
 } from "@stripe/react-stripe-js";
 import { X } from "lucide-react";
+import { Modal } from "./ui/Modal";
 
 const stripePublishableKey = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "")
   .trim()
@@ -42,13 +43,7 @@ export function CheckoutModal({ clientSecret, onClose }: CheckoutModalProps) {
   );
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden">
+    <Modal open onClose={onClose} ariaLabel="Upgrade to Wrex Pro" className="max-w-lg">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border-base px-6 py-4">
           <div>
@@ -113,7 +108,6 @@ export function CheckoutModal({ clientSecret, onClose }: CheckoutModalProps) {
           Payments processed securely by Stripe · Cancel anytime
           {stripeMode === "test" && " · No live charge in this build"}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

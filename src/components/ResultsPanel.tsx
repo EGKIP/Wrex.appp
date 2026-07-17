@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { AnalyzeResponse, CriterionResult, QuotaInfo } from "../types";
 import { ApiError, proHumanize } from "../lib/api";
+import { aiLikelihoodLabel, scoreColor, scoreGuidanceLabel } from "../lib/score";
 
 type ResultsPanelProps = {
   results: AnalyzeResponse | null;
@@ -321,24 +322,6 @@ function confidenceTone(confidence: AnalyzeResponse["confidence"]) {
   return "bg-success/10 text-success border border-success/20";
 }
 
-function scoreColor(score: number) {
-  if (score >= 70) return "#EF4444";
-  if (score >= 40) return "#F59E0B";
-  return "#10B981";
-}
-
-function scoreLabel(score: number) {
-  if (score >= 70) return "Strong rewrite pass recommended";
-  if (score >= 40) return "Add more specific voice and detail";
-  return "Reads naturally";
-}
-
-function aiLikelihoodLabel(score: number) {
-  if (score >= 70) return "High voice-signal risk";
-  if (score >= 40) return "Moderate voice-signal risk";
-  return "Low voice-signal risk";
-}
-
 /** Compact dual-score header: authenticity + optional Rubric Match side-by-side */
 function DualScoreCard({ results }: { results: AnalyzeResponse }) {
   const ai = results.score;
@@ -362,7 +345,7 @@ function DualScoreCard({ results }: { results: AnalyzeResponse }) {
             <p className="mb-2 text-lg font-bold" style={{ color: aiColor }}>%</p>
           </div>
           <p className="mt-2 text-sm font-semibold text-navy">{aiLikelihoodLabel(ai)}</p>
-          <p className="mt-1 text-xs leading-5 text-charcoal/55">{scoreLabel(ai)}</p>
+          <p className="mt-1 text-xs leading-5 text-charcoal/55">{scoreGuidanceLabel(ai)}</p>
           <span className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${confidenceTone(results.confidence)}`}>
             {results.confidence} confidence
           </span>

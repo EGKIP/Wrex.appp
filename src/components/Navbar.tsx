@@ -1,15 +1,9 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Headset, List, Sparkle, SquaresFour, X } from "phosphor-react";
 import type { AuthState } from "../hooks/useAuth";
-import type { ProCreditStatus } from "../hooks/useProStatus";
 import type { QuotaInfo } from "../types";
 import { Brand } from "./Brand";
 import { Entrance } from "./Motion";
-
-const ProfileModal = lazy(async () => {
-  const module = await import("./ProfileModal");
-  return { default: module.ProfileModal };
-});
 
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
@@ -22,10 +16,10 @@ interface NavbarProps {
   auth: AuthState;
   quota: QuotaInfo | null;
   isPro?: boolean;
-  proCredits?: ProCreditStatus | null;
   mode?: "landing" | "workspace";
   onOpenAuth: (tab?: "signin" | "signup") => void;
-  onUpgrade?: () => void;
+  /** Opens the account/plan modal owned by App */
+  onOpenProfile: () => void;
   /** Called when the logo is clicked in workspace mode — navigates to landing view */
   onGoHome?: () => void;
   /** Called when "Go to workspace" is clicked in landing mode by a logged-in user */
@@ -33,7 +27,6 @@ interface NavbarProps {
   /** Mobile workspace action: opens the history drawer managed by App */
   onOpenHistory?: () => void;
   historyCount?: number;
-  accessToken?: string | null;
 }
 
 function getInitials(email: string): string {
@@ -67,10 +60,9 @@ function Avatar({ email, isPro }: { email: string; isPro: boolean }) {
   );
 }
 
-export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "landing", onOpenAuth, onUpgrade, onGoHome, onGoWorkspace, onOpenHistory, historyCount = 0, accessToken = null }: NavbarProps) {
+export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAuth, onOpenProfile, onGoHome, onGoWorkspace, onOpenHistory, historyCount = 0 }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState("");
-  const [profileOpen, setProfileOpen] = useState(false);
   const isWorkspace = mode === "workspace";
 
   useEffect(() => {
@@ -178,7 +170,7 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
                   </button>
                 )}
                 <button
-                  onClick={() => setProfileOpen(true)}
+                  onClick={onOpenProfile}
                   className="flex items-center gap-2 rounded-full px-2 py-1.5 transition duration-300 hover:-translate-y-0.5 hover:bg-white/60"
                   title={auth.user.email}
                 >
@@ -241,7 +233,7 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
               {auth.user ? (
                 <>
                   <button
-                    onClick={() => { setProfileOpen(true); setMenuOpen(false); }}
+                    onClick={() => { onOpenProfile(); setMenuOpen(false); }}
                     className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition-colors text-left hover:bg-slate-100"
                   >
                     <Avatar email={auth.user.email!} isPro={isPro} />
@@ -312,19 +304,6 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
         )}
       </div>
     </header>
-
-    <Suspense fallback={null}>
-      <ProfileModal
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
-        auth={auth}
-        isPro={isPro}
-        proCredits={proCredits}
-        quota={quota}
-        onUpgrade={onUpgrade ?? (() => {})}
-        accessToken={accessToken}
-      />
-    </Suspense>
     </>
   );
 }
