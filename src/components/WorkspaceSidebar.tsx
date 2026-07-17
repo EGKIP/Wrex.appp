@@ -291,7 +291,7 @@ export function WorkspaceSidebar({
         className={`fixed inset-y-0 left-0 z-30 flex w-[min(22rem,calc(100vw-2rem))] flex-col border-r border-charcoal/10 bg-white/96 shadow-2xl backdrop-blur transition-transform duration-200 ease-out will-change-transform sm:hidden ${
           historyOpen ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ top: "56px" }}
+        style={{ top: "88px" }}
       >
         {historyContent}
       </div>
