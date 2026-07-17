@@ -12,6 +12,8 @@ type ModalProps = PropsWithChildren<{
   className?: string;
   /** Vertical alignment — checkout/auth are centered, profile hangs below the nav. */
   align?: "center" | "top";
+  /** Backdrop tint + blur — each dialog kept its original treatment. */
+  backdropClassName?: string;
 }>;
 
 const FOCUSABLE =
@@ -22,7 +24,7 @@ const FOCUSABLE =
  * dialog semantics, Escape to close, backdrop click, focus trap,
  * focus restore, body scroll lock, and a calm entrance/exit animation.
  */
-export function Modal({ open, onClose, ariaLabel, className = "", align = "center", children }: ModalProps) {
+export function Modal({ open, onClose, ariaLabel, className = "", align = "center", backdropClassName = "bg-charcoal/40 backdrop-blur-sm", children }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
   const reduceMotion = useReducedMotion();
@@ -76,7 +78,7 @@ export function Modal({ open, onClose, ariaLabel, className = "", align = "cente
     <AnimatePresence>
       {open && (
         <motion.div
-          className={`fixed inset-0 z-50 flex justify-center bg-navy/40 px-4 backdrop-blur-sm ${
+          className={`fixed inset-0 z-50 flex justify-center px-4 ${backdropClassName} ${
             align === "top" ? "items-start pt-20" : "items-center"
           }`}
           initial={{ opacity: 0 }}

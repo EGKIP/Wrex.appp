@@ -136,7 +136,7 @@ export function ProfileModal({ open, onClose, auth, isPro, proCredits, quota, on
   }
 
   return (
-    <Modal open={open} onClose={onClose} ariaLabel="Account and plan" align="top" className="max-w-sm border border-border-base">
+    <Modal open={open} onClose={onClose} ariaLabel="Account and plan" align="top" className="max-w-sm border border-slate-200" backdropClassName="bg-black/30 backdrop-blur-sm">
         {/* Header */}
         <div className="flex items-center gap-4 border-b border-slate-100 p-6">
           {/* Avatar */}

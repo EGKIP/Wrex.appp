@@ -43,7 +43,7 @@ export function CheckoutModal({ clientSecret, onClose }: CheckoutModalProps) {
   );
 
   return (
-    <Modal open onClose={onClose} ariaLabel="Upgrade to Wrex Pro" className="max-w-lg">
+    <Modal open onClose={onClose} ariaLabel="Upgrade to Wrex Pro" className="max-w-lg" backdropClassName="bg-black/60">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border-base px-6 py-4">
           <div>

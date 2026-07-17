@@ -106,7 +106,7 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                 />
               </div>
               <div>
@@ -118,7 +118,7 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                 />
               </div>
               {auth.error && (
@@ -133,7 +133,7 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
         ) : (
           <>
         {/* Tabs */}
-        <div className="flex rounded-lg overflow-hidden border border-border-base mb-6">
+        <div className="flex rounded-lg overflow-hidden border border-gray-200 mb-6">
           {(["signin", "signup"] as const).map((t) => (
             <button
               key={t}
@@ -155,7 +155,7 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
             <button
               type="button"
               onClick={() => auth.signInWithGoogle()}
-              className="flex w-full items-center justify-center gap-3 rounded-lg border border-border-base bg-white px-4 py-2.5 text-sm font-medium text-charcoal transition hover:bg-mist hover:border-charcoal/25 focus:outline-none focus:ring-2 focus:ring-accent/30"
+              className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-charcoal transition hover:bg-mist hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-accent/30"
             >
               {/* Google "G" logo SVG */}
               <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
@@ -169,9 +169,9 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
 
             {/* Divider */}
             <div className="my-5 flex items-center gap-3">
-              <div className="h-px flex-1 bg-border-base" />
+              <div className="h-px flex-1 bg-gray-200" />
               <span className="text-xs text-charcoal/40">or continue with email</span>
-              <div className="h-px flex-1 bg-border-base" />
+              <div className="h-px flex-1 bg-gray-200" />
             </div>
           </>
         )}
@@ -190,7 +190,7 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@university.edu"
-                className="w-full border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
               />
               {auth.error && (
                 <p className={`text-sm rounded-lg px-3 py-2 ${isInfo ? "bg-blue-50 text-blue-700" : "bg-red-50 text-red-600"}`}>
@@ -220,7 +220,7 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@university.edu"
-                  className="w-full border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                 />
               </div>
               <div>
@@ -240,7 +240,7 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                 />
               </div>
               {auth.error && (
