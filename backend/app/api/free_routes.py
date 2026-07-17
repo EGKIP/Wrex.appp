@@ -1,11 +1,12 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 
 from app.core.auth import AuthUser, get_optional_user
 from app.core.config import settings
+from app.core.limiter import limiter
 from app.core.logging import get_logger
 from app.core.sanitizer import sanitize
 from app.schemas.free import AnalyzeRequest, AnalyzeResponse
@@ -72,7 +73,9 @@ def _count_words(text: str) -> int:
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
+@limiter.limit("20/minute")
 def analyze_text(
+    request: Request,
     payload: AnalyzeRequest,
     user: Optional[AuthUser] = Depends(get_optional_user),
 ) -> AnalyzeResponse:
@@ -125,7 +128,8 @@ class GrammarCheckResponse(BaseModel):
 
 
 @router.post("/grammar-check", response_model=GrammarCheckResponse)
-def grammar_check(payload: GrammarCheckRequest) -> GrammarCheckResponse:
+@limiter.limit("30/minute")
+def grammar_check(request: Request, payload: GrammarCheckRequest) -> GrammarCheckResponse:
     """
     Proxy LanguageTool to return spelling and grammar matches.
     Available to all users (free tier). No API key needed.
