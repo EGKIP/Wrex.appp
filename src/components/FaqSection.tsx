@@ -66,6 +66,7 @@ export function FaqSection() {
               <button
                 type="button"
                 onClick={() => setOpen(open === i ? null : i)}
+                aria-expanded={open === i}
                 className="flex w-full items-center justify-between gap-4 text-left transition hover:text-navy"
               >
                 <span className="text-base font-semibold text-navy">{faq.q}</span>

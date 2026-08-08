@@ -1,22 +1,23 @@
 import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
-import { CheckCircle2, EyeOff, GraduationCap, ShieldCheck } from "lucide-react";
+import { CheckCircle, LockKey, Student, WaveSine } from "phosphor-react";
+import { Entrance, FloatCard, Reveal } from "./Motion";
 
 interface HeroProps {
   onTryFree?: () => void;
 }
 
 const TRUST = [
-  { Icon: ShieldCheck, label: "Private by default" },
-  { Icon: EyeOff, label: "Not shared with schools" },
-  { Icon: GraduationCap, label: "Built for students" },
+  { Icon: LockKey, label: "Private by default" },
+  { Icon: WaveSine, label: "Voice-first feedback" },
+  { Icon: Student, label: "Built for students" },
 ];
 
 
 function BrowserFrame({ children, label }: { children: ReactNode; label: string }) {
   return (
-    <div className="select-none overflow-hidden rounded-xl border border-charcoal/10 shadow-float">
-      <div className="flex items-center gap-3 bg-[#1e293b] px-3 py-2.5">
+    <div className="select-none overflow-hidden rounded-[1.6rem] border border-charcoal/10 bg-white/90 shadow-float">
+      <div className="flex items-center gap-3 bg-[#132033] px-3 py-3">
         <div className="flex gap-1.5">
           <div className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
           <div className="h-2.5 w-2.5 rounded-full bg-amber-400/80" />
@@ -122,9 +123,9 @@ function EvidenceCard({
   className?: string;
 }) {
   return (
-    <div className={`rounded-2xl border border-navy/8 bg-white/95 p-4 shadow-[0_20px_54px_-38px_rgba(15,23,42,0.72)] ${className}`}>
-      <p className="text-[10px] font-bold uppercase tracking-wide text-accent-dark">{eyebrow}</p>
-      <p className="mt-1 text-sm font-bold text-navy">{title}</p>
+    <div className={`ambient-panel rounded-[1.5rem] p-4 ${className}`}>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-accent-dark">{eyebrow}</p>
+      <p className="mt-1 text-sm font-semibold text-navy">{title}</p>
       <div className="mt-3">{children}</div>
     </div>
   );
@@ -139,51 +140,53 @@ function VisualStack() {
       />
 
       <div className="relative">
-        <div className="relative z-10 rounded-[1.65rem] border border-navy/8 bg-white/80 p-3 shadow-[0_28px_80px_-50px_rgba(15,23,42,0.9)]">
+        <FloatCard className="relative z-10 rounded-[1.9rem] border border-navy/8 bg-white/85 p-3 shadow-[0_28px_80px_-50px_rgba(15,23,42,0.9)]" delay={0.15}>
           <div className="overflow-hidden rounded-xl">
             <ScorePreview />
           </div>
-        </div>
+        </FloatCard>
 
-        <EvidenceCard
-          eyebrow="Inline fix"
-          title="Accept a correction in place"
-          className="relative z-20 mt-4 sm:absolute sm:-bottom-10 sm:-left-8 sm:mt-0 sm:w-64"
-        >
-          <div className="flex items-start gap-2 rounded-xl bg-emerald-50 px-3 py-2.5">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-            <div className="min-w-0">
-              <p className="text-xs leading-5 text-charcoal/65">
-                <span className="font-mono line-through text-charcoal/40">recieve</span>{" "}
-                <span className="text-charcoal/35">to</span>{" "}
-                <span className="font-mono font-bold text-navy">receive</span>
-              </p>
-              <p className="mt-1 text-[11px] text-emerald-700">One-click grammar cleanup</p>
-            </div>
-          </div>
-        </EvidenceCard>
-
-        <EvidenceCard
-          eyebrow="Saved trail"
-          title="History without the clutter"
-          className="relative z-20 mt-3 sm:absolute sm:-right-6 sm:-top-7 sm:mt-0 sm:w-56"
-        >
-          <div className="space-y-2">
-            {[
-              { score: "28%", label: "Narrative draft", color: "bg-emerald-100 text-emerald-700" },
-              { score: "46%", label: "Essay revision", color: "bg-amber-100 text-amber-700" },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center gap-2">
-                <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${item.color}`}>{item.score}</span>
-                <span className="truncate text-xs text-charcoal/62">{item.label}</span>
+        <Entrance delay={0.2} x={-28} className="relative z-20 mt-4 sm:absolute sm:-bottom-10 sm:-left-8 sm:mt-0 sm:w-64">
+          <EvidenceCard
+            eyebrow="Inline fix"
+            title="Accept a correction in place"
+          >
+            <div className="flex items-start gap-2 rounded-xl bg-emerald-50 px-3 py-2.5">
+              <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" weight="fill" />
+              <div className="min-w-0">
+                <p className="text-xs leading-5 text-charcoal/65">
+                  <span className="font-mono line-through text-charcoal/40">recieve</span>{" "}
+                  <span className="text-charcoal/35">to</span>{" "}
+                  <span className="font-mono font-bold text-navy">receive</span>
+                </p>
+                <p className="mt-1 text-[11px] text-emerald-700">One-click grammar cleanup</p>
               </div>
-            ))}
-          </div>
-        </EvidenceCard>
+            </div>
+          </EvidenceCard>
+        </Entrance>
+
+        <Entrance delay={0.34} x={28} y={-12} className="relative z-20 mt-3 sm:absolute sm:-right-6 sm:-top-7 sm:mt-0 sm:w-56">
+          <EvidenceCard
+            eyebrow="Saved trail"
+            title="History without the clutter"
+          >
+            <div className="space-y-2">
+              {[
+                { score: "28%", label: "Narrative draft", color: "bg-emerald-100 text-emerald-700" },
+                { score: "46%", label: "Essay revision", color: "bg-amber-100 text-amber-700" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center gap-2">
+                  <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${item.color}`}>{item.score}</span>
+                  <span className="truncate text-xs text-charcoal/62">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </EvidenceCard>
+        </Entrance>
       </div>
 
       <p className="relative mt-14 max-w-md text-sm leading-6 text-charcoal/58 sm:ml-auto sm:mt-12">
-        A simple workspace view: score first, fixes next, history nearby when you need it.
+        The workspace is designed to feel obvious: draft in the center, next action beside it, and history one click away.
       </p>
     </div>
   );
@@ -205,7 +208,7 @@ export function Hero({ onTryFree }: HeroProps) {
 
   return (
     <section className="relative overflow-hidden px-6 pb-20 pt-20 lg:px-10 lg:pb-28 lg:pt-28">
-      <div className="absolute inset-0 bg-gradient-to-b from-canvas to-white" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/35 to-transparent" />
       <div
         className="pointer-events-none absolute -right-24 -top-24 h-[480px] w-[480px] rounded-full opacity-[0.07]"
         style={{ background: "radial-gradient(circle, #FBBF24 0%, transparent 70%)" }}
@@ -216,15 +219,15 @@ export function Hero({ onTryFree }: HeroProps) {
       />
 
       <div className="relative mx-auto max-w-7xl">
-        <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
-          <div className="animate-fade-in-up">
-            <span className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-navy/80">
+        <div className="grid items-center gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:gap-16">
+          <Reveal className="relative">
+            <span className="inline-flex items-center gap-2 rounded-full border border-accent/35 bg-white/72 px-4 py-2 text-xs font-semibold tracking-[0.22em] text-navy/80 shadow-[0_16px_34px_-26px_rgba(15,23,42,0.35)]">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
               Free score + grammar, no account needed
             </span>
 
-            <h1 className="font-heading mt-6 text-[2.75rem] font-extrabold leading-[1.08] tracking-tight text-navy lg:text-[3.5rem]">
-              Write with confidence.<br />
+            <h1 className="font-heading mt-6 max-w-[11ch] text-[3.1rem] leading-[0.97] text-navy lg:text-[4.6rem]">
+              A cleaner place to shape your writing.<br />
               <span className="relative inline-block">
                 Sound like you.
                 <span
@@ -234,19 +237,31 @@ export function Hero({ onTryFree }: HeroProps) {
               </span>
             </h1>
 
-            <p className="mt-7 max-w-[460px] text-[1.0625rem] leading-relaxed text-charcoal/70">
-              Paste your draft. Wrex shows your authenticity score, flags sentences
-              that feel generic or inconsistent, and fixes grammar inline before you submit.
+            <p className="mt-7 max-w-[34rem] text-[1.0625rem] leading-relaxed text-charcoal/70">
+              Paste a draft, see where the voice drifts, and fix the rough spots without getting lost in panels. Wrex keeps the flow focused on what to change next.
             </p>
+
+            <div className="mt-7 grid max-w-xl gap-3 sm:grid-cols-3">
+              {[
+                { value: "1 view", label: "editor, score, and fixes together" },
+                { value: "fast", label: "motion that guides attention, not distracts" },
+                { value: "clear", label: "history and next steps stay nearby" },
+              ].map((item) => (
+                <div key={item.value} className="ambient-panel rounded-[1.25rem] px-4 py-3">
+                  <p className="font-heading text-xl text-navy">{item.value}</p>
+                  <p className="mt-1 text-xs leading-5 text-charcoal/58">{item.label}</p>
+                </div>
+              ))}
+            </div>
 
             <div className="mt-9 flex flex-wrap items-center gap-4">
               <button
                 onClick={onTryFree}
-                className="btn-shine rounded-soft bg-gradient-to-br from-accent to-accent-dark px-8 py-3.5 text-base font-bold text-navy shadow-button transition hover:scale-[1.02] hover:shadow-glow active:scale-[0.97]"
+                className="btn-shine rounded-full bg-gradient-to-br from-accent to-accent-dark px-8 py-3.5 text-base font-bold text-navy shadow-button transition hover:scale-[1.02] hover:shadow-glow active:scale-[0.97]"
               >
                 Check your writing free
               </button>
-              <a href="#how-it-works" className="text-sm font-medium text-charcoal/55 underline-offset-4 transition hover:text-navy hover:underline">
+              <a href="#how-it-works" className="rounded-full border border-navy/10 bg-white/55 px-4 py-3 text-sm font-medium text-charcoal/60 transition hover:border-navy/20 hover:text-navy">
                 How it works
               </a>
             </div>
@@ -254,12 +269,12 @@ export function Hero({ onTryFree }: HeroProps) {
             <div className="mt-8 flex flex-wrap items-center gap-5">
               {TRUST.map(({ Icon, label }) => (
                 <span key={label} className="flex items-center gap-1.5 text-xs font-medium text-charcoal/50">
-                  <Icon className="h-3.5 w-3.5 text-charcoal/35" />
+                  <Icon className="h-3.5 w-3.5 text-charcoal/35" weight="duotone" />
                   {label}
                 </span>
               ))}
             </div>
-          </div>
+          </Reveal>
 
           <div ref={rightRef} className="scroll-reveal" data-delay="1">
             <VisualStack />

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { Reveal } from "./Motion";
 
 const STEPS = [
   {
@@ -42,17 +43,17 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" className="bg-white px-6 py-20 lg:px-10 lg:py-28" ref={sectionRef}>
       <div className="mx-auto max-w-5xl">
-        <div className="scroll-reveal mb-16 max-w-lg">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-accent-dark">
+        <Reveal className="mb-16 max-w-xl">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.26em] text-accent-dark">
             How it works
           </p>
-          <h2 className="text-[1.75rem] font-bold leading-tight tracking-tight text-navy lg:text-[2.25rem]">
-            From rough draft<br className="hidden sm:block" /> to confident submission.
+          <h2 className="font-heading text-[2.3rem] leading-[1.02] text-navy lg:text-[3.3rem]">
+            From rough draft to a cleaner submission flow.
           </h2>
           <p className="mt-4 text-base leading-relaxed text-charcoal/65">
-            30 seconds. No signup. No school data shared.
+            The app should feel like a writing desk, not a maze. These are the three moments we optimize around.
           </p>
-        </div>
+        </Reveal>
 
         <div className="relative">
           <div
@@ -77,10 +78,10 @@ export function HowItWorks() {
                   </div>
                 </div>
 
-                <div className="flex-1 pb-2 pt-2">
+                <div className="ambient-panel flex-1 rounded-[1.4rem] pb-4 pt-4 px-5">
                   <div className="flex flex-wrap items-center gap-3">
-                    <h3 className="text-xl font-bold text-navy">{title}</h3>
-                    <span className="rounded-full border border-border-base bg-mist px-2.5 py-0.5 text-[11px] font-medium text-charcoal/50">
+                    <h3 className="text-xl font-semibold text-navy">{title}</h3>
+                    <span className="workspace-chip rounded-full px-2.5 py-1 text-[11px] font-medium text-charcoal/50">
                       {detail}
                     </span>
                   </div>
@@ -93,7 +94,7 @@ export function HowItWorks() {
           </div>
         </div>
 
-        <div className="scroll-reveal mt-16 flex flex-wrap items-center justify-between gap-6 rounded-modal border border-border-base bg-mist px-7 py-6">
+        <div className="scroll-reveal ambient-panel mt-16 flex flex-wrap items-center justify-between gap-6 rounded-[1.8rem] px-7 py-6">
           <div>
             <p className="text-base font-semibold text-navy">Ready to check your writing?</p>
             <p className="mt-1 text-sm text-charcoal/60">Free to start. No account needed.</p>

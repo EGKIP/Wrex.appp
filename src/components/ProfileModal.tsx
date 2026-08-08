@@ -1,5 +1,6 @@
 import { ExternalLink, Sparkles } from "lucide-react";
 import { useState } from "react";
+import { Modal } from "./ui/Modal";
 import { ApiError, createBillingPortalSession } from "../lib/api";
 import type { AuthState } from "../hooks/useAuth";
 import type { ProCreditStatus } from "../hooks/useProStatus";
@@ -70,7 +71,7 @@ export function ProfileModal({ open, onClose, auth, isPro, proCredits, quota, on
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState<string | null>(null);
 
-  if (!open || !auth.user) return null;
+  if (!auth.user) return null;
 
   const email = auth.user.email ?? "";
   const local = email.split("@")[0];
@@ -135,15 +136,7 @@ export function ProfileModal({ open, onClose, auth, isPro, proCredits, quota, on
   }
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Panel */}
-      <div className="fixed inset-x-4 top-20 z-50 mx-auto max-w-sm rounded-2xl border border-slate-200 bg-white shadow-2xl">
+    <Modal open={open} onClose={onClose} ariaLabel="Account and plan" align="top" className="max-w-sm border border-slate-200" backdropClassName="bg-black/30 backdrop-blur-sm">
         {/* Header */}
         <div className="flex items-center gap-4 border-b border-slate-100 p-6">
           {/* Avatar */}
@@ -262,7 +255,6 @@ export function ProfileModal({ open, onClose, auth, isPro, proCredits, quota, on
             Sign out
           </button>
         </div>
-      </div>
-    </>
+    </Modal>
   );
 }

@@ -21,8 +21,11 @@ import type {
 } from "../types";
 import type { ProCreditStatus } from "../hooks/useProStatus";
 import { HistoryPanel } from "./HistoryPanel";
+import { Entrance } from "./Motion";
 import { ResultsPanel } from "./ResultsPanel";
 import { GrammarEditor } from "./GrammarEditor";
+import { Spinner } from "./ui/Spinner";
+import { scoreColor, workspaceScoreLabel } from "../lib/score";
 
 const SAMPLE_TEXT = `In today's academic environment, technology has become an increasingly important part of how students learn and communicate. Moreover, it offers convenience and efficiency in many different contexts. However, it is also important to think carefully about how writing can remain personal, specific, and grounded in real understanding.`;
 
@@ -149,18 +152,6 @@ function proErrorMessage(error: unknown): string {
   return "Something went wrong.";
 }
 
-function workspaceScoreColor(score: number) {
-  if (score >= 70) return "#EF4444";
-  if (score >= 40) return "#F59E0B";
-  return "#10B981";
-}
-
-function workspaceScoreLabel(score: number) {
-  if (score >= 70) return "Needs a voice pass";
-  if (score >= 40) return "Some parts need your touch";
-  return "Reads naturally";
-}
-
 function WorkspaceResultSummary({
   results,
   loading,
@@ -192,7 +183,7 @@ function WorkspaceResultSummary({
 
   if (!results) return null;
 
-  const scoreColor = workspaceScoreColor(results.score);
+  const summaryColor = scoreColor(results.score);
   const flaggedCount = results.flagged_sentences.length;
   const rubric = results.rubric_result;
 
@@ -202,10 +193,10 @@ function WorkspaceResultSummary({
         <div className="border-b border-border-base bg-mist/55 p-5 lg:border-b-0 lg:border-r sm:p-6">
           <p className="text-xs font-bold uppercase tracking-wide text-charcoal/35">Latest analysis</p>
           <div className="mt-3 flex items-end gap-1 leading-none">
-            <span className="font-stat text-[4.1rem] font-bold tracking-tight" style={{ color: scoreColor }}>
+            <span className="font-stat text-[4.1rem] font-bold tracking-tight" style={{ color: summaryColor }}>
               {results.score}
             </span>
-            <span className="mb-3 text-xl font-bold" style={{ color: scoreColor }}>%</span>
+            <span className="mb-3 text-xl font-bold" style={{ color: summaryColor }}>%</span>
           </div>
           <p className="mt-2 text-base font-bold text-navy">{workspaceScoreLabel(results.score)}</p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -648,15 +639,15 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
       id="analyzer"
       className={
         workspace
-          ? "flex-1 overflow-y-auto bg-mist flex flex-col"
-          : "bg-[#f8fafc] px-6 py-16 lg:px-10 lg:py-20"
+          ? "flex flex-1 flex-col overflow-y-auto workspace-shell"
+          : "px-6 py-16 lg:px-10 lg:py-20"
       }
     >
       {/* ── Workspace sticky toolbar ──────────────────────────────────────── */}
       {workspace && (
-        <div className="sticky top-0 z-20 flex shrink-0 items-center gap-2 border-b border-charcoal/8 bg-white px-4 py-2.5 lg:px-8">
+        <div className="sticky top-0 z-20 flex shrink-0 items-center gap-2 border-b border-charcoal/8 bg-[rgba(255,252,246,0.82)] px-4 py-3 backdrop-blur lg:px-8">
           {/* Doc label */}
-          <span className="text-[13px] font-semibold text-navy">Document</span>
+          <span className="font-heading text-[1.1rem] text-navy">Document</span>
 
           {/* Grammar status badges */}
           {grammarLoading && (
@@ -685,30 +676,28 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
             <span className="text-[11px] text-charcoal/40">{wordCount} words</span>
           )}
 
-          {/* Re-analyze CTA — appears only when text has changed since last score */}
-          {results && resultsStale && !loading && (
+          {/* Primary action — always visible so users never scroll to find it */}
+          {!loading && wordCount > 0 && (
             <button
               type="button"
               onClick={onAnalyze}
-              disabled={loading || wordLimitExceeded}
+              disabled={text.trim().length < 10 || wordLimitExceeded}
+              title={wordLimitExceeded ? `Word limit: ${wordLimit}` : "⌘+Enter"}
               className="inline-flex items-center gap-1.5 rounded-soft bg-accent px-3 py-1.5 text-[11px] font-bold text-navy transition hover:bg-accent-dark active:scale-[0.97] disabled:opacity-50"
             >
-              ↑ Re-analyze
+              {results && resultsStale ? "↑ Re-analyze" : "Analyze"}
             </button>
           )}
           {loading && (
             <span className="inline-flex items-center gap-1.5 text-[11px] text-accent font-medium animate-pulse">
-              <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-              </svg>
+              <Spinner className="h-3 w-3" />
               Analyzing…
             </span>
           )}
         </div>
       )}
 
-      <div className={`mx-auto w-full ${workspace ? "max-w-5xl flex-1 px-4 py-6 lg:px-8 lg:py-8" : "max-w-3xl"}`}>
+      <div className={`mx-auto w-full ${workspace ? "relative z-10 max-w-6xl flex-1 px-4 py-6 lg:px-8 lg:py-8" : "max-w-3xl"}`}>
         {!workspace && (
           <div className="mb-7">
             <h2 className="text-balance text-[2rem] font-bold tracking-tight text-navy lg:text-[2.75rem]">
@@ -722,10 +711,11 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
         )}
 
         {showWorkspaceStarter && (
-          <div className="mb-5 rounded-modal border border-navy/8 bg-white p-4 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.7)] sm:p-5">
+          <Entrance y={26}>
+          <div className="ambient-panel mb-5 rounded-[1.8rem] p-4 sm:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-semibold text-navy">Ready for a new check</p>
+                <p className="font-heading text-2xl text-navy">Ready for a new check</p>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-charcoal/55">
                   Paste a draft below, open History from the menu, or try the sample to see how feedback appears.
                 </p>
@@ -734,7 +724,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 <button
                   type="button"
                   onClick={() => setEditorFocusKey((k) => k + 1)}
-                  className="rounded-soft border border-navy/12 bg-white px-3 py-2 text-xs font-semibold text-navy transition hover:bg-mist"
+                  className="workspace-chip rounded-full px-3 py-2 text-xs font-semibold text-navy transition hover:bg-mist"
                 >
                   Paste draft
                 </button>
@@ -746,21 +736,23 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                     setResultsStale(false);
                     setEditorFocusKey((k) => k + 1);
                   }}
-                  className="btn-shine rounded-soft bg-accent px-3 py-2 text-xs font-bold text-navy transition hover:bg-accent-dark"
+                  className="btn-shine rounded-full bg-accent px-3 py-2 text-xs font-bold text-navy transition hover:bg-accent-dark"
                 >
                   Try sample
                 </button>
               </div>
             </div>
           </div>
+          </Entrance>
         )}
 
         {workspace && (
-          <div className="mb-4 rounded-[1.2rem] border border-navy/8 bg-white/88 px-4 py-3 shadow-[0_14px_45px_-40px_rgba(15,23,42,0.72)]">
+          <Entrance delay={0.08} y={20}>
+          <div className="ambient-panel mb-4 rounded-[1.5rem] px-4 py-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wide text-charcoal/35">Workspace</p>
-                <p className="mt-0.5 text-sm font-semibold text-navy">
+                <p className="text-[11px] font-bold uppercase tracking-[0.26em] text-charcoal/35">Workspace</p>
+                <p className="mt-1 font-heading text-2xl text-navy">
                   {isPro ? "Pro writing tools active" : "Free voice check"}
                 </p>
               </div>
@@ -795,9 +787,9 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center gap-2 text-xs text-charcoal/50">
-                  <span className="rounded-full bg-mist px-2.5 py-1 font-medium">500 words per check</span>
+                  <span className="workspace-chip rounded-full px-2.5 py-1 font-medium">500 words per check</span>
                   {quota?.is_authenticated && (
-                    <span className="rounded-full bg-mist px-2.5 py-1 font-medium">
+                    <span className="workspace-chip rounded-full px-2.5 py-1 font-medium">
                       {quota.remaining} / {quota.limit} checks left today
                     </span>
                   )}
@@ -812,11 +804,13 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
               )}
             </div>
           </div>
+          </Entrance>
         )}
 
         {/* Single-column layout — keeps the flow clean, no sideways scrolling */}
         <div className="flex flex-col gap-5">
           {workspace && (results || loading) && (
+            <Entrance delay={0.12} y={22}>
             <div ref={resultSummaryRef}>
               <WorkspaceResultSummary
                 results={results}
@@ -827,10 +821,12 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 onReanalyze={onAnalyze}
               />
             </div>
+            </Entrance>
           )}
 
           {/* ── Editor card ─────────────────────────────────────────────────── */}
-          <div ref={editorCardRef} className={`rounded-[1.5rem] border border-navy/8 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.7)] transition-all duration-200 sm:p-6 ${
+          <Entrance delay={0.16} y={24}>
+          <div ref={editorCardRef} className={`editor-dock rounded-[1.9rem] p-5 transition-all duration-200 sm:p-6 ${
             results && resultsStale
               ? "ring-2 ring-amber-200/70"
               : ""
@@ -838,7 +834,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
             {/* Header row */}
             <div className="mb-1 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-navy">Your writing</p>
+                <p className="font-heading text-2xl text-navy">Your writing</p>
                 {results && resultsStale && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
                     <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
@@ -928,13 +924,13 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                     <button
                       type="button"
                       onClick={() => setShowRubric(true)}
-                      className="flex items-center gap-2 rounded-input border border-dashed border-accent/40 bg-accent/4 px-3 py-2 text-xs text-charcoal/60 transition hover:border-accent hover:text-navy"
-                    >
+                    className="flex items-center gap-2 rounded-[1rem] border border-dashed border-accent/40 bg-accent/4 px-3 py-2 text-xs text-charcoal/60 transition hover:border-accent hover:text-navy"
+                  >
                       <FileText className="h-3.5 w-3.5 text-accent" />
                       + Add rubric / assignment brief
                     </button>
                   ) : (
-                    <div className="rounded-input border border-accent/30 bg-accent/5 p-3">
+                    <div className="rounded-[1rem] border border-accent/30 bg-accent/5 p-3">
                       <div className="mb-2 flex items-center justify-between">
                         <span className="flex items-center gap-1.5 text-xs font-semibold text-navy">
                           <FileText className="h-3.5 w-3.5 text-accent" />Rubric / assignment brief
@@ -958,7 +954,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                         onChange={(e) => setRubric(e.target.value)}
                         placeholder={"1. Discuss the causes of the French Revolution\n2. Analyze the social impact\n3. Evaluate economic factors"}
                         rows={4}
-                        className="w-full rounded-input border border-border-base bg-white px-3 py-2.5 text-sm leading-6 text-charcoal outline-none transition placeholder:text-charcoal/30 focus:border-accent focus:ring-[3px] focus:ring-accent/15"
+                        className="w-full rounded-[1rem] border border-border-base bg-white px-3 py-2.5 text-sm leading-6 text-charcoal outline-none transition placeholder:text-charcoal/30 focus:border-accent focus:ring-[3px] focus:ring-accent/15"
                       />
                       <div className="mt-2 flex items-center justify-between">
                         <p className="text-[11px] text-charcoal/45">One criterion per line. Wrex checks each one after analysis.</p>
@@ -974,7 +970,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 <button
                   type="button"
                   onClick={handleUpgrade}
-                  className="flex items-center gap-2 rounded-input border border-dashed border-charcoal/15 bg-mist px-3 py-2 text-xs text-charcoal/40 transition hover:border-accent/40 hover:text-charcoal/60"
+                  className="flex items-center gap-2 rounded-[1rem] border border-dashed border-charcoal/15 bg-mist px-3 py-2 text-xs text-charcoal/40 transition hover:border-accent/40 hover:text-charcoal/60"
                 >
                   <Crown className="h-3.5 w-3.5 text-accent-dark" />
                   Add assignment brief &amp; tune the draft — <span className="font-semibold text-accent-dark">Pro voice tool</span>
@@ -1008,14 +1004,11 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 onClick={onAnalyze}
                 disabled={loading || text.trim().length < 10 || wordLimitExceeded}
                 title={wordLimitExceeded ? isPro ? `Pro limit: ${wordLimit} words` : "Free plan: 500 words. Upgrade to Pro for 2,000-word analyses." : undefined}
-                className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-8 py-3 text-base font-bold text-navy shadow-button transition hover:-translate-y-0.5 hover:shadow-button-hover active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                className="btn-shine flex items-center gap-2 rounded-full bg-gradient-to-br from-accent to-accent-dark px-8 py-3 text-base font-bold text-navy shadow-button transition hover:-translate-y-0.5 hover:shadow-button-hover active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {loading ? (
                   <>
-                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                    </svg>
+                    <Spinner className="h-4 w-4" />
                     Analyzing…
                   </>
                 ) : (
@@ -1029,9 +1022,12 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
               </p>
             </div>
           </div>{/* end editor card */}
+          </Entrance>
 
-          {/* ── Editing mode banner ──────────────────────────────────────────── */}
-          {results && resultsStale && (
+          {/* ── Editing mode banner — landing only; the workspace already has
+                 the toolbar CTA and summary-card chip for staleness ─────────── */}
+          {!workspace && results && resultsStale && (
+            <Entrance delay={0.08} y={18}>
             <div className="flex items-center gap-3 rounded-input border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               <Sparkles className="h-4 w-4 shrink-0" />
               <span className="flex-1">You've made changes. Re-analyze to see your updated score.</span>
@@ -1044,10 +1040,12 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 <RefreshCw className="h-3 w-3" /> Re-analyze
               </button>
             </div>
+            </Entrance>
           )}
 
           {/* ── Results panel ─────────────────────────────────────────────────── */}
           {(results || loading) && (
+            <Entrance delay={0.18} y={26}>
             <div ref={resultDetailsRef}>
               <ResultsPanel
                 results={results}
@@ -1063,11 +1061,13 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                 onProUsage={onProUsage}
               />
             </div>
+            </Entrance>
           )}
 
           {/* ── Pro AI panel ─────────────────────────────────────────────── */}
           {results && workspace && (
-          <div ref={proPanelRef} className="rounded-modal border border-border-base bg-white p-5 shadow-soft sm:p-6">
+          <Entrance delay={0.24} y={28}>
+          <div ref={proPanelRef} className="editor-dock rounded-[1.9rem] p-5 sm:p-6">
             {/* Header row — tappable on mobile to collapse/expand */}
             <div
               className="flex cursor-pointer items-center justify-between lg:cursor-default"
@@ -1085,22 +1085,21 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                     onClick={(e) => e.stopPropagation()}
                   >
                     {(["improve", "humanize", "rubric-rewrite"] as const).map((tab) => {
-                      const labels: Record<string, { short: string; full: string }> = {
-                            improve: { short: "Im", full: "Improve" },
-                        humanize: { short: "~", full: "Humanize" },
-                        "rubric-rewrite": { short: "✎", full: "Rewrite" },
+                      const labels: Record<string, string> = {
+                        improve: "Improve",
+                        humanize: "Humanize",
+                        "rubric-rewrite": "Rewrite",
                       };
                       return (
                         <button
                           key={tab}
                           type="button"
                           onClick={() => switchProTab(tab)}
-                          className={`px-3 py-1.5 font-medium transition first:rounded-l-input last:rounded-r-input sm:px-4 ${
+                          className={`px-2.5 py-1.5 text-xs font-medium transition first:rounded-l-input last:rounded-r-input sm:px-4 sm:text-sm ${
                             proTab === tab ? "bg-navy text-white" : "text-charcoal/60 hover:bg-mist"
                           }`}
                         >
-                          <span className="sm:hidden">{labels[tab].short}</span>
-                          <span className="hidden sm:inline">{labels[tab].full}</span>
+                          {labels[tab]}
                         </button>
                       );
                     })}
@@ -1168,7 +1167,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                         className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2.5 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-40"
                       >
                         {proLoading ? (
-                          <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Analyzing…</>
+                          <><Spinner className="h-3.5 w-3.5" />Analyzing…</>
                         ) : <span className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5" />Get improvement suggestions</span>}
                       </button>
                     )}
@@ -1253,7 +1252,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                         className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2.5 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-40"
                       >
                         {proLoading ? (
-                          <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Rewriting…</>
+                          <><Spinner className="h-3.5 w-3.5" />Rewriting…</>
                         ) : (
                           <span className="flex items-center gap-2">
                             <Users className="h-3.5 w-3.5" />
@@ -1328,7 +1327,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
                             className="btn-shine flex items-center gap-2 rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2.5 text-sm font-bold text-navy shadow-button transition hover:shadow-glow hover:scale-[1.02] active:scale-[0.97] disabled:opacity-40"
                           >
                             {proLoading ? (
-                              <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Rewriting…</>
+                              <><Spinner className="h-3.5 w-3.5" />Rewriting…</>
                             ) : <span className="flex items-center gap-2"><FileText className="h-3.5 w-3.5" />Rewrite to rubric</span>}
                           </button>
                         )}
@@ -1385,6 +1384,7 @@ export function AnalyzerSection({ accessToken, isPro = false, quota = null, onQu
               </div>
             ))}
           </div>
+          </Entrance>
         )}
 
           {/* ── History panel — landing page only ───────────────────────── */}

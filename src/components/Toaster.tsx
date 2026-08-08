@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "motion/react";
 import { useToast } from "../context/toast";
 
 const ICONS = {
@@ -33,15 +34,23 @@ const ICON_COLOR = {
 export function Toaster() {
   const { toasts, dismiss } = useToast();
 
-  if (toasts.length === 0) return null;
-
   return (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
+    <div
+      className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none"
+      aria-live="polite"
+      aria-atomic="false"
+    >
+      <AnimatePresence>
       {toasts.map((t) => (
-        <div
+        <motion.div
           key={t.id}
-          className={`flex items-center gap-3 rounded-lg px-4 py-3 shadow-xl text-sm font-medium pointer-events-auto animate-fade-in max-w-xs ${STYLES[t.type]}`}
-          role="alert"
+          layout
+          initial={{ opacity: 0, y: 16, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 8, scale: 0.97 }}
+          transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+          className={`flex items-center gap-3 rounded-lg px-4 py-3 shadow-xl text-sm font-medium pointer-events-auto max-w-xs ${STYLES[t.type]}`}
+          role="status"
         >
           <span className={`shrink-0 ${ICON_COLOR[t.type]}`}>{ICONS[t.type]}</span>
           <span className="flex-1 leading-snug">{t.message}</span>
@@ -54,8 +63,9 @@ export function Toaster() {
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
-        </div>
+        </motion.div>
       ))}
+      </AnimatePresence>
     </div>
   );
 }

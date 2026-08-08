@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { KeyRound } from "lucide-react";
 import type { AuthState } from "../hooks/useAuth";
 import { useToast } from "../context/toast";
+import { Modal } from "./ui/Modal";
 
 interface Props {
   open: boolean;
@@ -41,8 +42,6 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
     }
   }, [open, defaultTab, isRecovery]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!open) return null;
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
@@ -80,14 +79,12 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
     || auth.error?.toLowerCase().includes("password reset");
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/40 backdrop-blur-sm px-4"
-      onClick={isRecovery ? undefined : onClose}
+    <Modal
+      open={open}
+      onClose={isRecovery ? undefined : onClose}
+      ariaLabel={isRecovery ? "Set your new password" : "Sign in or create an account"}
+      className="max-w-sm p-8"
     >
-      <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8"
-        onClick={(e) => e.stopPropagation()}
-      >
         {/* ── Recovery / set-new-password view ─────────────────────────── */}
         {isRecovery ? (
           <>
@@ -267,7 +264,6 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
         )}
           </>
         )}
-      </div>
-    </div>
+    </Modal>
   );
 }

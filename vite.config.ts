@@ -6,4 +6,16 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom"],
+          motion: ["motion"],
+          supabase: ["@supabase/supabase-js"],
+          stripe: ["@stripe/react-stripe-js", "@stripe/stripe-js"],
+        },
+      },
+    },
+  },
 });

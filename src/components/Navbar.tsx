@@ -1,14 +1,9 @@
-import { Suspense, lazy, useEffect, useState } from "react";
-import { HelpCircle, History, LayoutDashboard, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Headset, List, Sparkle, SquaresFour, X } from "phosphor-react";
 import type { AuthState } from "../hooks/useAuth";
-import type { ProCreditStatus } from "../hooks/useProStatus";
 import type { QuotaInfo } from "../types";
 import { Brand } from "./Brand";
-
-const ProfileModal = lazy(async () => {
-  const module = await import("./ProfileModal");
-  return { default: module.ProfileModal };
-});
+import { Entrance } from "./Motion";
 
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
@@ -21,10 +16,10 @@ interface NavbarProps {
   auth: AuthState;
   quota: QuotaInfo | null;
   isPro?: boolean;
-  proCredits?: ProCreditStatus | null;
   mode?: "landing" | "workspace";
   onOpenAuth: (tab?: "signin" | "signup") => void;
-  onUpgrade?: () => void;
+  /** Opens the account/plan modal owned by App */
+  onOpenProfile: () => void;
   /** Called when the logo is clicked in workspace mode — navigates to landing view */
   onGoHome?: () => void;
   /** Called when "Go to workspace" is clicked in landing mode by a logged-in user */
@@ -32,7 +27,6 @@ interface NavbarProps {
   /** Mobile workspace action: opens the history drawer managed by App */
   onOpenHistory?: () => void;
   historyCount?: number;
-  accessToken?: string | null;
 }
 
 function getInitials(email: string): string {
@@ -53,7 +47,7 @@ function getDisplayName(email: string): string {
 function Avatar({ email, isPro }: { email: string; isPro: boolean }) {
   const initials = getInitials(email);
   return (
-    <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-navy text-xs font-bold text-white select-none ring-2 ring-white shadow-sm">
+    <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-navy text-xs font-bold text-white select-none ring-2 ring-white/80 shadow-[0_12px_26px_-18px_rgba(15,23,42,0.9)]">
       {initials}
       {isPro && (
         <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent shadow-sm" title="Wrex Pro">
@@ -66,11 +60,18 @@ function Avatar({ email, isPro }: { email: string; isPro: boolean }) {
   );
 }
 
-export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "landing", onOpenAuth, onUpgrade, onGoHome, onGoWorkspace, onOpenHistory, historyCount = 0, accessToken = null }: NavbarProps) {
+export function Navbar({ auth, quota, isPro = false, mode = "landing", onOpenAuth, onOpenProfile, onGoHome, onGoWorkspace, onOpenHistory, historyCount = 0 }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState("");
-  const [profileOpen, setProfileOpen] = useState(false);
   const isWorkspace = mode === "workspace";
+
+  // Escape closes the mobile drawer
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
 
   useEffect(() => {
     const sections = ["how-it-works", "pricing", "analyzer", "faq"];
@@ -112,20 +113,21 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
         </div>
       )}
       <div className="mx-auto max-w-7xl">
-        <div className="glass-nav flex items-center justify-between px-5 py-3">
-          <Brand onClick={isWorkspace ? onGoHome : undefined} />
+        <Entrance y={-22}>
+          <div className="glass-nav flex items-center justify-between px-4 py-3.5 md:px-5">
+            <Brand onClick={isWorkspace ? onGoHome : undefined} />
 
-          {/* Desktop nav */}
-          <nav className="hidden items-center gap-5 text-sm md:flex">
+            {/* Desktop nav */}
+            <nav className="hidden items-center gap-3 text-sm md:flex">
             {/* Landing nav links — hidden in workspace mode */}
             {!isWorkspace && NAV_LINKS.map(({ label, href }) => (
               <a
                 key={href}
                 href={href}
-                className={`relative pb-0.5 font-medium transition-colors ${
+                className={`rounded-full px-3 py-2 font-medium transition-colors ${
                   active === href
-                    ? "text-navy after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-accent after:content-['']"
-                    : "text-charcoal/60 hover:text-navy"
+                    ? "bg-white/75 text-navy shadow-[0_12px_28px_-22px_rgba(15,23,42,0.45)]"
+                    : "text-charcoal/60 hover:bg-white/55 hover:text-navy"
                 }`}
               >
                 {label}
@@ -137,9 +139,9 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
               <a
                 href="mailto:support@wrex.app"
                 title="Get support"
-                className="flex items-center gap-1.5 text-xs font-medium text-charcoal/50 transition hover:text-navy"
+                className="flex items-center gap-2 rounded-full px-3 py-2 text-xs font-medium text-charcoal/50 transition hover:bg-white/55 hover:text-navy"
               >
-                <HelpCircle className="h-4 w-4" />
+                <Headset className="h-4 w-4" weight="duotone" />
                 <span>Support</span>
               </a>
             )}
@@ -160,8 +162,8 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
                   </span>
                 )}
                 {isPro && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-semibold text-navy">
-                    <Sparkles className="h-3 w-3" />Pro
+                  <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-1 text-xs font-semibold text-navy">
+                    <Sparkle className="h-3 w-3" weight="fill" />Pro
                   </span>
                 )}
                 {/* Landing mode: "Go to workspace" button for logged-in users */}
@@ -169,15 +171,15 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
                   <button
                     type="button"
                     onClick={onGoWorkspace}
-                    className="flex items-center gap-1.5 rounded-soft border border-navy/15 bg-white/65 px-3 py-1.5 text-xs font-semibold text-navy transition duration-300 hover:-translate-y-0.5 hover:bg-navy hover:text-white"
+                    className="flex items-center gap-1.5 rounded-full border border-navy/15 bg-white/70 px-3.5 py-2 text-xs font-semibold text-navy transition duration-300 hover:-translate-y-0.5 hover:bg-navy hover:text-white"
                   >
-                    <LayoutDashboard className="h-3.5 w-3.5" />
+                    <SquaresFour className="h-3.5 w-3.5" weight="duotone" />
                     My workspace
                   </button>
                 )}
                 <button
-                  onClick={() => setProfileOpen(true)}
-                  className="flex items-center gap-2 rounded-lg px-2 py-1 transition duration-300 hover:-translate-y-0.5 hover:bg-slate-100"
+                  onClick={onOpenProfile}
+                  className="flex items-center gap-2 rounded-full px-2 py-1.5 transition duration-300 hover:-translate-y-0.5 hover:bg-white/60"
                   title={auth.user.email}
                 >
                   <Avatar email={auth.user.email!} isPro={isPro} />
@@ -198,36 +200,33 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
                 </button>
                 <button
                   onClick={() => onOpenAuth("signup")}
-                  className="btn-shine rounded-soft bg-gradient-to-br from-accent to-accent-dark px-5 py-2 text-sm font-bold text-navy shadow-button transition duration-300 hover:-translate-y-0.5 hover:shadow-button-hover active:translate-y-0 active:scale-[0.98]"
+                  className="btn-shine rounded-full bg-gradient-to-br from-accent to-accent-dark px-5 py-2.5 text-sm font-bold text-navy shadow-button transition duration-300 hover:-translate-y-0.5 hover:shadow-button-hover active:translate-y-0 active:scale-[0.98]"
                 >
                   Try free
                 </button>
               </>
             )}
-          </nav>
+            </nav>
 
-          {/* Mobile hamburger */}
-          <button
-            type="button"
-            onClick={() => setMenuOpen((o) => !o)}
-            className="flex h-9 w-9 items-center justify-center rounded-input border border-border-base text-navy md:hidden"
-            aria-label="Toggle menu"
-          >
-            {menuOpen ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M18 6 6 18M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
-          </button>
-        </div>
+            {/* Mobile hamburger */}
+            <button
+              type="button"
+              onClick={() => setMenuOpen((o) => !o)}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-border-base bg-white/70 text-navy transition duration-300 hover:-translate-y-0.5 md:hidden"
+              aria-label="Toggle menu"
+            >
+              {menuOpen ? (
+                <X className="h-[18px] w-[18px]" weight="bold" />
+              ) : (
+                <List className="h-[18px] w-[18px]" weight="bold" />
+              )}
+            </button>
+          </div>
+        </Entrance>
 
         {/* Mobile drawer — drops under the pill */}
         {menuOpen && (
-          <div className="mt-2 rounded-card border border-border-base bg-white/95 px-6 pb-6 pt-4 shadow-glass backdrop-blur-sm md:hidden">
+          <div className="mt-2 animate-fade-in rounded-[1.6rem] border border-border-base bg-white/95 px-6 pb-6 pt-4 shadow-glass backdrop-blur-sm md:hidden">
             <nav className="flex flex-col gap-4 text-sm">
               {!isWorkspace && NAV_LINKS.map(({ label, href }) => (
                 <a
@@ -242,8 +241,8 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
               {auth.user ? (
                 <>
                   <button
-                    onClick={() => { setProfileOpen(true); setMenuOpen(false); }}
-                    className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-100 transition-colors text-left"
+                    onClick={() => { onOpenProfile(); setMenuOpen(false); }}
+                    className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition-colors text-left hover:bg-slate-100"
                   >
                     <Avatar email={auth.user.email!} isPro={isPro} />
                     <div className="flex flex-col leading-tight">
@@ -255,7 +254,7 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
                     <span className="text-xs text-charcoal/40">{quota.remaining}/{quota.limit} checks left today</span>
                   )}
                   {isPro && (
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent"><Sparkles className="h-3 w-3" />Pro member</span>
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent"><Sparkle className="h-3 w-3" weight="fill" />Pro member</span>
                   )}
                   {/* Landing mode mobile: go to workspace */}
                   {!isWorkspace && onGoWorkspace && (
@@ -264,7 +263,7 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
                       onClick={() => { onGoWorkspace(); setMenuOpen(false); }}
                       className="flex items-center gap-2 rounded-soft border border-navy/20 px-3 py-2 text-sm font-semibold text-navy transition hover:bg-navy hover:text-white"
                     >
-                      <LayoutDashboard className="h-4 w-4" />My workspace
+                      <SquaresFour className="h-4 w-4" weight="duotone" />My workspace
                     </button>
                   )}
                   {/* Workspace mode mobile: support link */}
@@ -275,7 +274,7 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
                       className="flex items-center justify-between rounded-input border border-border-base px-3 py-2 text-sm font-semibold text-navy transition hover:bg-mist"
                     >
                       <span className="flex items-center gap-2">
-                        <History className="h-4 w-4" />History
+                        <SquaresFour className="h-4 w-4" weight="duotone" />History
                       </span>
                       <span className="rounded-full bg-accent/20 px-2 py-0.5 text-xs font-bold text-navy">
                         {historyCount}
@@ -288,7 +287,7 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
                       className="flex items-center gap-2 text-sm font-medium text-charcoal/60 hover:text-navy"
                       onClick={() => setMenuOpen(false)}
                     >
-                      <HelpCircle className="h-4 w-4" />Support
+                      <Headset className="h-4 w-4" weight="duotone" />Support
                     </a>
                   )}
                 </>
@@ -313,19 +312,6 @@ export function Navbar({ auth, quota, isPro = false, proCredits = null, mode = "
         )}
       </div>
     </header>
-
-    <Suspense fallback={null}>
-      <ProfileModal
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
-        auth={auth}
-        isPro={isPro}
-        proCredits={proCredits}
-        quota={quota}
-        onUpgrade={onUpgrade ?? (() => {})}
-        accessToken={accessToken}
-      />
-    </Suspense>
     </>
   );
 }
