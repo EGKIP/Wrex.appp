@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { KeyRound } from "lucide-react";
+import { Key } from "phosphor-react";
 import type { AuthState } from "../hooks/useAuth";
 import { useToast } from "../context/toast";
+import { Button } from "./ui/Button";
+import { Field } from "./ui/Field";
 import { Modal } from "./ui/Modal";
 
 interface Props {
@@ -90,44 +92,37 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
           <>
             <div className="mb-6 text-center">
               <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-accent/15 text-navy">
-                <KeyRound className="h-5 w-5" />
+                <Key className="h-5 w-5" weight="duotone" />
               </div>
               <h2 className="text-lg font-bold text-navy">Set your new password</h2>
               <p className="text-sm text-charcoal/60 mt-1">Choose a password you'll remember.</p>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-charcoal mb-1">New password</label>
-                <input
-                  ref={passwordRef}
-                  type="password"
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-charcoal mb-1">Confirm password</label>
-                <input
-                  type="password"
-                  required
-                  minLength={8}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-                />
-              </div>
+              <Field
+                ref={passwordRef}
+                label="New password"
+                type="password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+              />
+              <Field
+                label="Confirm password"
+                type="password"
+                required
+                minLength={8}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+              />
               {auth.error && (
                 <p className="text-sm rounded-lg px-3 py-2 bg-red-50 text-red-600">{auth.error}</p>
               )}
-              <button type="submit" disabled={submitting}
-                className="w-full bg-navy text-white font-semibold rounded-lg py-2.5 text-sm hover:bg-navy/90 transition-colors disabled:opacity-50">
+              <Button type="submit" disabled={submitting} fullWidth>
                 {submitting ? "Saving…" : "Update password"}
-              </button>
+              </Button>
             </form>
           </>
         ) : (
@@ -152,10 +147,11 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
         {/* Google OAuth — shown on both tabs, hidden in forgot-password view */}
         {!showForgot && (
           <>
-            <button
-              type="button"
+            <Button
               onClick={() => auth.signInWithGoogle()}
-              className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-charcoal transition hover:bg-mist hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-accent/30"
+              variant="secondary"
+              fullWidth
+              className="gap-3"
             >
               {/* Google "G" logo SVG */}
               <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
@@ -165,7 +161,7 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
                 <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z" fill="#EA4335"/>
               </svg>
               Continue with Google
-            </button>
+            </Button>
 
             {/* Divider */}
             <div className="my-5 flex items-center gap-3">
@@ -183,24 +179,23 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
               Enter your email and we'll send a reset link.
             </p>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <input
+              <Field
                 ref={emailRef}
+                label="Email"
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@university.edu"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
               />
               {auth.error && (
                 <p className={`text-sm rounded-lg px-3 py-2 ${isInfo ? "bg-blue-50 text-blue-700" : "bg-red-50 text-red-600"}`}>
                   {auth.error}
                 </p>
               )}
-              <button type="submit" disabled={submitting}
-                className="w-full bg-navy text-white font-semibold rounded-lg py-2.5 text-sm hover:bg-navy/90 transition-colors disabled:opacity-50">
+              <Button type="submit" disabled={submitting} fullWidth>
                 {submitting ? "Sending…" : "Send reset link"}
-              </button>
+              </Button>
             </form>
             <p className="mt-4 text-xs text-center text-charcoal/40">
               <button onClick={() => { setShowForgot(false); auth.clearError(); }} className="underline">
@@ -211,18 +206,15 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
         ) : (
           <>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-charcoal mb-1">Email</label>
-                <input
-                  ref={emailRef}
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@university.edu"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-                />
-              </div>
+              <Field
+                ref={emailRef}
+                label="Email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@university.edu"
+              />
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-sm font-medium text-charcoal">Password</label>
@@ -248,10 +240,9 @@ export function AuthModal({ open, onClose, auth, defaultTab = "signin", isRecove
                   {auth.error}
                 </p>
               )}
-              <button type="submit" disabled={submitting}
-                className="w-full bg-navy text-white font-semibold rounded-lg py-2.5 text-sm hover:bg-navy/90 transition-colors disabled:opacity-50">
+              <Button type="submit" disabled={submitting} fullWidth>
                 {submitting ? "Please wait…" : tab === "signin" ? "Sign in" : "Create free account"}
-              </button>
+              </Button>
             </form>
             <p className="mt-4 text-xs text-center text-charcoal/40">
               {tab === "signin" ? (

@@ -5,23 +5,42 @@
 @tailwind utilities;
 
 :root {
-  color: #314155;
-  background:
-    radial-gradient(circle at top left, rgba(242, 176, 61, 0.14), transparent 28%),
-    radial-gradient(circle at 85% 18%, rgba(33, 79, 116, 0.12), transparent 24%),
-    linear-gradient(180deg, #fcfaf4 0%, #f7f6f1 100%);
+  color: rgb(72 62 57);
+  background: rgb(248 246 241);
   font-family: "Outfit", ui-sans-serif, system-ui, sans-serif;
-  --surface-0: #fcfaf4;
-  --surface-1: rgba(255, 252, 245, 0.88);
-  --surface-2: rgba(255, 255, 255, 0.94);
-  --ink-strong: #152538;
-  --ink-soft: #546375;
-  --accent: #e9aa2a;
-  --accent-deep: #ca8717;
-  --line-soft: rgba(21, 37, 56, 0.08);
-  --shadow-soft: 0 18px 60px -42px rgba(22, 34, 56, 0.42);
-  --shadow-float: 0 28px 90px -48px rgba(22, 34, 56, 0.5);
-  --workspace-glow: radial-gradient(circle at top, rgba(233, 170, 42, 0.18), transparent 42%);
+
+  /* Canonical warm editorial palette: space-separated RGB supports Tailwind opacity. */
+  --color-paper: 248 246 241;
+  --color-parchment: 242 237 228;
+  --color-surface: 255 254 251;
+  --color-surface-muted: 244 241 235;
+  --color-ink: 43 35 31;
+  --color-brand: 91 61 46;
+  --color-muted: 104 92 84;
+  --color-taupe: 151 133 121;
+  --color-line: 222 214 204;
+  --color-accent: 216 177 131;
+  --color-accent-strong: 153 101 61;
+  --color-success: 74 111 82;
+  --color-warning: 151 105 47;
+  --color-danger: 153 63 55;
+  --color-info: 74 100 122;
+
+  --surface-0: rgb(var(--color-paper));
+  --surface-1: rgb(var(--color-surface) / 0.92);
+  --surface-2: rgb(var(--color-surface));
+  --ink-strong: rgb(var(--color-ink));
+  --ink-soft: rgb(var(--color-muted));
+  --accent: rgb(var(--color-accent));
+  --accent-deep: rgb(var(--color-accent-strong));
+  --line-soft: rgb(var(--color-line) / 0.82);
+  --radius-control: 0.5rem;
+  --radius-panel: 0.75rem;
+  --radius-dialog: 0.875rem;
+  --shadow-soft: 0 1px 2px rgb(69 48 37 / 0.025);
+  --shadow-raised: 0 8px 28px -18px rgb(69 48 37 / 0.18);
+  --shadow-float: var(--shadow-raised);
+  --workspace-glow: none;
 }
 
 html {
@@ -31,10 +50,7 @@ html {
 body {
   margin: 0;
   min-width: 320px;
-  background:
-    radial-gradient(circle at top left, rgba(242, 176, 61, 0.14), transparent 28%),
-    radial-gradient(circle at 85% 18%, rgba(33, 79, 116, 0.12), transparent 24%),
-    linear-gradient(180deg, #fcfaf4 0%, #f7f6f1 100%);
+  background: rgb(var(--color-paper));
   color: var(--ink-soft);
 }
 
@@ -47,11 +63,8 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.28;
-  background-image:
-    radial-gradient(rgba(21, 37, 56, 0.08) 0.7px, transparent 0.7px);
-  background-size: 22px 22px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.6), transparent 85%);
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
 }
 
 #root {
@@ -61,34 +74,25 @@ body::before {
 
 /* Floating glass nav */
 .glass-nav {
-  background: linear-gradient(180deg, rgba(255, 252, 246, 0.88), rgba(255, 255, 255, 0.8));
-  backdrop-filter: blur(16px) saturate(165%);
-  -webkit-backdrop-filter: blur(16px) saturate(165%);
-  border: 1px solid rgba(255, 255, 255, 0.66);
-  border-radius: 22px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 18px 55px -40px rgba(15, 23, 42, 0.48);
+  background: rgb(var(--color-surface) / 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgb(var(--color-line) / 0.72);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-soft);
 }
 
-/* Yellow shine CTA button */
+/* Legacy CTA hook. New buttons intentionally avoid decorative shine. */
 .btn-shine {
   position: relative;
   overflow: hidden;
+  color: white !important;
+  background-color: rgb(var(--color-ink)) !important;
+  background-image: none !important;
+  box-shadow: none !important;
 }
 .btn-shine::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
-  transition: left 0s;
-}
-.btn-shine:hover::before {
-  left: 100%;
-  transition: left 0.5s ease;
+  content: none;
 }
 
 /* Skeleton shimmer */
@@ -142,9 +146,9 @@ body::before {
    when navigated via keyboard. Mouse clicks are unaffected (focus-visible
    only activates for keyboard / programmatic focus). */
 :where(button, a, input, textarea, select):focus-visible {
-  outline: 3px solid #FBBF24; /* accent */
-  outline-offset: 2px;
-  border-radius: 6px;
+  outline: 2px solid rgb(var(--color-accent-strong));
+  outline-offset: 3px;
+  border-radius: var(--radius-control);
 }
 
 /* Yellow blob background accent */
@@ -157,19 +161,14 @@ body::before {
 }
 
 .ambient-panel {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 251, 244, 0.92));
-  border: 1px solid rgba(21, 37, 56, 0.08);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.75),
-    0 24px 70px -48px rgba(21, 37, 56, 0.38);
+  background: rgb(var(--color-surface) / 0.94);
+  border: 1px solid rgb(var(--color-line) / 0.78);
+  box-shadow: var(--shadow-soft);
 }
 
 .workspace-shell {
   position: relative;
-  background:
-    radial-gradient(circle at top, rgba(233, 170, 42, 0.16), transparent 42%),
-    linear-gradient(180deg, rgba(249, 247, 241, 0.92) 0%, rgba(243, 241, 236, 0.94) 100%);
+  background: rgb(var(--color-paper));
 }
 
 .workspace-shell::after {
@@ -177,26 +176,19 @@ body::before {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(rgba(21, 37, 56, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(21, 37, 56, 0.03) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.24), transparent 75%);
+  background: none;
 }
 
 .editor-dock {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 252, 246, 0.93));
-  border: 1px solid rgba(21, 37, 56, 0.08);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.88),
-    0 22px 65px -48px rgba(21, 37, 56, 0.44);
+  background: rgb(var(--color-surface));
+  border: 1px solid rgb(var(--color-line) / 0.8);
+  box-shadow: var(--shadow-soft);
 }
 
 .workspace-chip {
-  border: 1px solid rgba(21, 37, 56, 0.08);
-  background: rgba(255, 255, 255, 0.76);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  border: 1px solid rgb(var(--color-line) / 0.82);
+  background: rgb(var(--color-surface) / 0.82);
+  box-shadow: none;
 }
 
 .spotlight-card {
